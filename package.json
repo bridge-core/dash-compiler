@@ -26,13 +26,13 @@
 	},
 	"homepage": "https://github.com/bridge-core/dash-compiler#readme",
 	"dependencies": {
-		"@types/path-browserify": "^1.0.0",
 		"json5": "^2.2.0",
-		"mc-project-core": "^0.2.0",
+		"mc-project-core": "^0.2.1",
 		"micromatch": "^4.0.4",
 		"path-browserify": "^1.0.1"
 	},
 	"devDependencies": {
+		"@types/path-browserify": "^1.0.0",
 		"vite": "^2.6.13"
 	}
 }
