@@ -1,7 +1,8 @@
-import { TPackTypeId } from './Common/TPackTypeId'
 import { FileSystem } from './FileSystem/FileSystem'
-import { dirname, join, resolve } from 'path-browserify'
-import { ProjectConfig } from 'mc-project-core'
+import { DashProjectConfig } from './DashProjectConfig'
+import { dirname } from 'path-browserify'
+import { AllPlugins } from './Plugins/AllPlugins'
+import { IncludedFiles } from './Core/IncludedFiles'
 
 export interface IDashOptions {
 	/**
@@ -22,36 +23,27 @@ export interface IDashOptions {
 	plugins: Record<string, string>
 }
 
-export const defaultPackPaths = <const>{
-	behaviorPack: './BP',
-	resourcePack: './RP',
-	skinPack: './SP',
-	worldTemplate: './WT',
-}
-
 export class Dash {
-	protected _projectConfig?: any
+	public readonly projectConfig: DashProjectConfig
+	public readonly projectRoot: string
+	public readonly plugins = new AllPlugins()
+	public includedFiles = new IncludedFiles(this)
+
 	constructor(
-		protected fileSystem: FileSystem,
+		public readonly fileSystem: FileSystem,
 		protected options: IDashOptions
-	) {}
-
-	get projectConfig() {
-		if (!this._projectConfig) {
-			throw new Error(
-				"Make sure to call 'Dash.loadProject()' before accessing the projectConfig"
-			)
-		}
-		return this._projectConfig
+	) {
+		this.projectRoot = dirname(options.config)
+		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
 	}
 
-	async loadProject() {
-		this._projectConfig = await this.fileSystem.readJson(
-			this.options.config
-		)
-	}
+	async build() {
+		await this.plugins.runBuildStartHooks()
 
-	build() {}
+		await this.includedFiles.loadAll()
+
+		await this.plugins.runBuildEndHooks()
+	}
 
 	watch() {
 		// this.fileSystem.watchDirectory()
