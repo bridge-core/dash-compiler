@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		/* Basic Options */
+		"target": "ES2021",
+		"module": "CommonJS",
+		"moduleResolution": "node",
+		"outDir": "./dist/",
+		"rootDir": "./src/",
+		"composite": false,
+		"removeComments": true,
+		"sourceMap": false,
+		"declaration": true,
+		"emitDeclarationOnly": true,
+
+		/* Strict Type-Checking Options */
+		"strict": true,
+		"strictFunctionTypes": true,
+		"noImplicitAny": true,
+
+		/* Additional Checks */
+		"esModuleInterop": true,
+		"resolveJsonModule": true
+	},
+	"include": ["./src/**/*.ts"]
+}

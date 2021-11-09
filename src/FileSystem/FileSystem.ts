@@ -12,6 +12,8 @@ export abstract class FileSystem {
 	abstract unlink(path: string): Promise<void>
 	abstract mkdir(path: string): Promise<void>
 
+	abstract allFiles(path: string): Promise<string[]>
+
 	async writeJson(
 		path: string,
 		content: any,

@@ -1,6 +1,0 @@
-{
-	"imports": {
-		"path": "https://deno.land/std@0.113.0/path/mod.ts",
-		"flags": "https://deno.land/std@0.113.0/flags/mod.ts"
-	}
-}

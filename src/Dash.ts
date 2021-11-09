@@ -1,12 +1,25 @@
-import { TPackTypeId } from './Common/TPackTypeId.ts'
-import { FileSystem } from './FileSystem/FileSystem.ts'
-import { dirname, join, resolve } from 'path'
+import { TPackTypeId } from './Common/TPackTypeId'
+import { FileSystem } from './FileSystem/FileSystem'
+import { dirname, join, resolve } from 'path-browserify'
+import { ProjectConfig } from 'mc-project-core'
 
 export interface IDashOptions {
+	/**
+	 * mode: Either 'development' or 'production'
+	 */
+	mode: 'development' | 'production'
 	/**
 	 * A path that points to the config file for the current project
 	 */
 	config: string
+	/**
+	 * Output path
+	 */
+	output: string
+	/**
+	 * A record mapping compiler plugin IDs to their respective paths
+	 */
+	plugins: Record<string, string>
 }
 
 export const defaultPackPaths = <const>{
@@ -42,28 +55,5 @@ export class Dash {
 
 	watch() {
 		// this.fileSystem.watchDirectory()
-	}
-
-	getPackRoot(packId: TPackTypeId) {
-		return this.projectConfig.packs?.[packId] ?? defaultPackPaths[packId]
-	}
-	resolvePackPath(packId?: TPackTypeId, filePath?: string) {
-		const basePath = dirname(this.options.config)
-
-		if (!filePath && !packId) return basePath
-		else if (!packId && filePath) return join(basePath, filePath)
-		else if (!filePath && packId)
-			return resolve(basePath, `${this.getPackRoot(packId)}`)
-
-		return resolve(basePath, `${this.getPackRoot(packId!)}/${filePath}`)
-	}
-	getAvailablePackPaths() {
-		const paths: string[] = []
-
-		for (const packId of Object.keys(this.projectConfig.packs ?? {})) {
-			paths.push(this.resolvePackPath(<TPackTypeId>packId))
-		}
-
-		return paths
 	}
 }
