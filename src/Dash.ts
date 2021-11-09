@@ -26,7 +26,7 @@ export interface IDashOptions {
 export class Dash {
 	public readonly projectConfig: DashProjectConfig
 	public readonly projectRoot: string
-	public readonly plugins = new AllPlugins()
+	public readonly plugins = new AllPlugins(this)
 	public includedFiles = new IncludedFiles(this)
 
 	constructor(
@@ -37,7 +37,24 @@ export class Dash {
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
 	}
 
+	async setup() {
+		await this.projectConfig.setup()
+	}
+
+	/**
+	 * Omitting the "compiler" property from the project config
+	 * or setting it to false will disable the compiler.
+	 */
+	get isCompilerActivated() {
+		return (
+			!!this.projectConfig.get().compiler ||
+			!Array.isArray(this.projectConfig.get().compiler?.plugins)
+		)
+	}
+
 	async build() {
+		if (!this.isCompilerActivated) return
+
 		await this.plugins.runBuildStartHooks()
 
 		await this.includedFiles.loadAll()

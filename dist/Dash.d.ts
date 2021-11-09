@@ -16,6 +16,8 @@ export declare class Dash {
     readonly plugins: AllPlugins;
     includedFiles: IncludedFiles;
     constructor(fileSystem: FileSystem, options: IDashOptions);
+    setup(): Promise<void>;
+    get isCompilerActivated(): boolean;
     build(): Promise<void>;
     watch(): void;
 }

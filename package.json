@@ -27,7 +27,7 @@
 	"homepage": "https://github.com/bridge-core/dash-compiler#readme",
 	"dependencies": {
 		"json5": "^2.2.0",
-		"mc-project-core": "^0.2.1",
+		"mc-project-core": "^0.2.2",
 		"micromatch": "^4.0.4",
 		"path-browserify": "^1.0.1"
 	},

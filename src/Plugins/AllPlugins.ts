@@ -1,7 +1,31 @@
+import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
 
 export class AllPlugins {
 	protected plugins: Plugin[] = []
+
+	constructor(protected dash: Dash) {}
+
+	loadPlugins(plugins: Record<string, string>) {
+		const compilerPlugins =
+			this.dash.projectConfig.get().compiler?.plugins ?? []
+
+		/**
+		 * Map of plugin path and corresponding plugin opts
+		 */
+		const pluginOptsMap: Record<string, any> = {}
+		for (const pluginName in plugins) {
+			const currentPlugin = compilerPlugins.find((p) =>
+				typeof p === 'string' ? p === pluginName : p[0] === pluginName
+			)
+
+			if (currentPlugin)
+				pluginOptsMap[plugins[pluginName]] =
+					typeof currentPlugin === 'string' ? {} : currentPlugin[1]
+		}
+
+		// TODO: Load plugins from disk and add them to Plugin[] list
+	}
 
 	async runBuildStartHooks() {
 		for (const plugin of this.plugins) {
