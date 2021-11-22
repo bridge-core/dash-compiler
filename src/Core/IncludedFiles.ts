@@ -1,16 +1,20 @@
 import { join } from 'path-browserify'
 import type { Dash } from '../Dash'
+import { DashFile } from './DashFile'
 
 export class IncludedFiles {
-	protected files: string[] = []
+	protected files: DashFile[] = []
 
 	constructor(protected dash: Dash) {}
 
 	all() {
 		return this.files
 	}
-	filtered(cb: (filePath: string) => boolean) {
-		return this.files.filter(cb)
+	filtered(cb: (file: DashFile) => boolean) {
+		return this.files.filter((file) => cb(file))
+	}
+	setFiltered(cb: (file: DashFile) => boolean) {
+		this.files = this.filtered(cb)
 	}
 
 	async loadAll() {
@@ -26,6 +30,8 @@ export class IncludedFiles {
 		const includeFiles = await this.dash.plugins.runIncludeHooks()
 		for (const file of includeFiles) allFiles.add(file)
 
-		this.files = Array.from(allFiles)
+		this.files = Array.from(allFiles).map(
+			(filePath) => new DashFile(this.dash, filePath)
+		)
 	}
 }

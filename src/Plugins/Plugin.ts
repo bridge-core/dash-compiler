@@ -15,8 +15,11 @@ export class Plugin {
 	runTransformPathHook(filePath: string | null) {
 		return this.plugin.transformPath?.(filePath)
 	}
-	runReadHook(filePath: string) {
-		return this.plugin.read?.(filePath)
+	runReadHook(
+		filePath: string,
+		fileHandle?: { getFile(): Promise<File> | File }
+	) {
+		return this.plugin.read?.(filePath, fileHandle)
 	}
 	runLoadHook(filePath: string, fileContent: any) {
 		return this.plugin.load?.(filePath, fileContent)

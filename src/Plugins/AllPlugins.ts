@@ -54,6 +54,42 @@ export class AllPlugins {
 			if (newPath === null) return null
 			else if (newPath !== undefined) currentFilePath = newPath
 		}
+
+		return currentFilePath
+	}
+	async runReadHooks(
+		filePath: string,
+		fileHandle?: { getFile: () => Promise<File> | File }
+	) {
+		for (const plugin of this.plugins) {
+			const data = await plugin.runReadHook(filePath, fileHandle)
+
+			if (data !== null && data !== undefined) return data
+		}
+	}
+	async runLoadHooks(filePath: string, readData: any) {
+		let data: any = readData
+		for (const plugin of this.plugins) {
+			const tmp = await plugin.runLoadHook(filePath, data)
+			if (tmp === undefined) continue
+
+			data = tmp
+		}
+		return data
+	}
+	async runRegisterAliasesHooks(filePath: string, data: any) {
+		const aliases = new Set<string>()
+
+		for (const plugin of this.plugins) {
+			const tmp = await plugin.runRegisterAliasesHook(filePath, data)
+
+			if (tmp === undefined || tmp === null) continue
+
+			if (Array.isArray(tmp)) tmp.forEach((alias) => aliases.add(alias))
+			else aliases.add(tmp)
+		}
+
+		return aliases
 	}
 
 	async runBuildEndHooks() {
