@@ -91,6 +91,21 @@ export class AllPlugins {
 
 		return aliases
 	}
+	async runRequireHooks(filePath: string, data: any) {
+		const requiredFiles = new Set<string>()
+
+		for (const plugin of this.plugins) {
+			const tmp = await plugin.runRequireHook(filePath, data)
+
+			if (tmp === undefined || tmp === null) continue
+
+			if (Array.isArray(tmp))
+				tmp.forEach((file) => requiredFiles.add(file))
+			else requiredFiles.add(tmp)
+		}
+
+		return requiredFiles
+	}
 
 	async runBuildEndHooks() {
 		for (const plugin of this.plugins) {

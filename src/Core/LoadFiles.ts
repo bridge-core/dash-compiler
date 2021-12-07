@@ -1,5 +1,4 @@
 import type { Dash } from '../Dash'
-import { IncludedFiles } from './IncludedFiles'
 
 export class LoadFiles {
 	constructor(protected dash: Dash) {}
@@ -17,21 +16,28 @@ export class LoadFiles {
 			await file.processAfterLoad()
 		}
 
-		// Remove all files that don't need further processing
+		// Now, only iterate over files that need further processing
 		// (Files which only needed to be copied over)
-		this.dash.includedFiles.setFiltered((file) => !file.isDone)
+		for (const file of this.dash.includedFiles.filtered(
+			(file) => !file.isDone
+		)) {
+			file.setReadData(
+				(await this.dash.plugins.runLoadHooks(
+					file.filePath,
+					file.data
+				)) ?? file.data
+			)
 
-		for (const file of this.dash.includedFiles.all()) {
-			const [readData, aliases] = await Promise.all([
-				this.dash.plugins.runLoadHooks(file.filePath, file.data),
+			const [aliases, requiredFiles] = await Promise.all([
 				this.dash.plugins.runRegisterAliasesHooks(
 					file.filePath,
 					file.data
 				),
+				this.dash.plugins.runRequireHooks(file.filePath, file.data),
 			])
 
-			file.setReadData(readData ?? file.data)
 			file.setAliases(aliases)
+			file.setRequiredFiles(requiredFiles)
 		}
 	}
 }
