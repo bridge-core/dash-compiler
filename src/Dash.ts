@@ -27,6 +27,8 @@ export class Dash {
 	public includedFiles = new IncludedFiles(this)
 	public loadFiles = new LoadFiles(this)
 
+	// TODO(@solvedDev): Add support for multiple output directories
+	// (e.g. compiling a RP to Minecraft Bedrock and Java)
 	constructor(
 		public readonly fileSystem: FileSystem,
 		public readonly outputFileSystem: FileSystem = fileSystem,
