@@ -16,11 +16,11 @@ export class LoadFiles {
 			await file.processAfterLoad()
 		}
 
-		// Now, only iterate over files that need further processing
-		// (Files which only needed to be copied over)
-		for (const file of this.dash.includedFiles.filtered(
-			(file) => !file.isDone
-		)) {
+		for (const file of this.dash.includedFiles.all()) {
+			// Now, only iterate over files that need further processing
+			// (Ignore files which only needed to be copied over)
+			if (file.isDone) continue
+
 			file.setReadData(
 				(await this.dash.plugins.runLoadHooks(
 					file.filePath,

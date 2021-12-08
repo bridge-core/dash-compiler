@@ -4,6 +4,7 @@ import { DashFile } from './DashFile'
 
 export class IncludedFiles {
 	protected files: DashFile[] = []
+	protected aliases = new Map<string, DashFile>()
 
 	constructor(protected dash: Dash) {}
 
@@ -15,6 +16,15 @@ export class IncludedFiles {
 	}
 	setFiltered(cb: (file: DashFile) => boolean) {
 		this.files = this.filtered(cb)
+	}
+	get(fileId: string) {
+		return (
+			this.aliases.get(fileId) ??
+			this.files.find((file) => file.filePath === fileId)
+		)
+	}
+	addAlias(alias: string, DashFile: DashFile) {
+		this.aliases.set(alias, DashFile)
 	}
 
 	async loadAll() {

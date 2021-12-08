@@ -5,7 +5,6 @@ export class DashFile {
 	public isDone = false
 	public data: any
 	public readonly fileHandle: { getFile: () => Promise<File> | File }
-	public aliases = new Set<string>()
 	public requiredFiles = new Set<string>()
 
 	constructor(protected dash: Dash, public readonly filePath: string) {
@@ -23,7 +22,8 @@ export class DashFile {
 		this.data = data
 	}
 	setAliases(aliases: Set<string>) {
-		this.aliases = aliases
+		for (const alias of aliases)
+			this.dash.includedFiles.addAlias(alias, this)
 	}
 	setRequiredFiles(requiredFiles: Set<string>) {
 		this.requiredFiles = requiredFiles

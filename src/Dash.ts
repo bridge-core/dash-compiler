@@ -4,6 +4,8 @@ import { dirname } from 'path-browserify'
 import { AllPlugins } from './Plugins/AllPlugins'
 import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
+import { ResolveFileOrder } from './Core/ResolveFileOrder'
+import { FileTransformer } from './Core/TransformFiles'
 
 export interface IDashOptions {
 	/**
@@ -26,6 +28,8 @@ export class Dash {
 	public readonly plugins = new AllPlugins(this)
 	public includedFiles = new IncludedFiles(this)
 	public loadFiles = new LoadFiles(this)
+	public fileOrderResolver = new ResolveFileOrder(this)
+	public fileTransformer = new FileTransformer(this)
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -64,6 +68,9 @@ export class Dash {
 
 		await this.includedFiles.loadAll()
 		await this.loadFiles.run()
+
+		const resolvedFileOrder = this.fileOrderResolver.run()
+		await this.fileTransformer.run(resolvedFileOrder)
 
 		await this.plugins.runBuildEndHooks()
 	}

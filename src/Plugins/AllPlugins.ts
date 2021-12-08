@@ -1,3 +1,4 @@
+import type { DashFile } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
 
@@ -105,6 +106,40 @@ export class AllPlugins {
 		}
 
 		return requiredFiles
+	}
+	async runTransformHooks(file: DashFile) {
+		const dependencies = Object.fromEntries(
+			[...file.requiredFiles].map((fileId) => [
+				fileId,
+				this.dash.includedFiles.get(fileId),
+			])
+		)
+
+		let transformedData = file.data
+
+		for (const plugin of this.plugins) {
+			const tmpData = await plugin.runTransformHook(
+				file.filePath,
+				transformedData,
+				dependencies
+			)
+			if (tmpData === undefined) continue
+
+			transformedData = tmpData
+		}
+
+		return transformedData
+	}
+	async runFinalizeBuildHooks(file: DashFile) {
+		for (const plugin of this.plugins) {
+			const finalizedData = await plugin.runFinalizeBuildHook(
+				file.filePath,
+				file.data
+			)
+
+			if (finalizedData !== undefined && finalizedData !== null)
+				return finalizedData
+		}
 	}
 
 	async runBuildEndHooks() {
