@@ -13,6 +13,7 @@ export abstract class FileSystem {
 	abstract mkdir(path: string): Promise<void>
 
 	abstract allFiles(path: string): Promise<string[]>
+	abstract readdir(path: string): Promise<IDirEntry[]>
 
 	async writeJson(
 		path: string,
@@ -36,4 +37,9 @@ export abstract class FileSystem {
 			'Watching a directory for changes is not supported on this platform!'
 		)
 	}
+}
+
+interface IDirEntry {
+	name: string
+	kind: 'file' | 'directory'
 }

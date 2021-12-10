@@ -6,6 +6,9 @@ export class DashFile {
 	public data: any
 	public readonly fileHandle: { getFile: () => Promise<File> | File }
 	public requiredFiles = new Set<string>()
+	public aliases = new Set<string>()
+	// TODO(@solvedDev): Test adding a file hash property that helps determining whether a file gets rewritten to disk
+	// Could help with compilation speed of platforms with low file writing speeds (File System Access API)
 
 	constructor(protected dash: Dash, public readonly filePath: string) {
 		this.outputPath = filePath
@@ -24,6 +27,8 @@ export class DashFile {
 	setAliases(aliases: Set<string>) {
 		for (const alias of aliases)
 			this.dash.includedFiles.addAlias(alias, this)
+
+		this.aliases = aliases
 	}
 	setRequiredFiles(requiredFiles: Set<string>) {
 		this.requiredFiles = requiredFiles

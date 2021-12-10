@@ -5,6 +5,7 @@ export class ResolveFileOrder {
 	constructor(protected dash: Dash) {}
 
 	run() {
+		// TODO(@solvedDev): Store hot update chains in separate sets. This could enable some significant speed boosts in the future
 		const resolved = new Set<DashFile>()
 
 		for (const file of this.dash.includedFiles.all()) {

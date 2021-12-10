@@ -20,6 +20,10 @@ export interface IDashOptions {
 	 * A record mapping compiler plugin IDs to their respective paths
 	 */
 	plugins: Record<string, string>
+	/**
+	 * An environment for the plugins to execute in
+	 */
+	pluginEnvironment?: any
 }
 
 export class Dash {
@@ -48,6 +52,7 @@ export class Dash {
 
 	async setup() {
 		await this.projectConfig.setup()
+		await this.plugins.loadPlugins(this.options.pluginEnvironment)
 	}
 
 	/**
@@ -73,7 +78,16 @@ export class Dash {
 		await this.fileTransformer.run(resolvedFileOrder)
 
 		await this.plugins.runBuildEndHooks()
+
+		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
+
+	/**
+	 * Virtual files are files created by compiler plugins.
+	 * Updating them is much simpler than update normal files so we have this dedicated method for them.
+	 * @param filePaths
+	 */
+	async compileVirtualFiles(filePaths: string[]) {}
 
 	async updateFiles(filePaths: string[]) {
 		// Update files in output

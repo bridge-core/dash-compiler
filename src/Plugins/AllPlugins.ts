@@ -1,13 +1,64 @@
+import { join } from 'path-browserify'
+import { run } from '../Common/runScript'
 import type { DashFile } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
+import { TCompilerPluginFactory } from './TCompilerFactory'
 
 export class AllPlugins {
 	protected plugins: Plugin[] = []
 
 	constructor(protected dash: Dash) {}
 
-	loadPlugins(plugins: Record<string, string>) {
+	async loadPlugins(scriptEnv: any = {}) {
+		// Loading all available extensions
+		const extensions = [
+			...(
+				await this.dash.fileSystem
+					.readdir(join(this.dash.projectRoot, '.bridge/extensions'))
+					.catch(() => [])
+			).map((entry) =>
+				entry.kind === 'directory'
+					? join(
+							this.dash.projectRoot,
+							'.bridge/extensions',
+							entry.name
+					  )
+					: undefined
+			),
+			...(
+				await this.dash.fileSystem.readdir('extensions').catch(() => [])
+			).map((entry) =>
+				entry.kind === 'directory'
+					? join('extensions', entry.name)
+					: undefined
+			),
+		]
+
+		const plugins: Record<string, string> = {}
+		// Read extension manifests to extract compiler plugins
+		for (const extension of extensions) {
+			if (!extension) continue
+
+			let manifest: any
+			try {
+				manifest = await this.dash.fileSystem.readJson(
+					join(extension, 'manifest.json')
+				)
+			} catch {
+				continue
+			}
+
+			if (!manifest?.compiler?.plugins) continue
+
+			for (const pluginId in manifest.compiler.plugins) {
+				plugins[pluginId] = join(
+					extension,
+					manifest.compiler.plugins[pluginId]
+				)
+			}
+		}
+
 		const compilerPlugins =
 			this.dash.projectConfig.get().compiler?.plugins ?? []
 
@@ -25,7 +76,48 @@ export class AllPlugins {
 					typeof currentPlugin === 'string' ? {} : currentPlugin[1]
 		}
 
-		// TODO: Load plugins from disk and add them to Plugin[] list
+		// Execute plugins
+		for (const pluginPath in pluginOptsMap) {
+			const pluginSrc = await this.dash.fileSystem
+				.readFile(pluginPath)
+				.then((file) => file.text())
+
+			const module: { exports?: TCompilerPluginFactory } = {}
+			await run({
+				async: true,
+				script: pluginSrc,
+				env: {
+					require: undefined,
+					module,
+					...scriptEnv,
+				},
+			})
+
+			if (typeof module.exports === 'function')
+				this.plugins.push(
+					new Plugin(
+						module.exports({
+							options: pluginOptsMap[pluginPath],
+							fileSystem: this.dash.fileSystem,
+							outputFileSystem: this.dash.outputFileSystem,
+							targetVersion:
+								this.dash.projectConfig.get().targetVersion,
+							getAliases: (filePath: string) => [
+								...(this.dash.includedFiles.get(filePath)
+									?.aliases ?? []),
+							],
+							/**
+							 * TODO: Deprecated in favor of a broader API that is not specific to Minecraft Bedrock
+							 */
+							hasComMojangDirectory:
+								this.dash.fileSystem !==
+								this.dash.outputFileSystem,
+							compileFiles: (filePaths: string[]) =>
+								this.dash.compileVirtualFiles(filePaths),
+						})
+					)
+				)
+		}
 	}
 
 	async runBuildStartHooks() {
