@@ -5,7 +5,9 @@ export declare class Plugin {
     runBuildStartHook(): void | Promise<void> | undefined;
     runIncludeHook(): Maybe<string[]>;
     runTransformPathHook(filePath: string | null): Maybe<string>;
-    runReadHook(filePath: string): any;
+    runReadHook(filePath: string, fileHandle?: {
+        getFile(): Promise<File> | File;
+    }): any;
     runLoadHook(filePath: string, fileContent: any): any;
     runRegisterAliasesHook(filePath: string, fileContent: any): Maybe<string[]>;
     runRequireHook(filePath: string, fileContent: any): Maybe<string[]>;

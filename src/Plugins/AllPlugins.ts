@@ -4,6 +4,7 @@ import type { DashFile } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
 import { TCompilerPluginFactory } from './TCompilerFactory'
+import { SimpleRewrite } from './BuiltIn/SimpleRewrite'
 
 export class AllPlugins {
 	protected plugins: Plugin[] = []
@@ -35,7 +36,10 @@ export class AllPlugins {
 			),
 		]
 
-		const plugins: Record<string, string> = {}
+		const plugins: Record<string, string> = {
+			// This is ugly & hacky, needs reworking
+			simpleRewrite: SimpleRewrite.toString(),
+		}
 		// Read extension manifests to extract compiler plugins
 		for (const extension of extensions) {
 			if (!extension) continue
@@ -64,6 +68,8 @@ export class AllPlugins {
 
 		/**
 		 * Map of plugin path and corresponding plugin opts
+		 *
+		 * TODO(@solvedDev): Refactor to warn users about missing plugin based on compiler config; the current warning actually warns when a plugin is unused!
 		 */
 		const pluginOptsMap: Record<string, any> = {}
 		for (const pluginName in plugins) {
@@ -74,13 +80,17 @@ export class AllPlugins {
 			if (currentPlugin)
 				pluginOptsMap[plugins[pluginName]] =
 					typeof currentPlugin === 'string' ? {} : currentPlugin[1]
+			else console.warn(`Missing plugin with name ${pluginName}`)
 		}
 
 		// Execute plugins
 		for (const pluginPath in pluginOptsMap) {
-			const pluginSrc = await this.dash.fileSystem
-				.readFile(pluginPath)
-				.then((file) => file.text())
+			// This ternary is a hacky way to load built-in plugins directly from source. Needs a rework, see L40
+			const pluginSrc = pluginPath.startsWith('/')
+				? await this.dash.fileSystem
+						.readFile(pluginPath)
+						.then((file) => file.text())
+				: pluginPath
 
 			const module: { exports?: TCompilerPluginFactory } = {}
 			await run({
@@ -97,9 +107,14 @@ export class AllPlugins {
 				this.plugins.push(
 					new Plugin(
 						module.exports({
-							options: pluginOptsMap[pluginPath],
+							options: {
+								mode: this.dash.getMode(),
+								...pluginOptsMap[pluginPath],
+							},
 							fileSystem: this.dash.fileSystem,
 							outputFileSystem: this.dash.outputFileSystem,
+							projectConfig: this.dash.projectConfig,
+							projectRoot: this.dash.projectRoot,
 							targetVersion:
 								this.dash.projectConfig.get().targetVersion,
 							getAliases: (filePath: string) => [

@@ -34,7 +34,7 @@ export class IncludedFiles {
 		for (const packPath of packPaths) {
 			const files = await this.dash.fileSystem.allFiles(packPath)
 
-			for (const file of files) allFiles.add(join(packPath, file))
+			for (const file of files) allFiles.add(file)
 		}
 
 		const includeFiles = await this.dash.plugins.runIncludeHooks()

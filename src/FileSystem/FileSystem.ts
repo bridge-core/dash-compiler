@@ -1,19 +1,33 @@
-export abstract class FileSystem {
-	abstract iterateDirectory(
-		path: string,
-		callback: (relativePath: string) => Promise<void> | void
-	): Promise<void>
+import { join } from 'path-browserify'
 
+export interface IDirEntry {
+	name: string
+	kind: 'file' | 'directory'
+}
+export abstract class FileSystem {
 	abstract readFile(path: string): Promise<File>
 	abstract writeFile(
 		path: string,
 		content: string | Uint8Array
 	): Promise<void>
 	abstract unlink(path: string): Promise<void>
-	abstract mkdir(path: string): Promise<void>
 
-	abstract allFiles(path: string): Promise<string[]>
 	abstract readdir(path: string): Promise<IDirEntry[]>
+	abstract mkdir(path: string): Promise<void>
+	async allFiles(path: string) {
+		const files: string[] = []
+		const entries = await this.readdir(path)
+
+		for (const { name, kind } of entries) {
+			if (kind === 'directory') {
+				files.push(...(await this.allFiles(join(path, name))))
+			} else if (kind === 'file') {
+				files.push(join(path, name))
+			}
+		}
+
+		return files
+	}
 
 	async writeJson(
 		path: string,
@@ -37,9 +51,4 @@ export abstract class FileSystem {
 			'Watching a directory for changes is not supported on this platform!'
 		)
 	}
-}
-
-interface IDirEntry {
-	name: string
-	kind: 'file' | 'directory'
 }

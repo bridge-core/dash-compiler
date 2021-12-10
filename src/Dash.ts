@@ -6,24 +6,24 @@ import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
 import { ResolveFileOrder } from './Core/ResolveFileOrder'
 import { FileTransformer } from './Core/TransformFiles'
+import { PackType } from 'mc-project-core'
 
 export interface IDashOptions {
 	/**
 	 * mode: Either 'development' or 'production'
 	 */
-	mode: 'development' | 'production'
+	mode?: 'development' | 'production'
 	/**
 	 * A path that points to the config file for the current project
 	 */
 	config: string
-	/**
-	 * A record mapping compiler plugin IDs to their respective paths
-	 */
-	plugins: Record<string, string>
+
 	/**
 	 * An environment for the plugins to execute in
 	 */
 	pluginEnvironment?: any
+
+	packType?: PackType<any>
 }
 
 export class Dash {
@@ -43,11 +43,14 @@ export class Dash {
 		protected options: IDashOptions = {
 			mode: 'development',
 			config: 'config.json',
-			plugins: {},
 		}
 	) {
 		this.projectRoot = dirname(options.config)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
+	}
+
+	getMode() {
+		return this.options.mode
 	}
 
 	async setup() {
@@ -67,7 +70,10 @@ export class Dash {
 	}
 
 	async build() {
+		console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
+
+		const startTime = Date.now()
 
 		await this.plugins.runBuildStartHooks()
 
@@ -75,9 +81,16 @@ export class Dash {
 		await this.loadFiles.run()
 
 		const resolvedFileOrder = this.fileOrderResolver.run()
-		await this.fileTransformer.run(resolvedFileOrder)
+		console.log(resolvedFileOrder)
+		// await this.fileTransformer.run(resolvedFileOrder)
 
 		await this.plugins.runBuildEndHooks()
+
+		console.log(
+			`Dash compiled ${this.includedFiles.all().length} files in ${
+				Date.now() - startTime
+			}ms!`
+		)
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
@@ -87,7 +100,9 @@ export class Dash {
 	 * Updating them is much simpler than update normal files so we have this dedicated method for them.
 	 * @param filePaths
 	 */
-	async compileVirtualFiles(filePaths: string[]) {}
+	async compileVirtualFiles(filePaths: string[]) {
+		// TODO
+	}
 
 	async updateFiles(filePaths: string[]) {
 		// Update files in output
