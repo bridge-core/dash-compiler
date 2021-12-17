@@ -1,33 +1,38 @@
-import { join } from 'path-browserify'
+import { isMatch } from 'bridge-common-utils'
 import type { Dash } from '../Dash'
 import { DashFile } from './DashFile'
 
 export class IncludedFiles {
-	protected files: DashFile[] = []
+	protected files = new Map<string, DashFile>()
 	protected aliases = new Map<string, DashFile>()
+	protected queryCache = new Map<string, DashFile[]>()
 
 	constructor(protected dash: Dash<any>) {}
 
 	all() {
-		return this.files
+		return [...this.files.values()]
 	}
 	filtered(cb: (file: DashFile) => boolean) {
-		return this.files.filter((file) => cb(file))
-	}
-	setFiltered(cb: (file: DashFile) => boolean) {
-		this.files = this.filtered(cb)
+		return this.all().filter((file) => cb(file))
 	}
 	get(fileId: string) {
-		return (
-			this.aliases.get(fileId) ??
-			this.files.find((file) => file.filePath === fileId)
-		)
+		return this.aliases.get(fileId) ?? this.files.get(fileId)
 	}
 	addAlias(alias: string, DashFile: DashFile) {
 		this.aliases.set(alias, DashFile)
 	}
+	queryGlob(glob: string) {
+		if (this.queryCache.has(glob)) {
+			return this.queryCache.get(glob)!
+		}
+
+		const files = this.filtered((file) => isMatch(file.filePath, glob))
+		this.queryCache.set(glob, files)
+		return files
+	}
 
 	async loadAll() {
+		this.queryCache = new Map()
 		const allFiles = new Set<string>()
 
 		const packPaths = this.dash.projectConfig.getAvailablePackPaths()
@@ -38,10 +43,26 @@ export class IncludedFiles {
 		}
 
 		const includeFiles = await this.dash.plugins.runIncludeHooks()
-		for (const file of includeFiles) allFiles.add(file)
 
-		this.files = Array.from(allFiles).map(
-			(filePath) => new DashFile(this.dash, filePath)
+		for (const filePath of includeFiles) {
+			allFiles.add(filePath)
+		}
+
+		this.add([...allFiles])
+	}
+	add(filePaths: string[], isVirtual = false) {
+		for (const filePath of filePaths) {
+			this.files.set(
+				filePath,
+				new DashFile(this.dash, filePath, isVirtual)
+			)
+		}
+	}
+
+	async save(filePath: string) {
+		this.dash.fileSystem.writeJson(
+			filePath,
+			this.all().map((file) => file.serialize())
 		)
 	}
 }

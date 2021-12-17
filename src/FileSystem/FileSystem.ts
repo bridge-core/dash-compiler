@@ -42,6 +42,7 @@ export abstract class FileSystem {
 	async readJson(path: string): Promise<any> {
 		return JSON.parse(await this.readFile(path).then((file) => file.text()))
 	}
+	abstract lastModified(filePath: string): Promise<number>
 
 	watchDirectory(
 		path: string,

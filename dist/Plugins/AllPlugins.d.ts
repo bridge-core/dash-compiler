@@ -2,10 +2,25 @@ import type { DashFile } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
 export declare class AllPlugins {
-    protected dash: Dash;
+    protected dash: Dash<any>;
     protected plugins: Plugin[];
-    constructor(dash: Dash);
+    constructor(dash: Dash<any>);
     loadPlugins(scriptEnv?: any): Promise<void>;
+    protected addBuiltInPlugins(): void;
+    protected getPluginContext(pluginId: string): {
+        options: any;
+        fileSystem: import("../main").FileSystem;
+        outputFileSystem: import("../main").FileSystem;
+        projectConfig: import("../DashProjectConfig").DashProjectConfig;
+        projectRoot: string;
+        packType: import("mc-project-core").PackType<any>;
+        fileType: import("mc-project-core").FileType<any>;
+        targetVersion: string | undefined;
+        getAliases: (filePath: string) => string[];
+        hasComMojangDirectory: boolean;
+        compileFiles: (filePaths: string[]) => Promise<void>;
+    };
+    protected getPluginOptions(pluginId: string): any;
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<string[]>;
     runTransformPathHooks(filePath: string): Promise<string | null>;

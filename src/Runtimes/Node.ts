@@ -2,7 +2,8 @@ import { FileSystem, IDirEntry } from '../FileSystem/FileSystem'
 import { promises as fs, existsSync } from 'fs'
 import { basename, dirname, join } from 'path-browserify'
 import { Dash } from '../Dash'
-import { PackType } from 'mc-project-core'
+import { FileType, PackType } from 'mc-project-core'
+import { isMatch } from 'bridge-common-utils'
 
 export class NodeFileSystem extends FileSystem {
 	constructor() {
@@ -40,6 +41,9 @@ export class NodeFileSystem extends FileSystem {
 	async mkdir(path: string): Promise<void> {
 		await fs.mkdir(path, { recursive: true })
 	}
+	async lastModified(filePath: string): Promise<number> {
+		return (await fs.stat(filePath)).mtimeMs
+	}
 }
 
 if (require.main === module) {
@@ -51,9 +55,17 @@ if (require.main === module) {
 			).then((resp) => resp.json())
 		}
 	}
+	class FileTypeImpl extends FileType<void> {
+		async setup() {
+			this.fileTypes = Object.values(
+				import.meta.globEager('./fileDefinition/*.json')
+			).map((mod) => mod.default)
+		}
+	}
 	const dash = new Dash<void>(fs, undefined, {
 		config: join(process.cwd(), 'config.json'),
 		packType: new PackTypeImpl(undefined),
+		fileType: new FileTypeImpl(undefined, isMatch),
 	})
 
 	dash.setup().then(() => {

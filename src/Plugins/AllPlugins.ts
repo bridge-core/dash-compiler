@@ -3,10 +3,26 @@ import { run } from '../Common/runScript'
 import type { DashFile } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
-import { TCompilerPluginFactory } from './TCompilerFactory'
+import { TCompilerPluginFactory } from './TCompilerPluginFactory'
 import { SimpleRewrite } from './BuiltIn/SimpleRewrite'
+import { MoLangPlugin } from './BuiltIn/MoLang'
+import { EntityIdentifierAlias } from './BuiltIn/EntityIdentifier'
+import {
+	CustomBlockComponentPlugin,
+	CustomEntityComponentPlugin,
+	CustomItemComponentPlugin,
+} from './BuiltIn/Components/Plugins'
+import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
 
-const builtInPlugins: TCompilerPluginFactory[] = [SimpleRewrite]
+const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
+	simpleRewrite: SimpleRewrite,
+	moLang: MoLangPlugin,
+	entityIdentifierAlias: EntityIdentifierAlias,
+	customEntityComponents: CustomEntityComponentPlugin,
+	customItemComponents: CustomItemComponentPlugin,
+	customBlockComponents: CustomBlockComponentPlugin,
+	customCommands: CustomCommandsPlugin,
+}
 
 export class AllPlugins {
 	protected plugins: Plugin[] = []
@@ -62,28 +78,8 @@ export class AllPlugins {
 			}
 		}
 
-		const compilerPlugins =
-			this.dash.projectConfig.get().compiler?.plugins ?? []
-
-		/**
-		 * Map of plugin path and corresponding plugin opts
-		 *
-		 * TODO(@solvedDev): Refactor to warn users about missing plugin based on compiler config; the current warning actually warns when a plugin is unused!
-		 */
-		const pluginOptsMap: Record<string, any> = {}
-		for (const pluginName in plugins) {
-			const currentPlugin = compilerPlugins.find((p) =>
-				typeof p === 'string' ? p === pluginName : p[0] === pluginName
-			)
-
-			if (currentPlugin)
-				pluginOptsMap[plugins[pluginName]] =
-					typeof currentPlugin === 'string' ? {} : currentPlugin[1]
-			else console.warn(`Missing plugin with name ${pluginName}`)
-		}
-
 		// Execute plugins
-		for (const pluginPath in pluginOptsMap) {
+		for (const [pluginId, pluginPath] of Object.entries(plugins)) {
 			// This ternary is a hacky way to load built-in plugins directly from source. Needs a rework, see L40
 			const pluginSrc = await this.dash.fileSystem
 				.readFile(pluginPath)
@@ -102,36 +98,38 @@ export class AllPlugins {
 
 			if (typeof module.exports === 'function')
 				this.plugins.push(
-					new Plugin(
-						module.exports(
-							this.getPluginContext(pluginOptsMap[pluginPath])
-						)
-					)
+					new Plugin(module.exports(this.getPluginContext(pluginId)))
 				)
 		}
 
 		this.addBuiltInPlugins()
-
-		console.log(this.plugins)
 	}
 
 	protected addBuiltInPlugins() {
-		for (const plugin of builtInPlugins) {
-			this.plugins.push(new Plugin(plugin(this.getPluginContext())))
+		for (const [pluginId, plugin] of Object.entries(builtInPlugins)) {
+			this.plugins.push(
+				new Plugin(plugin(this.getPluginContext(pluginId)))
+			)
 		}
 	}
 
-	protected getPluginContext(pluginOpts: any = {}) {
+	/**
+	 * Returns the execution environment for a specific plugin
+	 * @param pluginId The plugin ID to get the context for
+	 * @returns The plugin context
+	 */
+	protected getPluginContext(pluginId: string) {
 		return {
 			options: {
 				mode: this.dash.getMode(),
-				...pluginOpts,
+				...this.getPluginOptions(pluginId),
 			},
 			fileSystem: this.dash.fileSystem,
 			outputFileSystem: this.dash.outputFileSystem,
 			projectConfig: this.dash.projectConfig,
 			projectRoot: this.dash.projectRoot,
 			packType: this.dash.packType,
+			fileType: this.dash.fileType,
 			targetVersion: this.dash.projectConfig.get().targetVersion,
 			getAliases: (filePath: string) => [
 				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
@@ -144,6 +142,21 @@ export class AllPlugins {
 			compileFiles: (filePaths: string[]) =>
 				this.dash.compileVirtualFiles(filePaths),
 		}
+	}
+	/**
+	 * Get plugin options for a specific plugin from the project config
+	 * @param pluginId The plugin ID to get options for
+	 * @returns Plugin options
+	 */
+	protected getPluginOptions(pluginId: string) {
+		const entry = this.dash.projectConfig
+			.get()
+			.compiler?.plugins?.find((p) =>
+				typeof p === 'string' ? p === pluginId : p[0] === pluginId
+			)
+
+		if (entry) return typeof entry === 'string' ? {} : entry[1]
+		return {}
 	}
 
 	async runBuildStartHooks() {
@@ -229,7 +242,7 @@ export class AllPlugins {
 		const dependencies = Object.fromEntries(
 			[...file.requiredFiles].map((fileId) => [
 				fileId,
-				this.dash.includedFiles.get(fileId),
+				this.dash.includedFiles.get(fileId)?.data ?? null,
 			])
 		)
 

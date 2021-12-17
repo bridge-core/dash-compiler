@@ -1,0 +1,1 @@
+{"id":"function","type":"text","icon":"mdi-function","detect":{"packType":"behaviorPack","scope":"functions/","matcher":["functions/**/*.mcfunction","functions/*.mcfunction"],"fileExtensions":[".mcfunction"]},"packSpider":"function.json","formatOnSaveCapable":false,"lightningCache":"function.js"}

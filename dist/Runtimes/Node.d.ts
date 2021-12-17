@@ -6,4 +6,5 @@ export declare class NodeFileSystem extends FileSystem {
     unlink(path: string): Promise<void>;
     readdir(path: string): Promise<IDirEntry[]>;
     mkdir(path: string): Promise<void>;
+    lastModified(filePath: string): Promise<number>;
 }

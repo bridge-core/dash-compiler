@@ -1,0 +1,1 @@
+{"id":"clientItem","icon":"mdi-sword","detect":{"packType":"resourcePack","scope":"items/","matcher":["items/**/*.json","items/*.json"]},"schema":"file:///data/packages/minecraftBedrock/schema/clientItem/main.json","lightningCache":"clientItem.json","definitions":{"identifier":[{"from":"item","match":"identifier"}],"itemTexture":[{"from":"itemTexture","match":"texture"}]}}

@@ -11,5 +11,6 @@ export declare abstract class FileSystem {
     allFiles(path: string): Promise<string[]>;
     writeJson(path: string, content: any, beautify?: boolean): Promise<void>;
     readJson(path: string): Promise<any>;
+    abstract lastModified(filePath: string): Promise<number>;
     watchDirectory(path: string, onChange: (filePath: string, changeType: unknown) => void): void;
 }

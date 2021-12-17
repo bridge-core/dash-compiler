@@ -1,0 +1,1 @@
+{"id":"mcstructure","type":"nbt","icon":"mdi-castle","detect":{"packType":"behaviorPack","scope":"structures/","matcher":["structures/**/*.mcstructure","structures/*.mcstructure"],"fileExtensions":[".mcstructure"]}}

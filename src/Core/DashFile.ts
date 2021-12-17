@@ -1,21 +1,28 @@
 import { Dash } from '../Dash'
+import isGlob from 'is-glob'
 
 export class DashFile {
 	public outputPath: string | null
 	public isDone = false
 	public data: any
-	public readonly fileHandle: { getFile: () => Promise<File> | File }
+	public readonly fileHandle?: { getFile: () => Promise<File> | File }
 	public requiredFiles = new Set<string>()
 	public aliases = new Set<string>()
+	public lastModified: number = 0
 	// TODO(@solvedDev): Test adding a file hash property that helps determining whether a file gets rewritten to disk
 	// Could help with compilation speed of platforms with low file writing speeds (File System Access API)
 
-	constructor(protected dash: Dash<any>, public readonly filePath: string) {
+	constructor(
+		protected dash: Dash<any>,
+		public readonly filePath: string,
+		public readonly isVirtual = false
+	) {
 		this.outputPath = filePath
 
-		this.fileHandle = {
-			getFile: () => this.dash.fileSystem.readFile(filePath),
-		}
+		if (!this.isVirtual)
+			this.fileHandle = {
+				getFile: () => this.dash.fileSystem.readFile(filePath),
+			}
 	}
 
 	setOutputPath(outputPath: string | null) {
@@ -31,7 +38,17 @@ export class DashFile {
 		this.aliases = aliases
 	}
 	setRequiredFiles(requiredFiles: Set<string>) {
-		this.requiredFiles = requiredFiles
+		this.requiredFiles = new Set<string>(
+			[...requiredFiles]
+				.map((filePath) => {
+					if (isGlob(filePath))
+						return this.dash.includedFiles
+							.queryGlob(filePath)
+							.map((file) => file.filePath)
+					return filePath
+				})
+				.flat()
+		)
 	}
 
 	async processAfterLoad() {
@@ -40,13 +57,27 @@ export class DashFile {
 			this.isDone = true
 
 			// If the outputPath was set, we need to copy the file over to the output though
-			if (this.filePath !== this.outputPath && this.outputPath !== null) {
+			if (
+				this.filePath !== this.outputPath &&
+				this.outputPath !== null &&
+				!this.isVirtual
+			) {
 				const file = await this.dash.fileSystem.readFile(this.filePath)
 				await this.dash.outputFileSystem.writeFile(
 					this.outputPath,
 					new Uint8Array(await file.arrayBuffer())
 				)
 			}
+		}
+	}
+
+	serialize() {
+		return {
+			isVirtual: this.isVirtual,
+			filePath: this.filePath,
+			lastModified: this.lastModified,
+			aliases: [...this.aliases],
+			requiredFiles: [...this.requiredFiles],
 		}
 	}
 }

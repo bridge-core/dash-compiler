@@ -1,0 +1,1 @@
+{"id":"textureSet","icon":"mdi-format-list-bulleted","detect":{"packType":"resourcePack","matcher":["textures/blocks/**/*.json","textures/blocks/*.json"]},"schema":"file:///data/packages/minecraftBedrock/schema/textureSet/main.json","documentation":{"baseUrl":"https://bedrock.dev/docs/stable/Texture%20Sets"}}

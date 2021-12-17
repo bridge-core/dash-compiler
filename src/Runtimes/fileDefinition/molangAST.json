@@ -1,0 +1,1 @@
+{"id":"molang","type":"text","icon":"mdi-alpha-m","detect":{"packType":"behaviorPack","scope":"scripts/molang/","matcher":["scripts/molang/**/*.js","scripts/molang/*.js","scripts/molang/**/*.ts","scripts/molang/*.ts"]}}

@@ -16,7 +16,7 @@ export class FileTransformer {
 				(await this.dash.plugins.runFinalizeBuildHooks(file)) ??
 				transformedData
 
-			if (writeData !== undefined && writeData !== undefined) {
+			if (writeData !== undefined && writeData !== null) {
 				if (!isWritableData(writeData)) {
 					console.warn(
 						`File "${
@@ -27,10 +27,11 @@ export class FileTransformer {
 					writeData = JSON.stringify(writeData)
 				}
 
-				await this.dash.outputFileSystem.writeFile(
-					file.filePath,
-					writeData
-				)
+				if (file.outputPath)
+					await this.dash.outputFileSystem.writeFile(
+						file.outputPath,
+						writeData
+					)
 			}
 
 			file.isDone = true

@@ -9,7 +9,14 @@ export default defineConfig({
 			fileName: (format) => `dash-compiler.${format}.js`,
 		},
 		rollupOptions: {
-			external: ['path-browserify', 'mc-project-core', 'fs'],
+			external: [
+				'path-browserify',
+				'mc-project-core',
+				'molang',
+				'fs',
+				'bridge-common-utils',
+				'is-glob',
+			],
 		},
 	},
 })

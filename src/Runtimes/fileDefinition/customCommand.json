@@ -1,0 +1,1 @@
+{"id":"customCommand","type":"text","icon":"mdi-script-text-outline","detect":{"packType":"behaviorPack","scope":"commands/","matcher":["commands/**/*.js","commands/**/*.ts"]},"types":["types/customCommand/main.d.ts"],"documentation":{"baseUrl":"https://bridge-core.app/extension-docs/custom-commands/","supportsQuerying":false}}

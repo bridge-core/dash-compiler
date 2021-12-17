@@ -2,14 +2,36 @@ export interface IScriptContext {
 	script: string
 	env: Record<string, unknown>
 	async?: boolean
+	modules?: Record<string, unknown>
 }
 
 export function run(context: IScriptContext) {
 	return createRunner(context)(...Object.values(context.env))
 }
 
-export function createRunner({ script, env, async = false }: IScriptContext) {
+export function createRunner({
+	script,
+	env,
+	modules,
+	async = false,
+}: IScriptContext) {
 	let transformedScript = transformScript(script)
+
+	// Helper which allows for quickly setting up importable modules
+	if (modules) {
+		if (!async)
+			throw new Error(
+				`Cannot use script modules without making script async!`
+			)
+		const currRequire = env.require
+
+		env.require = async (moduleName: string) => {
+			if (modules[moduleName]) return modules[moduleName]
+
+			if (typeof currRequire === 'function')
+				return await currRequire?.(moduleName)
+		}
+	}
 
 	try {
 		if (async)

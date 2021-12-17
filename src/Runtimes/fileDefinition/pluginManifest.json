@@ -1,0 +1,1 @@
+{"id":"pluginManifest","detect":{"matcher":".bridge/extensions/*/manifest.json"},"schema":"file:///data/packages/minecraftBedrock/schema/bridge/manifest/main.json"}

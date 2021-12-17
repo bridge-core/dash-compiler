@@ -1,0 +1,1 @@
+{"id":"clientBlock","detect":{"packType":"resourcePack","scope":"blocks.json","matcher":"blocks.json"},"schema":"file:///data/packages/minecraftBedrock/schema/clientBlock/main.json","lightningCache":"clientBlock.json","definitions":{"identifier":[{"from":"block","match":"identifier"}]}}

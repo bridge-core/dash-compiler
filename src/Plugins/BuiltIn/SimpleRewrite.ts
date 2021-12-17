@@ -1,5 +1,5 @@
 import { relative, join } from 'path-browserify'
-import { TCompilerPluginFactory } from '../TCompilerFactory'
+import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const SimpleRewrite: TCompilerPluginFactory = ({
 	options,
