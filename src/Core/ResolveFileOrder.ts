@@ -2,7 +2,7 @@ import { Dash } from '../Dash'
 import { DashFile } from './DashFile'
 
 export class ResolveFileOrder {
-	constructor(protected dash: Dash) {}
+	constructor(protected dash: Dash<any>) {}
 
 	run() {
 		// TODO(@solvedDev): Store hot update chains in separate sets. This could enable some significant speed boosts in the future

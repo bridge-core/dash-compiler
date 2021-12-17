@@ -6,7 +6,7 @@ export class IncludedFiles {
 	protected files: DashFile[] = []
 	protected aliases = new Map<string, DashFile>()
 
-	constructor(protected dash: Dash) {}
+	constructor(protected dash: Dash<any>) {}
 
 	all() {
 		return this.files

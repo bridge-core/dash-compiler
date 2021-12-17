@@ -6,10 +6,12 @@ import { Plugin } from './Plugin'
 import { TCompilerPluginFactory } from './TCompilerFactory'
 import { SimpleRewrite } from './BuiltIn/SimpleRewrite'
 
+const builtInPlugins: TCompilerPluginFactory[] = [SimpleRewrite]
+
 export class AllPlugins {
 	protected plugins: Plugin[] = []
 
-	constructor(protected dash: Dash) {}
+	constructor(protected dash: Dash<any>) {}
 
 	async loadPlugins(scriptEnv: any = {}) {
 		// Loading all available extensions
@@ -36,10 +38,7 @@ export class AllPlugins {
 			),
 		]
 
-		const plugins: Record<string, string> = {
-			// This is ugly & hacky, needs reworking
-			simpleRewrite: SimpleRewrite.toString(),
-		}
+		const plugins: Record<string, string> = {}
 		// Read extension manifests to extract compiler plugins
 		for (const extension of extensions) {
 			if (!extension) continue
@@ -86,11 +85,9 @@ export class AllPlugins {
 		// Execute plugins
 		for (const pluginPath in pluginOptsMap) {
 			// This ternary is a hacky way to load built-in plugins directly from source. Needs a rework, see L40
-			const pluginSrc = pluginPath.startsWith('/')
-				? await this.dash.fileSystem
-						.readFile(pluginPath)
-						.then((file) => file.text())
-				: pluginPath
+			const pluginSrc = await this.dash.fileSystem
+				.readFile(pluginPath)
+				.then((file) => file.text())
 
 			const module: { exports?: TCompilerPluginFactory } = {}
 			await run({
@@ -106,32 +103,46 @@ export class AllPlugins {
 			if (typeof module.exports === 'function')
 				this.plugins.push(
 					new Plugin(
-						module.exports({
-							options: {
-								mode: this.dash.getMode(),
-								...pluginOptsMap[pluginPath],
-							},
-							fileSystem: this.dash.fileSystem,
-							outputFileSystem: this.dash.outputFileSystem,
-							projectConfig: this.dash.projectConfig,
-							projectRoot: this.dash.projectRoot,
-							targetVersion:
-								this.dash.projectConfig.get().targetVersion,
-							getAliases: (filePath: string) => [
-								...(this.dash.includedFiles.get(filePath)
-									?.aliases ?? []),
-							],
-							/**
-							 * TODO: Deprecated in favor of a broader API that is not specific to Minecraft Bedrock
-							 */
-							hasComMojangDirectory:
-								this.dash.fileSystem !==
-								this.dash.outputFileSystem,
-							compileFiles: (filePaths: string[]) =>
-								this.dash.compileVirtualFiles(filePaths),
-						})
+						module.exports(
+							this.getPluginContext(pluginOptsMap[pluginPath])
+						)
 					)
 				)
+		}
+
+		this.addBuiltInPlugins()
+
+		console.log(this.plugins)
+	}
+
+	protected addBuiltInPlugins() {
+		for (const plugin of builtInPlugins) {
+			this.plugins.push(new Plugin(plugin(this.getPluginContext())))
+		}
+	}
+
+	protected getPluginContext(pluginOpts: any = {}) {
+		return {
+			options: {
+				mode: this.dash.getMode(),
+				...pluginOpts,
+			},
+			fileSystem: this.dash.fileSystem,
+			outputFileSystem: this.dash.outputFileSystem,
+			projectConfig: this.dash.projectConfig,
+			projectRoot: this.dash.projectRoot,
+			packType: this.dash.packType,
+			targetVersion: this.dash.projectConfig.get().targetVersion,
+			getAliases: (filePath: string) => [
+				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
+			],
+			/**
+			 * TODO: Deprecated in favor of a broader API that is not specific to Minecraft Bedrock
+			 */
+			hasComMojangDirectory:
+				this.dash.fileSystem !== this.dash.outputFileSystem,
+			compileFiles: (filePaths: string[]) =>
+				this.dash.compileVirtualFiles(filePaths),
 		}
 	}
 

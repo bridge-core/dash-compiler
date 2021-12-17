@@ -1,7 +1,7 @@
 import type { Dash } from '../Dash'
 
 export class LoadFiles {
-	constructor(protected dash: Dash) {}
+	constructor(protected dash: Dash<any>) {}
 
 	async run() {
 		for (const file of this.dash.includedFiles.all()) {

@@ -1,3 +1,4 @@
+import { relative, join } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerFactory'
 
 export const SimpleRewrite: TCompilerPluginFactory = ({
@@ -6,6 +7,7 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 	hasComMojangDirectory,
 	projectConfig,
 	projectRoot,
+	packType,
 }) => {
 	if (!options.buildName)
 		options.buildName = options.mode === 'development' ? 'dev' : 'dist'
@@ -13,10 +15,10 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 	if (!(options.rewriteToComMojang ?? true)) hasComMojangDirectory = false
 
 	const folders: Record<string, string> = {
-		BP: 'development_behavior_packs',
-		RP: 'development_resource_packs',
-		SP: 'skin_packs',
-		WT: 'minecraftWorlds',
+		behaviorPack: 'development_behavior_packs',
+		resourcePack: 'development_resource_packs',
+		skinPack: 'skin_packs',
+		worldTemplate: 'minecraftWorlds',
 	}
 
 	// Rewrite paths so files land in the correct comMojangFolder if comMojang folder is set
@@ -24,20 +26,20 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 		hasComMojangDirectory && options.mode === 'development'
 			? `${folders[pack]}`
 			: `${projectRoot}/builds/${options.buildName}`
-	const pathPrefixWithPack = (pack: string) =>
-		`${pathPrefix(pack)}/${options.packName} ${pack}`
+	const pathPrefixWithPack = (pack: string, suffix: string) =>
+		`${pathPrefix(pack)}/${options.packName} ${suffix}`
 
 	return {
 		async buildStart() {
 			if (options.mode === 'production' || options.restartDevServer) {
 				if (hasComMojangDirectory) {
-					for (const pack in folders) {
-						await outputFileSystem
-							.unlink(pathPrefixWithPack(pack))
-							.catch(() => {})
-
-						await outputFileSystem.mkdir(pathPrefixWithPack(pack))
-					}
+					// TODO
+					// for (const pack in folders) {
+					// 	await outputFileSystem
+					// 		.unlink(pathPrefixWithPack(pack))
+					// 		.catch(() => {})
+					// 	await outputFileSystem.mkdir(pathPrefixWithPack(pack))
+					// }
 				} else {
 					//Using "BP" is fine here because the path doesn't change based on the pack without a com.mojang folder
 					await outputFileSystem
@@ -55,12 +57,25 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 			)
 				return
 
-			// TODO: Needs update
-			const pathParts = filePath.split('/')
-			const pack = <string>pathParts.shift()
+			const pack = packType?.get(filePath)
+			if (!pack) return
 
-			if (['BP', 'RP', 'SP', 'WT'].includes(pack))
-				return `${pathPrefixWithPack(pack)}/${pathParts.join('/')}`
+			const packRoot = projectConfig.getPackRoot(pack.id)
+			const relPath = relative(packRoot, filePath)
+
+			if (
+				[
+					'behaviorPack',
+					'resourcePack',
+					'skinPack',
+					'worldTemplate',
+				].includes(pack.id)
+			)
+				return join(
+					// @ts-ignore
+					pathPrefixWithPack(pack.id, pack.defaultPackPath),
+					relPath
+				)
 		},
 	}
 }

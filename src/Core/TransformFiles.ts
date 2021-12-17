@@ -3,7 +3,7 @@ import { Dash } from '../Dash'
 import type { DashFile } from './DashFile'
 
 export class FileTransformer {
-	constructor(protected dash: Dash) {}
+	constructor(protected dash: Dash<any>) {}
 
 	async run(resolvedFileOrder: Set<DashFile>) {
 		for (const file of resolvedFileOrder) {

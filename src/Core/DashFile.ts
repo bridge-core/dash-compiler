@@ -10,7 +10,7 @@ export class DashFile {
 	// TODO(@solvedDev): Test adding a file hash property that helps determining whether a file gets rewritten to disk
 	// Could help with compilation speed of platforms with low file writing speeds (File System Access API)
 
-	constructor(protected dash: Dash, public readonly filePath: string) {
+	constructor(protected dash: Dash<any>, public readonly filePath: string) {
 		this.outputPath = filePath
 
 		this.fileHandle = {
@@ -42,10 +42,10 @@ export class DashFile {
 			// If the outputPath was set, we need to copy the file over to the output though
 			if (this.filePath !== this.outputPath && this.outputPath !== null) {
 				const file = await this.dash.fileSystem.readFile(this.filePath)
-				// await this.dash.outputFileSystem.writeFile(
-				// 	this.outputPath,
-				// 	new Uint8Array(await file.arrayBuffer())
-				// )
+				await this.dash.outputFileSystem.writeFile(
+					this.outputPath,
+					new Uint8Array(await file.arrayBuffer())
+				)
 			}
 		}
 	}

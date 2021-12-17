@@ -2,6 +2,7 @@ import { FileSystem, IDirEntry } from '../FileSystem/FileSystem'
 import { promises as fs, existsSync } from 'fs'
 import { basename, dirname, join } from 'path-browserify'
 import { Dash } from '../Dash'
+import { PackType } from 'mc-project-core'
 
 export class NodeFileSystem extends FileSystem {
 	constructor() {
@@ -43,8 +44,16 @@ export class NodeFileSystem extends FileSystem {
 
 if (require.main === module) {
 	const fs = new NodeFileSystem()
-	const dash = new Dash(fs, undefined, {
+	class PackTypeImpl extends PackType<void> {
+		async setup() {
+			this.packTypes = await fetch(
+				'https://raw.githubusercontent.com/bridge-core/editor-packages/main/packages/minecraftBedrock/packDefinitions.json'
+			).then((resp) => resp.json())
+		}
+	}
+	const dash = new Dash<void>(fs, undefined, {
 		config: join(process.cwd(), 'config.json'),
+		packType: new PackTypeImpl(undefined),
 	})
 
 	dash.setup().then(() => {
