@@ -2742,9 +2742,10 @@ class Dash {
     this.includedFiles.resetAll();
   }
   async compileFile(filePath, fileData) {
-    const file = this.includedFiles.get(filePath);
-    if (!file)
-      return;
+    let file = this.includedFiles.get(filePath);
+    if (!file) {
+      [file] = this.includedFiles.add([filePath]);
+    }
     file.setFileHandle({
       getFile: () => new File([fileData], basename(filePath))
     });
@@ -2764,7 +2765,10 @@ class Dash {
     }
     const transformedData = await this.fileTransformer.transformFile(file, true);
     this.includedFiles.resetAll();
-    return [requiredFiles, transformedData];
+    return [
+      [...requiredFiles].map((file2) => file2.filePath),
+      transformedData
+    ];
   }
   async unlink(path, updateDashFile = true) {
     const outputPath = await this.plugins.runTransformPathHooks(path);

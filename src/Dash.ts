@@ -138,9 +138,14 @@ export class Dash<TSetupArg = void> {
 		await this.saveDashFile()
 		this.includedFiles.resetAll()
 	}
-	async compileFile(filePath: string, fileData: Uint8Array) {
-		const file = this.includedFiles.get(filePath)
-		if (!file) return
+	async compileFile(
+		filePath: string,
+		fileData: Uint8Array
+	): Promise<[string[], any]> {
+		let file = this.includedFiles.get(filePath)
+		if (!file) {
+			;[file] = this.includedFiles.add([filePath])
+		}
 
 		// Update file handle to use provided fileData
 		file.setFileHandle({
@@ -177,7 +182,10 @@ export class Dash<TSetupArg = void> {
 		// Reset includedFiles data
 		this.includedFiles.resetAll()
 
-		return [requiredFiles, transformedData]
+		return [
+			[...requiredFiles].map((file) => file.filePath),
+			transformedData,
+		]
 	}
 
 	async unlink(path: string, updateDashFile = true) {
