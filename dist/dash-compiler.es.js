@@ -2738,6 +2738,7 @@ class Dash {
     await this.loadFiles.run([...filesToLoad.values()]);
     const filesToTransform = file.getHotUpdateChain();
     await this.fileTransformer.run(filesToTransform);
+    await this.saveDashFile();
     this.includedFiles.resetAll();
   }
   async compileFile(filePath, fileData) {
