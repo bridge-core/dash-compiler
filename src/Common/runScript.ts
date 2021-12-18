@@ -6,7 +6,12 @@ export interface IScriptContext {
 }
 
 export function run(context: IScriptContext) {
-	return createRunner(context)(...Object.values(context.env))
+	try {
+		return createRunner(context)(...Object.values(context.env))
+	} catch (err) {
+		console.error(context.script)
+		throw new Error(`Error within script: ${err}`)
+	}
 }
 
 export function createRunner({
