@@ -35,7 +35,7 @@ export declare class Dash<TSetupArg = void> {
     get isCompilerActivated(): boolean;
     build(): Promise<void>;
     updateFile(filePath: string): Promise<void>;
-    compileFile(filePath: string, fileData: Uint8Array): Promise<any>;
+    compileFile(filePath: string, fileData: Uint8Array): Promise<any[] | undefined>;
     unlink(path: string, updateDashFile?: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     watch(): void;

@@ -2764,7 +2764,7 @@ class Dash {
     }
     const transformedData = await this.fileTransformer.transformFile(file, true);
     this.includedFiles.resetAll();
-    return transformedData;
+    return [requiredFiles, transformedData];
   }
   async unlink(path, updateDashFile = true) {
     const outputPath = await this.plugins.runTransformPathHooks(path);

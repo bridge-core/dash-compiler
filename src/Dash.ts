@@ -177,7 +177,7 @@ export class Dash<TSetupArg = void> {
 		// Reset includedFiles data
 		this.includedFiles.resetAll()
 
-		return transformedData
+		return [requiredFiles, transformedData]
 	}
 
 	async unlink(path: string, updateDashFile = true) {
