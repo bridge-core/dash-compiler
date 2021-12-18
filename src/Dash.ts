@@ -196,6 +196,12 @@ export class Dash<TSetupArg = void> {
 
 		await this.saveDashFile()
 	}
+	async getCompilerOutputPath(filePath: string) {
+		const outputPath = await this.plugins.runTransformPathHooks(filePath)
+		if (!outputPath) return
+
+		return outputPath
+	}
 
 	watch() {
 		// this.fileSystem.watchDirectory()

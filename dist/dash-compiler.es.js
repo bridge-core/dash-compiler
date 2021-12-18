@@ -2780,6 +2780,12 @@ class Dash {
     await this.updateFile(newPath);
     await this.saveDashFile();
   }
+  async getCompilerOutputPath(filePath) {
+    const outputPath = await this.plugins.runTransformPathHooks(filePath);
+    if (!outputPath)
+      return;
+    return outputPath;
+  }
   watch() {
   }
   async saveDashFile() {
