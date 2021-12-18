@@ -13,5 +13,7 @@ export declare class IncludedFiles {
     queryGlob(glob: string): DashFile[];
     loadAll(): Promise<void>;
     add(filePaths: string[], isVirtual?: boolean): void;
+    remove(filePath: string): void;
     save(filePath: string): Promise<void>;
+    resetAll(): void;
 }

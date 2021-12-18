@@ -1,12 +1,13 @@
 import { FileSystem } from './FileSystem/FileSystem'
 import { DashProjectConfig } from './DashProjectConfig'
-import { dirname, join } from 'path-browserify'
+import { basename, dirname, join } from 'path-browserify'
 import { AllPlugins } from './Plugins/AllPlugins'
 import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
 import { ResolveFileOrder } from './Core/ResolveFileOrder'
 import { FileTransformer } from './Core/TransformFiles'
 import { FileType, PackType } from 'mc-project-core'
+import type { DashFile } from './Core/DashFile'
 
 export interface IDashOptions<TSetupArg = void> {
 	/**
@@ -25,6 +26,8 @@ export interface IDashOptions<TSetupArg = void> {
 
 	packType: PackType<TSetupArg>
 	fileType: FileType<TSetupArg>
+
+	requestJsonData: <T = any>(dataPath: string) => Promise<T>
 }
 
 export class Dash<TSetupArg = void> {
@@ -36,9 +39,9 @@ export class Dash<TSetupArg = void> {
 	public packType: PackType<any>
 	public fileType: FileType<any>
 	public includedFiles: IncludedFiles = new IncludedFiles(this)
-	public loadFiles = new LoadFiles(this)
-	public fileOrderResolver = new ResolveFileOrder(this)
-	public fileTransformer = new FileTransformer(this)
+	public loadFiles: LoadFiles = new LoadFiles(this)
+	public fileOrderResolver: ResolveFileOrder = new ResolveFileOrder(this)
+	public fileTransformer: FileTransformer = new FileTransformer(this)
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -57,6 +60,13 @@ export class Dash<TSetupArg = void> {
 
 	getMode() {
 		return this.options.mode ?? 'development'
+	}
+	get requestJsonData() {
+		return this.options.requestJsonData
+	}
+
+	protected get dashFilePath() {
+		return join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`)
 	}
 
 	async setup(setupArg: TSetupArg) {
@@ -101,18 +111,91 @@ export class Dash<TSetupArg = void> {
 			}ms!`
 		)
 
-		// Save compiler data
-		this.includedFiles.save(
-			join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`)
-		)
+		await this.saveDashFile()
+		this.includedFiles.resetAll()
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
 
-	protected async compileIncludedFiles() {
-		await this.loadFiles.run()
+	async updateFile(filePath: string) {
+		// Update files in output
 
-		const resolvedFileOrder = this.fileOrderResolver.run()
+		this.includedFiles.resetAll()
+	}
+	async compileFile(filePath: string, fileData: Uint8Array) {
+		const file = this.includedFiles.get(filePath)
+		if (!file) return
+
+		// Update file handle to use provided fileData
+		file.setFileHandle({
+			getFile: () => new File([fileData], basename(filePath)),
+		})
+
+		// Load files and files that are required by this file
+		await this.loadFiles.loadFile(file)
+		await this.loadFiles.loadRequiredFiles(file)
+
+		// Resolve all file dependencies
+		const requiredFiles = new Set<DashFile>()
+		this.fileOrderResolver.resolveSingle(file, requiredFiles)
+
+		// Load all file dependencies
+		for (const depFile of requiredFiles) {
+			if (depFile === file) continue
+
+			await this.loadFiles.loadFile(depFile)
+		}
+
+		// Run transform hook on file dependencies
+		for (const depFile of requiredFiles) {
+			if (depFile === file) continue
+			await this.fileTransformer.transformFile(depFile)
+		}
+
+		// Transform original file data
+		const transformedData = await this.fileTransformer.transformFile(
+			file,
+			true
+		)
+
+		// Reset includedFiles data
+		this.includedFiles.resetAll()
+
+		return transformedData
+	}
+
+	async unlink(path: string, updateDashFile = true) {
+		const outputPath = await this.plugins.runTransformPathHooks(path)
+		if (!outputPath) return
+
+		await this.outputFileSystem.unlink(outputPath)
+		this.includedFiles.remove(path)
+
+		if (updateDashFile) await this.saveDashFile()
+	}
+
+	async rename(oldPath: string, newPath: string) {
+		await this.unlink(oldPath, false)
+		await this.updateFile(newPath)
+
+		await this.saveDashFile()
+	}
+
+	watch() {
+		// this.fileSystem.watchDirectory()
+	}
+
+	// Save compiler data
+	protected async saveDashFile() {
+		await this.includedFiles.save(this.dashFilePath)
+	}
+
+	protected async compileIncludedFiles() {
+		await this.loadFiles.run(this.includedFiles.all())
+
+		const resolvedFileOrder = this.fileOrderResolver.run(
+			this.includedFiles.all()
+		)
 		console.log(resolvedFileOrder)
 		await this.fileTransformer.run(resolvedFileOrder)
 	}
@@ -126,21 +209,5 @@ export class Dash<TSetupArg = void> {
 		console.log(filePaths)
 		this.includedFiles.add(filePaths, true)
 		await this.compileIncludedFiles()
-	}
-
-	async updateFiles(filePaths: string[]) {
-		// Update files in output
-	}
-
-	async unlink(path: string) {
-		// TODO: Remove file or folder from output
-	}
-
-	async rename(oldPath: string, newPath: string) {
-		// TODO: Rename file or folder in output
-	}
-
-	watch() {
-		// this.fileSystem.watchDirectory()
 	}
 }

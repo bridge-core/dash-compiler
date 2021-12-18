@@ -17,4 +17,5 @@ export declare type TCompilerPluginFactory<T = {
     compileFiles: (files: string[]) => Promise<void>;
     getAliases: (filePath: string) => string[];
     targetVersion?: string;
+    requestJsonData: <T = any>(dataPath: string) => Promise<T>;
 }) => Partial<TCompilerPlugin>;

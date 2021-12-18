@@ -58,11 +58,26 @@ export class IncludedFiles {
 			)
 		}
 	}
+	remove(filePath: string) {
+		const file = this.files.get(filePath)
+		if (!file) return
+
+		this.files.delete(filePath)
+		for (const alias of file.aliases) {
+			this.aliases.delete(alias)
+		}
+	}
 
 	async save(filePath: string) {
 		this.dash.fileSystem.writeJson(
 			filePath,
 			this.all().map((file) => file.serialize())
 		)
+	}
+
+	resetAll() {
+		for (const file of this.all()) {
+			file.reset()
+		}
 	}
 }

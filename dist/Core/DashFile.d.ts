@@ -1,4 +1,7 @@
 import { Dash } from '../Dash';
+export interface IFileHandle {
+    getFile: () => Promise<File> | File;
+}
 export declare class DashFile {
     protected dash: Dash<any>;
     readonly filePath: string;
@@ -6,18 +9,18 @@ export declare class DashFile {
     outputPath: string | null;
     isDone: boolean;
     data: any;
-    readonly fileHandle?: {
-        getFile: () => Promise<File> | File;
-    };
+    fileHandle?: IFileHandle;
     requiredFiles: Set<string>;
     aliases: Set<string>;
     lastModified: number;
     constructor(dash: Dash<any>, filePath: string, isVirtual?: boolean);
+    setFileHandle(fileHandle: IFileHandle): void;
+    setDefaultFileHandle(): void;
     setOutputPath(outputPath: string | null): void;
     setReadData(data: any): void;
     setAliases(aliases: Set<string>): void;
     setRequiredFiles(requiredFiles: Set<string>): void;
-    processAfterLoad(): Promise<void>;
+    processAfterLoad(writeFiles: boolean): Promise<void>;
     serialize(): {
         isVirtual: boolean;
         filePath: string;
@@ -25,4 +28,5 @@ export declare class DashFile {
         aliases: string[];
         requiredFiles: string[];
     };
+    reset(): void;
 }

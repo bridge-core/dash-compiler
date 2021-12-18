@@ -12,6 +12,7 @@ export interface IDashOptions<TSetupArg = void> {
     pluginEnvironment?: any;
     packType: PackType<TSetupArg>;
     fileType: FileType<TSetupArg>;
+    requestJsonData: <T = any>(dataPath: string) => Promise<T>;
 }
 export declare class Dash<TSetupArg = void> {
     readonly fileSystem: FileSystem;
@@ -28,13 +29,16 @@ export declare class Dash<TSetupArg = void> {
     fileTransformer: FileTransformer;
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
+    get requestJsonData(): <T = any>(dataPath: string) => Promise<T>;
     setup(setupArg: TSetupArg): Promise<void>;
     get isCompilerActivated(): boolean;
     build(): Promise<void>;
-    protected compileIncludedFiles(): Promise<void>;
-    compileVirtualFiles(filePaths: string[]): Promise<void>;
-    updateFiles(filePaths: string[]): Promise<void>;
-    unlink(path: string): Promise<void>;
+    updateFile(filePath: string): Promise<void>;
+    compileFile(filePath: string, fileData: Uint8Array): Promise<any>;
+    unlink(path: string, updateDashFile?: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     watch(): void;
+    protected saveDashFile(): Promise<void>;
+    protected compileIncludedFiles(): Promise<void>;
+    compileVirtualFiles(filePaths: string[]): Promise<void>;
 }

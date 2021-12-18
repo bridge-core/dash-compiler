@@ -15,7 +15,7 @@ var __spreadValues = (a, b) => {
   return a;
 };
 import { ProjectConfig } from "mc-project-core";
-import { dirname, relative, join } from "path-browserify";
+import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMoLang, expressions, MoLang } from "molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
 import isGlob from "is-glob";
@@ -1228,6 +1228,7 @@ var lib = JSON5;
 const MoLangPlugin = ({
   fileType,
   projectConfig,
+  requestJsonData,
   options: { include = {}, isFileRequest = false, mode } = {}
 }) => {
   const customMoLang = new CustomMoLang({});
@@ -1240,7 +1241,7 @@ const MoLangPlugin = ({
   const astTransformers = [];
   return {
     async buildStart() {
-      include = Object.assign(await fetch("https://raw.githubusercontent.com/bridge-core/editor-packages/main/packages/minecraftBedrock/location/validMoLang.json").then((res) => res.json()), include);
+      include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), include);
     },
     transformPath(filePath) {
       if (isMoLangFile(filePath) || isMoLangScript(filePath))
@@ -2142,6 +2143,7 @@ class Command {
 const CustomCommandsPlugin = ({
   projectConfig,
   fileType: fileTypeLib,
+  requestJsonData,
   options: {
     include = {},
     isFileRequest,
@@ -2162,7 +2164,7 @@ const CustomCommandsPlugin = ({
   };
   return {
     async buildStart() {
-      include = Object.assign(await fetch("https://raw.githubusercontent.com/bridge-core/editor-packages/main/packages/minecraftBedrock/location/validCommand.json").then((resp) => resp.json()), include);
+      include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), include);
     },
     transformPath(filePath) {
       if (isCommand(filePath) && !isFileRequest)
@@ -2297,6 +2299,7 @@ class AllPlugins {
       packType: this.dash.packType,
       fileType: this.dash.fileType,
       targetVersion: this.dash.projectConfig.get().targetVersion,
+      requestJsonData: this.dash.requestJsonData,
       getAliases: (filePath) => {
         var _a, _b;
         return [
@@ -2423,9 +2426,15 @@ class DashFile {
     this.lastModified = 0;
     this.outputPath = filePath;
     if (!this.isVirtual)
-      this.fileHandle = {
-        getFile: () => this.dash.fileSystem.readFile(filePath)
-      };
+      this.setDefaultFileHandle();
+  }
+  setFileHandle(fileHandle) {
+    this.fileHandle = fileHandle;
+  }
+  setDefaultFileHandle() {
+    this.setFileHandle({
+      getFile: () => this.dash.fileSystem.readFile(this.filePath)
+    });
   }
   setOutputPath(outputPath) {
     this.outputPath = outputPath;
@@ -2445,10 +2454,10 @@ class DashFile {
       return filePath;
     }).flat());
   }
-  async processAfterLoad() {
+  async processAfterLoad(writeFiles) {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
-      if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual) {
+      if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual && writeFiles) {
         const file = await this.dash.fileSystem.readFile(this.filePath);
         await this.dash.outputFileSystem.writeFile(this.outputPath, new Uint8Array(await file.arrayBuffer()));
       }
@@ -2462,6 +2471,11 @@ class DashFile {
       aliases: [...this.aliases],
       requiredFiles: [...this.requiredFiles]
     };
+  }
+  reset() {
+    this.isDone = false;
+    this.data = null;
+    this.setDefaultFileHandle();
   }
 }
 class IncludedFiles {
@@ -2512,66 +2526,88 @@ class IncludedFiles {
       this.files.set(filePath, new DashFile(this.dash, filePath, isVirtual));
     }
   }
+  remove(filePath) {
+    const file = this.files.get(filePath);
+    if (!file)
+      return;
+    this.files.delete(filePath);
+    for (const alias of file.aliases) {
+      this.aliases.delete(alias);
+    }
+  }
   async save(filePath) {
     this.dash.fileSystem.writeJson(filePath, this.all().map((file) => file.serialize()));
+  }
+  resetAll() {
+    for (const file of this.all()) {
+      file.reset();
+    }
   }
 }
 class LoadFiles {
   constructor(dash) {
     this.dash = dash;
   }
-  async run() {
+  async run(files) {
+    for (const file of files) {
+      if (file.isDone)
+        continue;
+      await this.loadFile(file, true);
+    }
+    for (const file of files) {
+      if (file.isDone)
+        continue;
+      await this.loadRequiredFiles(file);
+    }
+  }
+  async loadFile(file, writeFiles = false) {
     var _a;
-    for (const file of this.dash.includedFiles.all()) {
-      if (file.isDone)
-        continue;
-      const [outputPath, readData] = await Promise.all([
-        this.dash.plugins.runTransformPathHooks(file.filePath),
-        this.dash.plugins.runReadHooks(file.filePath, file.fileHandle)
-      ]);
-      file.setOutputPath(outputPath);
-      file.setReadData(readData);
-      await file.processAfterLoad();
-    }
-    for (const file of this.dash.includedFiles.all()) {
-      if (file.isDone)
-        continue;
-      file.setReadData((_a = await this.dash.plugins.runLoadHooks(file.filePath, file.data)) != null ? _a : file.data);
-      const aliases = await this.dash.plugins.runRegisterAliasesHooks(file.filePath, file.data);
-      file.setAliases(aliases);
-    }
-    for (const file of this.dash.includedFiles.all()) {
-      if (file.isDone)
-        continue;
-      const requiredFiles = await this.dash.plugins.runRequireHooks(file.filePath, file.data);
-      file.setRequiredFiles(requiredFiles);
-    }
+    const [outputPath, readData] = await Promise.all([
+      this.dash.plugins.runTransformPathHooks(file.filePath),
+      this.dash.plugins.runReadHooks(file.filePath, file.fileHandle)
+    ]);
+    file.setOutputPath(outputPath);
+    file.setReadData(readData);
+    await file.processAfterLoad(writeFiles);
+    if (file.isDone)
+      return;
+    file.setReadData((_a = await this.dash.plugins.runLoadHooks(file.filePath, file.data)) != null ? _a : file.data);
+    const aliases = await this.dash.plugins.runRegisterAliasesHooks(file.filePath, file.data);
+    file.setAliases(aliases);
+  }
+  async loadRequiredFiles(file) {
+    const requiredFiles = await this.dash.plugins.runRequireHooks(file.filePath, file.data);
+    file.setRequiredFiles(requiredFiles);
   }
 }
 class ResolveFileOrder {
   constructor(dash) {
     this.dash = dash;
   }
-  run() {
+  run(files) {
     const resolved = new Set();
-    for (const file of this.dash.includedFiles.all()) {
+    for (const file of files) {
       if (file.isDone || resolved.has(file))
         continue;
-      this.resolve(file, resolved, new Set());
+      this.resolveSingle(file, resolved);
     }
     return resolved;
   }
-  resolve(file, resolved, unresolved) {
+  resolveSingle(file, resolved, unresolved = new Set()) {
     const files = this.dash.includedFiles;
     unresolved.add(file);
     for (const depFileId of file.requiredFiles) {
       const depFile = files.get(depFileId);
-      if (!depFile)
-        throw new Error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
+      if (!depFile) {
+        console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
+        continue;
+      }
       if (!resolved.has(depFile)) {
-        if (unresolved.has(depFile))
-          throw new Error("Circular dependency detected!");
-        this.resolve(depFile, resolved, unresolved);
+        if (unresolved.has(depFile)) {
+          console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
+          continue;
+        }
+        this.resolveSingle(depFile, resolved, unresolved);
       }
     }
     resolved.add(file);
@@ -2586,21 +2622,28 @@ class FileTransformer {
     this.dash = dash;
   }
   async run(resolvedFileOrder) {
-    var _a, _b;
     for (const file of resolvedFileOrder) {
-      const transformedData = await this.dash.plugins.runTransformHooks(file);
-      (_a = file.data) != null ? _a : file.data = transformedData;
-      let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : transformedData;
-      if (writeData !== void 0 && writeData !== null) {
-        if (!isWritableData(writeData)) {
-          console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
-          writeData = JSON.stringify(writeData);
-        }
-        if (file.outputPath)
-          await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);
+      let writeData = await this.transformFile(file, true);
+      if (writeData !== void 0 && writeData !== null && file.outputPath) {
+        await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);
       }
       file.isDone = true;
     }
+  }
+  async transformFile(file, runFinalizeHook = false) {
+    var _a, _b;
+    const transformedData = await this.dash.plugins.runTransformHooks(file);
+    (_a = file.data) != null ? _a : file.data = transformedData;
+    if (!runFinalizeHook)
+      return;
+    let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : transformedData;
+    if (writeData !== void 0 && writeData !== null) {
+      if (!isWritableData(writeData)) {
+        console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
+        writeData = JSON.stringify(writeData);
+      }
+    }
+    return writeData;
   }
 }
 class Dash {
@@ -2621,6 +2664,9 @@ class Dash {
   getMode() {
     var _a;
     return (_a = this.options.mode) != null ? _a : "development";
+  }
+  get requestJsonData() {
+    return this.options.requestJsonData;
   }
   async setup(setupArg) {
     var _a, _b, _c, _d;
@@ -2645,11 +2691,59 @@ class Dash {
     await this.compileIncludedFiles();
     await this.plugins.runBuildEndHooks();
     console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
-    this.includedFiles.save(join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`));
+    await this.saveDashFile();
+    this.includedFiles.resetAll();
+  }
+  async updateFile(filePath) {
+    this.includedFiles.resetAll();
+  }
+  async compileFile(filePath, fileData) {
+    const file = this.includedFiles.get(filePath);
+    if (!file)
+      return;
+    file.setFileHandle({
+      getFile: () => new File([fileData], basename(filePath))
+    });
+    await this.loadFiles.loadFile(file);
+    await this.loadFiles.loadRequiredFiles(file);
+    const requiredFiles = new Set();
+    this.fileOrderResolver.resolveSingle(file, requiredFiles);
+    for (const depFile of requiredFiles) {
+      if (depFile === file)
+        continue;
+      await this.loadFiles.loadFile(depFile);
+    }
+    for (const depFile of requiredFiles) {
+      if (depFile === file)
+        continue;
+      await this.fileTransformer.transformFile(depFile);
+    }
+    const transformedData = await this.fileTransformer.transformFile(file, true);
+    this.includedFiles.resetAll();
+    return transformedData;
+  }
+  async unlink(path, updateDashFile = true) {
+    const outputPath = await this.plugins.runTransformPathHooks(path);
+    if (!outputPath)
+      return;
+    await this.outputFileSystem.unlink(outputPath);
+    this.includedFiles.remove(path);
+    if (updateDashFile)
+      await this.saveDashFile();
+  }
+  async rename(oldPath, newPath) {
+    await this.unlink(oldPath, false);
+    await this.updateFile(newPath);
+    await this.saveDashFile();
+  }
+  watch() {
+  }
+  async saveDashFile() {
+    await this.includedFiles.save(join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`));
   }
   async compileIncludedFiles() {
-    await this.loadFiles.run();
-    const resolvedFileOrder = this.fileOrderResolver.run();
+    await this.loadFiles.run(this.includedFiles.all());
+    const resolvedFileOrder = this.fileOrderResolver.run(this.includedFiles.all());
     console.log(resolvedFileOrder);
     await this.fileTransformer.run(resolvedFileOrder);
   }
@@ -2657,14 +2751,6 @@ class Dash {
     console.log(filePaths);
     this.includedFiles.add(filePaths, true);
     await this.compileIncludedFiles();
-  }
-  async updateFiles(filePaths) {
-  }
-  async unlink(path) {
-  }
-  async rename(oldPath, newPath) {
-  }
-  watch() {
   }
 }
 class FileSystem {

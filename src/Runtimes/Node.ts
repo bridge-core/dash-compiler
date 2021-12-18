@@ -66,6 +66,13 @@ if (require.main === module) {
 		config: join(process.cwd(), 'config.json'),
 		packType: new PackTypeImpl(undefined),
 		fileType: new FileTypeImpl(undefined, isMatch),
+		requestJsonData: (dataPath: string) =>
+			fetch(
+				dataPath.replace(
+					'data/',
+					'https://raw.githubusercontent.com/bridge-core/editor-packages/main/'
+				)
+			).then((resp) => resp.json()),
 	})
 
 	dash.setup().then(() => {

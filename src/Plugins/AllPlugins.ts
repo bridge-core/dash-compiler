@@ -131,6 +131,7 @@ export class AllPlugins {
 			packType: this.dash.packType,
 			fileType: this.dash.fileType,
 			targetVersion: this.dash.projectConfig.get().targetVersion,
+			requestJsonData: this.dash.requestJsonData,
 			getAliases: (filePath: string) => [
 				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
 			],

@@ -1,11 +1,14 @@
 import { Dash } from '../Dash'
 import isGlob from 'is-glob'
 
+export interface IFileHandle {
+	getFile: () => Promise<File> | File
+}
 export class DashFile {
 	public outputPath: string | null
 	public isDone = false
 	public data: any
-	public readonly fileHandle?: { getFile: () => Promise<File> | File }
+	public fileHandle?: IFileHandle
 	public requiredFiles = new Set<string>()
 	public aliases = new Set<string>()
 	public lastModified: number = 0
@@ -19,10 +22,16 @@ export class DashFile {
 	) {
 		this.outputPath = filePath
 
-		if (!this.isVirtual)
-			this.fileHandle = {
-				getFile: () => this.dash.fileSystem.readFile(filePath),
-			}
+		if (!this.isVirtual) this.setDefaultFileHandle()
+	}
+
+	setFileHandle(fileHandle: IFileHandle) {
+		this.fileHandle = fileHandle
+	}
+	setDefaultFileHandle() {
+		this.setFileHandle({
+			getFile: () => this.dash.fileSystem.readFile(this.filePath),
+		})
 	}
 
 	setOutputPath(outputPath: string | null) {
@@ -51,7 +60,7 @@ export class DashFile {
 		)
 	}
 
-	async processAfterLoad() {
+	async processAfterLoad(writeFiles: boolean) {
 		// Nothing to load -> Nothing more to do in the next compile steps
 		if (this.data === null || this.data === undefined) {
 			this.isDone = true
@@ -60,7 +69,8 @@ export class DashFile {
 			if (
 				this.filePath !== this.outputPath &&
 				this.outputPath !== null &&
-				!this.isVirtual
+				!this.isVirtual &&
+				writeFiles
 			) {
 				const file = await this.dash.fileSystem.readFile(this.filePath)
 				await this.dash.outputFileSystem.writeFile(
@@ -79,5 +89,10 @@ export class DashFile {
 			aliases: [...this.aliases],
 			requiredFiles: [...this.requiredFiles],
 		}
+	}
+	reset() {
+		this.isDone = false
+		this.data = null
+		this.setDefaultFileHandle()
 	}
 }

@@ -16,6 +16,7 @@ export declare class AllPlugins {
         packType: import("mc-project-core").PackType<any>;
         fileType: import("mc-project-core").FileType<any>;
         targetVersion: string | undefined;
+        requestJsonData: <T = any>(dataPath: string) => Promise<T>;
         getAliases: (filePath: string) => string[];
         hasComMojangDirectory: boolean;
         compileFiles: (filePaths: string[]) => Promise<void>;

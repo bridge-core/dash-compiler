@@ -12,6 +12,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 }> = ({
 	projectConfig,
 	fileType: fileTypeLib,
+	requestJsonData,
 	options: {
 		include = {},
 		isFileRequest,
@@ -37,9 +38,9 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 		async buildStart() {
 			// Load default command locations and merge them with user defined locations
 			include = Object.assign(
-				await fetch(
-					'https://raw.githubusercontent.com/bridge-core/editor-packages/main/packages/minecraftBedrock/location/validCommand.json'
-				).then((resp) => resp.json()),
+				await requestJsonData(
+					'data/packages/minecraftBedrock/location/validCommand.json'
+				),
 				include
 			)
 		},
