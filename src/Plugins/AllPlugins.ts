@@ -80,7 +80,8 @@ export class AllPlugins {
 
 		// Execute plugins
 		for (const [pluginId, pluginPath] of Object.entries(plugins)) {
-			// This ternary is a hacky way to load built-in plugins directly from source. Needs a rework, see L40
+			if (!this.usesPlugin(pluginId)) continue
+
 			const pluginSrc = await this.dash.fileSystem
 				.readFile(pluginPath)
 				.then((file) => file.text())
@@ -158,6 +159,13 @@ export class AllPlugins {
 
 		if (entry) return typeof entry === 'string' ? {} : entry[1]
 		return {}
+	}
+	protected usesPlugin(pluginId: string) {
+		return this.dash.projectConfig
+			.get()
+			.compiler?.plugins?.some((p) =>
+				typeof p === 'string' ? p === pluginId : p[0] === pluginId
+			)
 	}
 
 	async runBuildStartHooks() {

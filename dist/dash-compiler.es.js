@@ -2277,6 +2277,8 @@ class AllPlugins {
       }
     }
     for (const [pluginId, pluginPath] of Object.entries(plugins)) {
+      if (!this.usesPlugin(pluginId))
+        continue;
       const pluginSrc = await this.dash.fileSystem.readFile(pluginPath).then((file) => file.text());
       const module = {};
       await run({
@@ -2326,6 +2328,10 @@ class AllPlugins {
     if (entry)
       return typeof entry === "string" ? {} : entry[1];
     return {};
+  }
+  usesPlugin(pluginId) {
+    var _a, _b;
+    return (_b = (_a = this.dash.projectConfig.get().compiler) == null ? void 0 : _a.plugins) == null ? void 0 : _b.some((p) => typeof p === "string" ? p === pluginId : p[0] === pluginId);
   }
   async runBuildStartHooks() {
     for (const plugin of this.plugins) {

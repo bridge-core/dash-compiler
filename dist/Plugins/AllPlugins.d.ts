@@ -22,6 +22,7 @@ export declare class AllPlugins {
         compileFiles: (filePaths: string[]) => Promise<void>;
     };
     protected getPluginOptions(pluginId: string): any;
+    protected usesPlugin(pluginId: string): boolean | undefined;
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<string[]>;
     runTransformPathHooks(filePath: string): Promise<string | null>;
