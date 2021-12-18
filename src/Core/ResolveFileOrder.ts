@@ -34,6 +34,8 @@ export class ResolveFileOrder {
 				continue
 			}
 
+			depFile.addUpdateFile(file)
+
 			if (!resolved.has(depFile)) {
 				if (unresolved.has(depFile)) {
 					console.error(

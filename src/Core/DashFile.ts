@@ -12,6 +12,7 @@ export class DashFile {
 	public requiredFiles = new Set<string>()
 	public aliases = new Set<string>()
 	public lastModified: number = 0
+	protected updateFiles = new Set<DashFile>()
 	// TODO(@solvedDev): Test adding a file hash property that helps determining whether a file gets rewritten to disk
 	// Could help with compilation speed of platforms with low file writing speeds (File System Access API)
 
@@ -59,6 +60,41 @@ export class DashFile {
 				.flat()
 		)
 	}
+	addUpdateFile(file: DashFile) {
+		this.updateFiles.add(file)
+	}
+
+	getHotUpdateChain() {
+		const chain = new Set<DashFile>([this])
+
+		for (const updateFile of this.updateFiles)
+			updateFile.getHotUpdateChain().forEach((file) => chain.add(file))
+
+		return chain
+	}
+	filesToLoadForHotUpdate() {
+		const chain = new Set<DashFile>()
+
+		for (const depFiles of this.requiredFiles) {
+			const depFile = this.dash.includedFiles.get(depFiles)
+
+			if (depFile) {
+				chain.add(depFile)
+				depFile
+					.filesToLoadForHotUpdate()
+					.forEach((file) => chain.add(file))
+			}
+		}
+
+		for (const updateFile of this.updateFiles) {
+			chain.add(updateFile)
+			updateFile
+				.filesToLoadForHotUpdate()
+				.forEach((file) => chain.add(file))
+		}
+
+		return chain
+	}
 
 	async processAfterLoad(writeFiles: boolean) {
 		// Nothing to load -> Nothing more to do in the next compile steps
@@ -88,6 +124,7 @@ export class DashFile {
 			lastModified: this.lastModified,
 			aliases: [...this.aliases],
 			requiredFiles: [...this.requiredFiles],
+			updateFiles: [...this.updateFiles].map((file) => file.filePath),
 		}
 	}
 	reset() {

@@ -30,6 +30,7 @@ export declare class Dash<TSetupArg = void> {
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
     get requestJsonData(): <T = any>(dataPath: string) => Promise<T>;
+    protected get dashFilePath(): string;
     setup(setupArg: TSetupArg): Promise<void>;
     get isCompilerActivated(): boolean;
     build(): Promise<void>;

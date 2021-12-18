@@ -13,6 +13,7 @@ export declare class DashFile {
     requiredFiles: Set<string>;
     aliases: Set<string>;
     lastModified: number;
+    protected updateFiles: Set<DashFile>;
     constructor(dash: Dash<any>, filePath: string, isVirtual?: boolean);
     setFileHandle(fileHandle: IFileHandle): void;
     setDefaultFileHandle(): void;
@@ -20,6 +21,9 @@ export declare class DashFile {
     setReadData(data: any): void;
     setAliases(aliases: Set<string>): void;
     setRequiredFiles(requiredFiles: Set<string>): void;
+    addUpdateFile(file: DashFile): void;
+    getHotUpdateChain(): Set<DashFile>;
+    filesToLoadForHotUpdate(): Set<DashFile>;
     processAfterLoad(writeFiles: boolean): Promise<void>;
     serialize(): {
         isVirtual: boolean;
@@ -27,6 +31,7 @@ export declare class DashFile {
         lastModified: number;
         aliases: string[];
         requiredFiles: string[];
+        updateFiles: string[];
     };
     reset(): void;
 }

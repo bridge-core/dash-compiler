@@ -2424,6 +2424,7 @@ class DashFile {
     this.requiredFiles = new Set();
     this.aliases = new Set();
     this.lastModified = 0;
+    this.updateFiles = new Set();
     this.outputPath = filePath;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
@@ -2454,6 +2455,30 @@ class DashFile {
       return filePath;
     }).flat());
   }
+  addUpdateFile(file) {
+    this.updateFiles.add(file);
+  }
+  getHotUpdateChain() {
+    const chain = new Set([this]);
+    for (const updateFile of this.updateFiles)
+      updateFile.getHotUpdateChain().forEach((file) => chain.add(file));
+    return chain;
+  }
+  filesToLoadForHotUpdate() {
+    const chain = new Set();
+    for (const depFiles of this.requiredFiles) {
+      const depFile = this.dash.includedFiles.get(depFiles);
+      if (depFile) {
+        chain.add(depFile);
+        depFile.filesToLoadForHotUpdate().forEach((file) => chain.add(file));
+      }
+    }
+    for (const updateFile of this.updateFiles) {
+      chain.add(updateFile);
+      updateFile.filesToLoadForHotUpdate().forEach((file) => chain.add(file));
+    }
+    return chain;
+  }
   async processAfterLoad(writeFiles) {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
@@ -2469,7 +2494,8 @@ class DashFile {
       filePath: this.filePath,
       lastModified: this.lastModified,
       aliases: [...this.aliases],
-      requiredFiles: [...this.requiredFiles]
+      requiredFiles: [...this.requiredFiles],
+      updateFiles: [...this.updateFiles].map((file) => file.filePath)
     };
   }
   reset() {
@@ -2522,9 +2548,12 @@ class IncludedFiles {
     this.add([...allFiles]);
   }
   add(filePaths, isVirtual = false) {
+    let files = [];
     for (const filePath of filePaths) {
-      this.files.set(filePath, new DashFile(this.dash, filePath, isVirtual));
+      files.push(new DashFile(this.dash, filePath, isVirtual));
+      this.files.set(filePath, files.at(-1));
     }
+    return files;
   }
   remove(filePath) {
     const file = this.files.get(filePath);
@@ -2602,6 +2631,7 @@ class ResolveFileOrder {
         console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
         continue;
       }
+      depFile.addUpdateFile(file);
       if (!resolved.has(depFile)) {
         if (unresolved.has(depFile)) {
           console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
@@ -2668,6 +2698,9 @@ class Dash {
   get requestJsonData() {
     return this.options.requestJsonData;
   }
+  get dashFilePath() {
+    return join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
+  }
   async setup(setupArg) {
     var _a, _b, _c, _d;
     await this.projectConfig.setup();
@@ -2695,6 +2728,16 @@ class Dash {
     this.includedFiles.resetAll();
   }
   async updateFile(filePath) {
+    let file = this.includedFiles.get(filePath);
+    if (!file) {
+      [file] = this.includedFiles.add([filePath]);
+    }
+    await this.loadFiles.loadFile(file);
+    await this.loadFiles.loadRequiredFiles(file);
+    const filesToLoad = file.filesToLoadForHotUpdate();
+    await this.loadFiles.run([...filesToLoad.values()]);
+    const filesToTransform = file.getHotUpdateChain();
+    await this.fileTransformer.run(filesToTransform);
     this.includedFiles.resetAll();
   }
   async compileFile(filePath, fileData) {
@@ -2739,16 +2782,14 @@ class Dash {
   watch() {
   }
   async saveDashFile() {
-    await this.includedFiles.save(join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`));
+    await this.includedFiles.save(this.dashFilePath);
   }
   async compileIncludedFiles() {
     await this.loadFiles.run(this.includedFiles.all());
     const resolvedFileOrder = this.fileOrderResolver.run(this.includedFiles.all());
-    console.log(resolvedFileOrder);
     await this.fileTransformer.run(resolvedFileOrder);
   }
   async compileVirtualFiles(filePaths) {
-    console.log(filePaths);
     this.includedFiles.add(filePaths, true);
     await this.compileIncludedFiles();
   }

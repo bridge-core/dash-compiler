@@ -51,12 +51,14 @@ export class IncludedFiles {
 		this.add([...allFiles])
 	}
 	add(filePaths: string[], isVirtual = false) {
+		let files: DashFile[] = []
+
 		for (const filePath of filePaths) {
-			this.files.set(
-				filePath,
-				new DashFile(this.dash, filePath, isVirtual)
-			)
+			files.push(new DashFile(this.dash, filePath, isVirtual))
+			this.files.set(filePath, files.at(-1)!)
 		}
+
+		return files
 	}
 	remove(filePath: string) {
 		const file = this.files.get(filePath)

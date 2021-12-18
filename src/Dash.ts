@@ -120,6 +120,22 @@ export class Dash<TSetupArg = void> {
 	async updateFile(filePath: string) {
 		// Update files in output
 
+		let file = this.includedFiles.get(filePath)
+		if (!file) {
+			;[file] = this.includedFiles.add([filePath])
+		}
+
+		// Load files and files that are required by this file
+		await this.loadFiles.loadFile(file)
+		await this.loadFiles.loadRequiredFiles(file)
+
+		const filesToLoad = file.filesToLoadForHotUpdate()
+		await this.loadFiles.run([...filesToLoad.values()])
+
+		const filesToTransform = file.getHotUpdateChain()
+		await this.fileTransformer.run(filesToTransform)
+
+		await this.saveDashFile()
 		this.includedFiles.resetAll()
 	}
 	async compileFile(filePath: string, fileData: Uint8Array) {
@@ -196,7 +212,7 @@ export class Dash<TSetupArg = void> {
 		const resolvedFileOrder = this.fileOrderResolver.run(
 			this.includedFiles.all()
 		)
-		console.log(resolvedFileOrder)
+		// console.log(resolvedFileOrder)
 		await this.fileTransformer.run(resolvedFileOrder)
 	}
 
@@ -206,7 +222,6 @@ export class Dash<TSetupArg = void> {
 	 * @param filePaths
 	 */
 	async compileVirtualFiles(filePaths: string[]) {
-		console.log(filePaths)
 		this.includedFiles.add(filePaths, true)
 		await this.compileIncludedFiles()
 	}
