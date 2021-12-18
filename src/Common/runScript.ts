@@ -6,6 +6,14 @@ export interface IScriptContext {
 }
 
 export function run(context: IScriptContext) {
+	if (context.async)
+		return createRunner(context)(...Object.values(context.env)).catch(
+			(err: any) => {
+				console.error(context.script)
+				throw new Error(`Error within script: ${err}`)
+			}
+		)
+
 	try {
 		return createRunner(context)(...Object.values(context.env))
 	} catch (err) {

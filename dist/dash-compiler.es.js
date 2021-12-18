@@ -33,6 +33,11 @@ class DashProjectConfig extends ProjectConfig {
   }
 }
 function run(context) {
+  if (context.async)
+    return createRunner(context)(...Object.values(context.env)).catch((err) => {
+      console.error(context.script);
+      throw new Error(`Error within script: ${err}`);
+    });
   try {
     return createRunner(context)(...Object.values(context.env));
   } catch (err) {
