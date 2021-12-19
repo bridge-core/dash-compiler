@@ -42,7 +42,9 @@ export function createCustomComponentPlugin({
 		const isComponent = (filePath: string | null) =>
 			options.v1CompatMode
 				? filePath?.includes(`/components/`)
-				: filePath && fileTypeLib?.getId(filePath) === `customComponent`
+				: filePath &&
+				  fileTypeLib?.getId(filePath) === `customComponent` &&
+				  filePath.includes(`/${fileType}/`)
 		const mayUseComponent = (filePath: string | null) =>
 			filePath && fileTypeLib?.getId(filePath) === fileType
 
@@ -196,7 +198,7 @@ export function createCustomComponentPlugin({
 			},
 			finalizeBuild(filePath, fileContent) {
 				// Necessary to make auto-completions work for TypeScript components
-				if (isComponent(filePath)) {
+				if (isComponent(filePath) && fileContent) {
 					return (<Component>fileContent).toString()
 				} else if (
 					mayUseComponent(filePath) ||

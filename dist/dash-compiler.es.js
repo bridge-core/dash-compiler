@@ -169,7 +169,7 @@ const SimpleRewrite = ({
       if (!pack)
         return;
       const packRoot = projectConfig.getPackRoot(pack.id);
-      const relPath = relative(packRoot, filePath);
+      const relPath = relative(join(projectRoot, packRoot), filePath);
       if ([
         "behaviorPack",
         "resourcePack",
@@ -1526,6 +1526,7 @@ class Component {
           try {
             func(componentArgs, opts);
           } catch (err) {
+            console.log(func.toString());
             console.error(err);
           }
         };
@@ -1853,7 +1854,7 @@ function createCustomComponentPlugin({
     fileType: fileTypeLib
   }) => {
     const isPlayerFile = (filePath, getAliases2) => filePath && fileType === "item" && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === "entity" && getAliases2(filePath).includes("minecraft:player");
-    const isComponent = (filePath) => options.v1CompatMode ? filePath == null ? void 0 : filePath.includes(`/components/`) : filePath && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === `customComponent`;
+    const isComponent = (filePath) => options.v1CompatMode ? filePath == null ? void 0 : filePath.includes(`/components/`) : filePath && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === `customComponent` && filePath.includes(`/${fileType}/`);
     const mayUseComponent = (filePath) => filePath && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === fileType;
     return {
       buildStart() {
@@ -1940,7 +1941,7 @@ function createCustomComponentPlugin({
         }
       },
       finalizeBuild(filePath, fileContent) {
-        if (isComponent(filePath)) {
+        if (isComponent(filePath) && fileContent) {
           return fileContent.toString();
         } else if (mayUseComponent(filePath) || createAdditionalFiles[filePath])
           return JSON.stringify(fileContent, null, "	");

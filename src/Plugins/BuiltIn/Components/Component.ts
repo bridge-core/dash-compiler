@@ -64,6 +64,7 @@ export class Component {
 					try {
 						func(componentArgs, opts)
 					} catch (err) {
+						console.log(func.toString())
 						console.error(err)
 					}
 				}
