@@ -80,6 +80,7 @@ export class IncludedFiles {
 	resetAll() {
 		for (const file of this.all()) {
 			file.reset()
+			if (file.isVirtual) this.remove(file.filePath)
 		}
 	}
 }

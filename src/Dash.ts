@@ -121,6 +121,8 @@ export class Dash<TSetupArg = void> {
 		// Update files in output
 		console.log(`Dash is starting to update the file "${filePath}"...`)
 
+		await this.plugins.runBuildStartHooks()
+
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
 			;[file] = this.includedFiles.add([filePath])
@@ -132,11 +134,22 @@ export class Dash<TSetupArg = void> {
 
 		const filesToLoad = file.filesToLoadForHotUpdate()
 		console.log(`Dash is loading ${filesToLoad.size} files...`)
-		await this.loadFiles.run([...filesToLoad.values()])
+		await this.loadFiles.run(
+			[...filesToLoad.values()].filter((currFile) => currFile !== file)
+		)
 
 		const filesToTransform = file.getHotUpdateChain()
-		console.log(`Dash is compiling ${filesToTransform.size}...`)
-		await this.fileTransformer.run(filesToTransform)
+		console.log(`Dash is compiling ${filesToTransform.size} files...`)
+
+		for (const file of filesToLoad) {
+			const transformedData = await this.plugins.runTransformHooks(file)
+			file.data ??= transformedData
+		}
+
+		// We need to run the whole transformation pipeline
+		await this.fileTransformer.run(filesToTransform, true)
+
+		await this.plugins.runBuildEndHooks()
 
 		await this.saveDashFile()
 		this.includedFiles.resetAll()

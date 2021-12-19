@@ -23,7 +23,7 @@ export declare class DashFile {
     setRequiredFiles(requiredFiles: Set<string>): void;
     addUpdateFile(file: DashFile): void;
     getHotUpdateChain(): Set<DashFile>;
-    filesToLoadForHotUpdate(): Set<DashFile>;
+    filesToLoadForHotUpdate(visited?: Set<DashFile>, didFileChange?: boolean): Set<DashFile>;
     processAfterLoad(writeFiles: boolean): Promise<void>;
     serialize(): {
         isVirtual: boolean;

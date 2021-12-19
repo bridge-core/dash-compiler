@@ -2477,22 +2477,36 @@ class DashFile {
   }
   getHotUpdateChain() {
     const chain = new Set([this]);
-    for (const updateFile of this.updateFiles)
-      updateFile.getHotUpdateChain().forEach((file) => chain.add(file));
+    for (const updateFile of this.updateFiles) {
+      updateFile.getHotUpdateChain().forEach((file) => {
+        if (!file.isVirtual)
+          chain.add(file);
+      });
+    }
     return chain;
   }
-  filesToLoadForHotUpdate() {
+  filesToLoadForHotUpdate(visited = new Set(), didFileChange = true) {
     const chain = new Set();
+    if (visited.has(this))
+      return chain;
+    visited.add(this);
     for (const depFileId of this.requiredFiles) {
       const depFile = this.dash.includedFiles.get(depFileId);
       if (depFile) {
-        chain.add(depFile);
-        depFile.filesToLoadForHotUpdate().forEach((file) => chain.add(file));
+        depFile.filesToLoadForHotUpdate(visited, false).forEach((file) => {
+          if (!file.isVirtual)
+            chain.add(file);
+        });
       }
     }
-    for (const updateFile of this.updateFiles) {
-      chain.add(updateFile);
-      updateFile.filesToLoadForHotUpdate().forEach((file) => chain.add(file));
+    chain.add(this);
+    if (didFileChange) {
+      for (const updateFile of this.updateFiles) {
+        updateFile.filesToLoadForHotUpdate(visited, true).forEach((file) => {
+          if (!file.isVirtual)
+            chain.add(file);
+        });
+      }
     }
     return chain;
   }
@@ -2518,7 +2532,8 @@ class DashFile {
   reset() {
     this.isDone = false;
     this.data = null;
-    this.setDefaultFileHandle();
+    if (!this.isVirtual)
+      this.setDefaultFileHandle();
   }
 }
 class IncludedFiles {
@@ -2587,6 +2602,8 @@ class IncludedFiles {
   resetAll() {
     for (const file of this.all()) {
       file.reset();
+      if (file.isVirtual)
+        this.remove(file.filePath);
     }
   }
 }
@@ -2668,22 +2685,23 @@ class FileTransformer {
   constructor(dash) {
     this.dash = dash;
   }
-  async run(resolvedFileOrder) {
+  async run(resolvedFileOrder, skipTransform = false) {
     for (const file of resolvedFileOrder) {
-      let writeData = await this.transformFile(file, true);
+      let writeData = await this.transformFile(file, true, skipTransform);
       if (writeData !== void 0 && writeData !== null && file.outputPath) {
         await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);
       }
       file.isDone = true;
     }
   }
-  async transformFile(file, runFinalizeHook = false) {
+  async transformFile(file, runFinalizeHook = false, skipTransform = false) {
     var _a, _b;
-    const transformedData = await this.dash.plugins.runTransformHooks(file);
-    (_a = file.data) != null ? _a : file.data = transformedData;
+    if (!skipTransform) {
+      (_a = file.data) != null ? _a : file.data = await this.dash.plugins.runTransformHooks(file);
+    }
     if (!runFinalizeHook)
       return;
-    let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : transformedData;
+    let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
         console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
@@ -2745,7 +2763,9 @@ class Dash {
     this.includedFiles.resetAll();
   }
   async updateFile(filePath) {
+    var _a;
     console.log(`Dash is starting to update the file "${filePath}"...`);
+    await this.plugins.runBuildStartHooks();
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);
@@ -2754,10 +2774,15 @@ class Dash {
     await this.loadFiles.loadRequiredFiles(file);
     const filesToLoad = file.filesToLoadForHotUpdate();
     console.log(`Dash is loading ${filesToLoad.size} files...`);
-    await this.loadFiles.run([...filesToLoad.values()]);
+    await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => currFile !== file));
     const filesToTransform = file.getHotUpdateChain();
-    console.log(`Dash is compiling ${filesToTransform.size}...`);
-    await this.fileTransformer.run(filesToTransform);
+    console.log(`Dash is compiling ${filesToTransform.size} files...`);
+    for (const file2 of filesToLoad) {
+      const transformedData = await this.plugins.runTransformHooks(file2);
+      (_a = file2.data) != null ? _a : file2.data = transformedData;
+    }
+    await this.fileTransformer.run(filesToTransform, true);
+    await this.plugins.runBuildEndHooks();
     await this.saveDashFile();
     this.includedFiles.resetAll();
     console.log(`Dash finished updating the file "${filePath}"!`);

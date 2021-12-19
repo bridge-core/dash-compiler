@@ -67,30 +67,45 @@ export class DashFile {
 	getHotUpdateChain() {
 		const chain = new Set<DashFile>([this])
 
-		for (const updateFile of this.updateFiles)
-			updateFile.getHotUpdateChain().forEach((file) => chain.add(file))
+		for (const updateFile of this.updateFiles) {
+			updateFile.getHotUpdateChain().forEach((file) => {
+				if (!file.isVirtual) chain.add(file)
+			})
+		}
 
 		return chain
 	}
-	filesToLoadForHotUpdate() {
+	filesToLoadForHotUpdate(
+		visited = new Set<DashFile>(),
+		didFileChange = true
+	) {
 		const chain = new Set<DashFile>()
+
+		if (visited.has(this)) return chain
+		visited.add(this)
 
 		for (const depFileId of this.requiredFiles) {
 			const depFile = this.dash.includedFiles.get(depFileId)
 
 			if (depFile) {
-				chain.add(depFile)
 				depFile
-					.filesToLoadForHotUpdate()
-					.forEach((file) => chain.add(file))
+					.filesToLoadForHotUpdate(visited, false)
+					.forEach((file) => {
+						if (!file.isVirtual) chain.add(file)
+					})
 			}
 		}
 
-		for (const updateFile of this.updateFiles) {
-			chain.add(updateFile)
-			updateFile
-				.filesToLoadForHotUpdate()
-				.forEach((file) => chain.add(file))
+		chain.add(this)
+
+		if (didFileChange) {
+			for (const updateFile of this.updateFiles) {
+				updateFile
+					.filesToLoadForHotUpdate(visited, true)
+					.forEach((file) => {
+						if (!file.isVirtual) chain.add(file)
+					})
+			}
 		}
 
 		return chain
@@ -130,6 +145,6 @@ export class DashFile {
 	reset() {
 		this.isDone = false
 		this.data = null
-		this.setDefaultFileHandle()
+		if (!this.isVirtual) this.setDefaultFileHandle()
 	}
 }

@@ -5,9 +5,9 @@ import type { DashFile } from './DashFile'
 export class FileTransformer {
 	constructor(protected dash: Dash<any>) {}
 
-	async run(resolvedFileOrder: Set<DashFile>) {
+	async run(resolvedFileOrder: Set<DashFile>, skipTransform = false) {
 		for (const file of resolvedFileOrder) {
-			let writeData = await this.transformFile(file, true)
+			let writeData = await this.transformFile(file, true, skipTransform)
 
 			if (
 				writeData !== undefined &&
@@ -24,15 +24,19 @@ export class FileTransformer {
 		}
 	}
 
-	async transformFile(file: DashFile, runFinalizeHook = false) {
-		const transformedData = await this.dash.plugins.runTransformHooks(file)
-		file.data ??= transformedData
+	async transformFile(
+		file: DashFile,
+		runFinalizeHook = false,
+		skipTransform = false
+	) {
+		if (!skipTransform) {
+			file.data ??= await this.dash.plugins.runTransformHooks(file)
+		}
 
 		if (!runFinalizeHook) return
 
 		let writeData =
-			(await this.dash.plugins.runFinalizeBuildHooks(file)) ??
-			transformedData
+			(await this.dash.plugins.runFinalizeBuildHooks(file)) ?? file.data
 
 		if (writeData !== undefined && writeData !== null) {
 			if (!isWritableData(writeData)) {
