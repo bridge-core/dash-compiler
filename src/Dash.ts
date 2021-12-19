@@ -119,6 +119,7 @@ export class Dash<TSetupArg = void> {
 
 	async updateFile(filePath: string) {
 		// Update files in output
+		console.log(`Dash is starting to update the file "${filePath}"...`)
 
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
@@ -130,13 +131,16 @@ export class Dash<TSetupArg = void> {
 		await this.loadFiles.loadRequiredFiles(file)
 
 		const filesToLoad = file.filesToLoadForHotUpdate()
+		console.log(`Dash is loading ${filesToLoad.size} files...`)
 		await this.loadFiles.run([...filesToLoad.values()])
 
 		const filesToTransform = file.getHotUpdateChain()
+		console.log(`Dash is compiling ${filesToTransform.size}...`)
 		await this.fileTransformer.run(filesToTransform)
 
 		await this.saveDashFile()
 		this.includedFiles.resetAll()
+		console.log(`Dash finished updating the file "${filePath}"!`)
 	}
 	async compileFile(
 		filePath: string,

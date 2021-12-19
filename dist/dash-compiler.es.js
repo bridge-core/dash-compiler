@@ -2483,8 +2483,8 @@ class DashFile {
   }
   filesToLoadForHotUpdate() {
     const chain = new Set();
-    for (const depFiles of this.requiredFiles) {
-      const depFile = this.dash.includedFiles.get(depFiles);
+    for (const depFileId of this.requiredFiles) {
+      const depFile = this.dash.includedFiles.get(depFileId);
       if (depFile) {
         chain.add(depFile);
         depFile.filesToLoadForHotUpdate().forEach((file) => chain.add(file));
@@ -2745,6 +2745,7 @@ class Dash {
     this.includedFiles.resetAll();
   }
   async updateFile(filePath) {
+    console.log(`Dash is starting to update the file "${filePath}"...`);
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);
@@ -2752,11 +2753,14 @@ class Dash {
     await this.loadFiles.loadFile(file);
     await this.loadFiles.loadRequiredFiles(file);
     const filesToLoad = file.filesToLoadForHotUpdate();
+    console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()]);
     const filesToTransform = file.getHotUpdateChain();
+    console.log(`Dash is compiling ${filesToTransform.size}...`);
     await this.fileTransformer.run(filesToTransform);
     await this.saveDashFile();
     this.includedFiles.resetAll();
+    console.log(`Dash finished updating the file "${filePath}"!`);
   }
   async compileFile(filePath, fileData) {
     let file = this.includedFiles.get(filePath);

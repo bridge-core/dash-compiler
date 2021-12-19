@@ -75,8 +75,8 @@ export class DashFile {
 	filesToLoadForHotUpdate() {
 		const chain = new Set<DashFile>()
 
-		for (const depFiles of this.requiredFiles) {
-			const depFile = this.dash.includedFiles.get(depFiles)
+		for (const depFileId of this.requiredFiles) {
+			const depFile = this.dash.includedFiles.get(depFileId)
 
 			if (depFile) {
 				chain.add(depFile)
