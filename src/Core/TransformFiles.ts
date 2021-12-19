@@ -30,10 +30,11 @@ export class FileTransformer {
 		skipTransform = false
 	) {
 		if (!skipTransform) {
-			file.data ??= await this.dash.plugins.runTransformHooks(file)
+			file.data =
+				(await this.dash.plugins.runTransformHooks(file)) ?? file.data
 		}
 
-		if (!runFinalizeHook) return
+		if (!runFinalizeHook) return file.data
 
 		let writeData =
 			(await this.dash.plugins.runFinalizeBuildHooks(file)) ?? file.data

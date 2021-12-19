@@ -138,13 +138,13 @@ export class Dash<TSetupArg = void> {
 			[...filesToLoad.values()].filter((currFile) => currFile !== file)
 		)
 
+		for (const file of filesToLoad) {
+			file.data =
+				(await this.plugins.runTransformHooks(file)) ?? file.data
+		}
+
 		const filesToTransform = file.getHotUpdateChain()
 		console.log(`Dash is compiling ${filesToTransform.size} files...`)
-
-		for (const file of filesToLoad) {
-			const transformedData = await this.plugins.runTransformHooks(file)
-			file.data ??= transformedData
-		}
 
 		// We need to run the whole transformation pipeline
 		await this.fileTransformer.run(filesToTransform, true)

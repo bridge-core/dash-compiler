@@ -2697,10 +2697,10 @@ class FileTransformer {
   async transformFile(file, runFinalizeHook = false, skipTransform = false) {
     var _a, _b;
     if (!skipTransform) {
-      (_a = file.data) != null ? _a : file.data = await this.dash.plugins.runTransformHooks(file);
+      file.data = (_a = await this.dash.plugins.runTransformHooks(file)) != null ? _a : file.data;
     }
     if (!runFinalizeHook)
-      return;
+      return file.data;
     let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
@@ -2775,12 +2775,11 @@ class Dash {
     const filesToLoad = file.filesToLoadForHotUpdate();
     console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => currFile !== file));
+    for (const file2 of filesToLoad) {
+      file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
+    }
     const filesToTransform = file.getHotUpdateChain();
     console.log(`Dash is compiling ${filesToTransform.size} files...`);
-    for (const file2 of filesToLoad) {
-      const transformedData = await this.plugins.runTransformHooks(file2);
-      (_a = file2.data) != null ? _a : file2.data = transformedData;
-    }
     await this.fileTransformer.run(filesToTransform, true);
     await this.plugins.runBuildEndHooks();
     await this.saveDashFile();
