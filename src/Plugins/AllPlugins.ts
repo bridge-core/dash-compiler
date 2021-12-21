@@ -193,9 +193,8 @@ export class AllPlugins {
 	async runTransformPathHooks(filePath: string) {
 		let currentFilePath: string | null = filePath
 		for (const plugin of this.plugins) {
-			const newPath: string | undefined | null = <
-				string | null | undefined
-			>plugin.runTransformPathHook(currentFilePath)
+			const newPath: string | undefined | null =
+				await plugin.runTransformPathHook(currentFilePath)
 
 			if (newPath === null) return null
 			else if (newPath !== undefined) currentFilePath = newPath
