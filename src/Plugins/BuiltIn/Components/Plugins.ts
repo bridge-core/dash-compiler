@@ -15,7 +15,7 @@ export function createCustomComponentPlugin({
 	getComponentObjects,
 }: IOpts): TCompilerPluginFactory<{
 	isFileRequest: boolean
-	mode: 'dev' | 'build'
+	mode: 'development' | 'production'
 	v1CompatMode?: boolean
 }> {
 	const usedComponents = new Map<string, [string, string][]>()

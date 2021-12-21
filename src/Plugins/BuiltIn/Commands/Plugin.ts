@@ -7,7 +7,7 @@ import { setObjectAt } from 'bridge-common-utils'
 export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
 	isFileRequest: boolean
-	mode: 'dev' | 'build'
+	mode: 'development' | 'production'
 	v1CompatMode?: boolean
 }> = ({
 	projectConfig,
@@ -16,7 +16,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	options: {
 		include = {},
 		isFileRequest,
-		mode = 'dev',
+		mode = 'development',
 		v1CompatMode = false,
 	} = {},
 }) => {

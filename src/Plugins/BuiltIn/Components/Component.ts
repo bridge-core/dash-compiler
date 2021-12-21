@@ -20,7 +20,7 @@ export class Component {
 	constructor(
 		protected fileType: string,
 		protected componentSrc: string,
-		protected mode: 'build' | 'dev',
+		protected mode: 'production' | 'development',
 		protected v1Compat: boolean,
 		protected targetVersion?: string
 	) {}

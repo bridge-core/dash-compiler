@@ -7,7 +7,7 @@ import { run } from '../../Common/runScript'
 export const MoLangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
 	isFileRequest?: boolean
-	mode: 'build' | 'dev'
+	mode: 'production' | 'development'
 }> = ({
 	fileType,
 	projectConfig,

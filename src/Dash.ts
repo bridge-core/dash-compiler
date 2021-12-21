@@ -8,6 +8,7 @@ import { ResolveFileOrder } from './Core/ResolveFileOrder'
 import { FileTransformer } from './Core/TransformFiles'
 import { FileType, PackType } from 'mc-project-core'
 import type { DashFile } from './Core/DashFile'
+import { Progress } from './Core/Progress'
 
 export interface IDashOptions<TSetupArg = void> {
 	/**
@@ -32,6 +33,7 @@ export interface IDashOptions<TSetupArg = void> {
 
 export class Dash<TSetupArg = void> {
 	public readonly outputFileSystem: FileSystem
+	public readonly progress = new Progress()
 
 	public readonly projectConfig: DashProjectConfig
 	public readonly projectRoot: string
@@ -97,13 +99,22 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return
 
 		const startTime = Date.now()
+		this.progress.setTotal(7)
 
 		await this.plugins.runBuildStartHooks()
+		this.progress.advance()
 
 		await this.includedFiles.loadAll()
+		this.progress.advance()
+
 		await this.compileIncludedFiles()
 
 		await this.plugins.runBuildEndHooks()
+		this.progress.advance()
+
+		await this.saveDashFile()
+		this.includedFiles.resetAll()
+		this.progress.advance()
 
 		console.log(
 			`Dash compiled ${this.includedFiles.all().length} files in ${
@@ -111,31 +122,36 @@ export class Dash<TSetupArg = void> {
 			}ms!`
 		)
 
-		await this.saveDashFile()
-		this.includedFiles.resetAll()
-
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
 
-	async updateFile(filePath: string) {
+	async updateFiles(filePaths: string[]) {
 		// Update files in output
-		console.log(`Dash is starting to update the file "${filePath}"...`)
+		console.log(`Dash is starting to update ${filePaths.length} files...`)
 
 		await this.plugins.runBuildStartHooks()
 
-		let file = this.includedFiles.get(filePath)
-		if (!file) {
-			;[file] = this.includedFiles.add([filePath])
+		const files: DashFile[] = []
+		for (const filePath of filePaths) {
+			let file = this.includedFiles.get(filePath)
+			if (!file) {
+				;[file] = this.includedFiles.add([filePath])
+			}
+
+			files.push(file)
 		}
 
 		// Load files and files that are required by this file
-		await this.loadFiles.loadFile(file)
-		await this.loadFiles.loadRequiredFiles(file)
+		await this.loadFiles.run(files)
 
-		const filesToLoad = file.filesToLoadForHotUpdate()
+		const filesToLoad = new Set(
+			files.map((file) => [...file.filesToLoadForHotUpdate()]).flat()
+		)
 		console.log(`Dash is loading ${filesToLoad.size} files...`)
 		await this.loadFiles.run(
-			[...filesToLoad.values()].filter((currFile) => currFile !== file)
+			[...filesToLoad.values()].filter(
+				(currFile) => !files.includes(currFile)
+			)
 		)
 
 		for (const file of filesToLoad) {
@@ -143,7 +159,9 @@ export class Dash<TSetupArg = void> {
 				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
 
-		const filesToTransform = file.getHotUpdateChain()
+		const filesToTransform = new Set(
+			files.map((file) => [...file.getHotUpdateChain()]).flat()
+		)
 		console.log(`Dash is compiling ${filesToTransform.size} files...`)
 
 		// We need to run the whole transformation pipeline
@@ -153,7 +171,7 @@ export class Dash<TSetupArg = void> {
 
 		await this.saveDashFile()
 		this.includedFiles.resetAll()
-		console.log(`Dash finished updating the file "${filePath}"!`)
+		console.log(`Dash finished updating ${filesToTransform.size} files!`)
 	}
 	async compileFile(
 		filePath: string,
@@ -217,7 +235,7 @@ export class Dash<TSetupArg = void> {
 
 	async rename(oldPath: string, newPath: string) {
 		await this.unlink(oldPath, false)
-		await this.updateFile(newPath)
+		await this.updateFiles([newPath])
 
 		await this.saveDashFile()
 	}
@@ -239,12 +257,16 @@ export class Dash<TSetupArg = void> {
 
 	protected async compileIncludedFiles() {
 		await this.loadFiles.run(this.includedFiles.all())
+		this.progress.advance()
 
 		const resolvedFileOrder = this.fileOrderResolver.run(
 			this.includedFiles.all()
 		)
+		this.progress.advance()
+
 		// console.log(resolvedFileOrder)
 		await this.fileTransformer.run(resolvedFileOrder)
+		this.progress.advance()
 	}
 
 	/**

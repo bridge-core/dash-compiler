@@ -3,7 +3,7 @@ export declare type TTemplate = (componentArgs: any, opts: any) => any;
 export declare class Component {
     protected fileType: string;
     protected componentSrc: string;
-    protected mode: 'build' | 'dev';
+    protected mode: 'production' | 'development';
     protected v1Compat: boolean;
     protected targetVersion?: string | undefined;
     protected _name?: string;
@@ -15,7 +15,7 @@ export declare class Component {
     protected dialogueScenes: any[];
     protected clientFiles: Record<string, any>;
     protected projectConfig?: ProjectConfig;
-    constructor(fileType: string, componentSrc: string, mode: 'build' | 'dev', v1Compat: boolean, targetVersion?: string | undefined);
+    constructor(fileType: string, componentSrc: string, mode: 'production' | 'development', v1Compat: boolean, targetVersion?: string | undefined);
     setProjectConfig(projectConfig: ProjectConfig): void;
     get name(): string | undefined;
     load(type?: 'server' | 'client'): Promise<boolean>;

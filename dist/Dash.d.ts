@@ -6,6 +6,7 @@ import { LoadFiles } from './Core/LoadFiles';
 import { ResolveFileOrder } from './Core/ResolveFileOrder';
 import { FileTransformer } from './Core/TransformFiles';
 import { FileType, PackType } from 'mc-project-core';
+import { Progress } from './Core/Progress';
 export interface IDashOptions<TSetupArg = void> {
     mode?: 'development' | 'production';
     config: string;
@@ -18,6 +19,7 @@ export declare class Dash<TSetupArg = void> {
     readonly fileSystem: FileSystem;
     protected options: IDashOptions<TSetupArg>;
     readonly outputFileSystem: FileSystem;
+    readonly progress: Progress;
     readonly projectConfig: DashProjectConfig;
     readonly projectRoot: string;
     readonly plugins: AllPlugins;
@@ -34,7 +36,7 @@ export declare class Dash<TSetupArg = void> {
     setup(setupArg: TSetupArg): Promise<void>;
     get isCompilerActivated(): boolean;
     build(): Promise<void>;
-    updateFile(filePath: string): Promise<void>;
+    updateFiles(filePaths: string[]): Promise<void>;
     compileFile(filePath: string, fileData: Uint8Array): Promise<[string[], any]>;
     unlink(path: string, updateDashFile?: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;

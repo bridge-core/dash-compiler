@@ -1,1 +1,0 @@
-{"id":"material","icon":"mdi-texture","detect":{"packType":"resourcePack","scope":"materials/","matcher":["materials/**/*.material","materials/*.material"],"fileExtensions":[".material"]},"meta":{"language":"json"},"schema":"file:///data/packages/minecraftBedrock/schema/material/main.json"}

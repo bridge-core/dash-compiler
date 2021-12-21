@@ -2158,7 +2158,7 @@ const CustomCommandsPlugin = ({
   options: {
     include = {},
     isFileRequest,
-    mode = "dev",
+    mode = "development",
     v1CompatMode = false
   } = {}
 }) => {
@@ -2711,10 +2711,39 @@ class FileTransformer {
     return writeData;
   }
 }
+class Progress {
+  constructor(total = 1) {
+    this.total = total;
+    this.current = 0;
+    this.onChangeCbs = new Set();
+  }
+  get percentage() {
+    return this.current / this.total;
+  }
+  onChange(cb) {
+    this.onChangeCbs.add(cb);
+    return {
+      dispose: () => this.onChangeCbs.delete(cb)
+    };
+  }
+  setTotal(total) {
+    this.total = total;
+    this.onChangeCbs.forEach((cb) => cb(this));
+  }
+  updateCurrent(current) {
+    this.current = current;
+    this.onChangeCbs.forEach((cb) => cb(this));
+  }
+  advance() {
+    this.current++;
+    this.onChangeCbs.forEach((cb) => cb(this));
+  }
+}
 class Dash {
   constructor(fileSystem, outputFileSystem, options) {
     this.fileSystem = fileSystem;
     this.options = options;
+    this.progress = new Progress();
     this.plugins = new AllPlugins(this);
     this.includedFiles = new IncludedFiles(this);
     this.loadFiles = new LoadFiles(this);
@@ -2754,37 +2783,45 @@ class Dash {
     if (!this.isCompilerActivated)
       return;
     const startTime = Date.now();
+    this.progress.setTotal(7);
     await this.plugins.runBuildStartHooks();
+    this.progress.advance();
     await this.includedFiles.loadAll();
+    this.progress.advance();
     await this.compileIncludedFiles();
     await this.plugins.runBuildEndHooks();
-    console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
+    this.progress.advance();
     await this.saveDashFile();
     this.includedFiles.resetAll();
+    this.progress.advance();
+    console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
   }
-  async updateFile(filePath) {
+  async updateFiles(filePaths) {
     var _a;
-    console.log(`Dash is starting to update the file "${filePath}"...`);
+    console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.plugins.runBuildStartHooks();
-    let file = this.includedFiles.get(filePath);
-    if (!file) {
-      [file] = this.includedFiles.add([filePath]);
+    const files = [];
+    for (const filePath of filePaths) {
+      let file = this.includedFiles.get(filePath);
+      if (!file) {
+        [file] = this.includedFiles.add([filePath]);
+      }
+      files.push(file);
     }
-    await this.loadFiles.loadFile(file);
-    await this.loadFiles.loadRequiredFiles(file);
-    const filesToLoad = file.filesToLoadForHotUpdate();
+    await this.loadFiles.run(files);
+    const filesToLoad = new Set(files.map((file) => [...file.filesToLoadForHotUpdate()]).flat());
     console.log(`Dash is loading ${filesToLoad.size} files...`);
-    await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => currFile !== file));
-    for (const file2 of filesToLoad) {
-      file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
+    await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));
+    for (const file of filesToLoad) {
+      file.data = (_a = await this.plugins.runTransformHooks(file)) != null ? _a : file.data;
     }
-    const filesToTransform = file.getHotUpdateChain();
+    const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
     console.log(`Dash is compiling ${filesToTransform.size} files...`);
     await this.fileTransformer.run(filesToTransform, true);
     await this.plugins.runBuildEndHooks();
     await this.saveDashFile();
     this.includedFiles.resetAll();
-    console.log(`Dash finished updating the file "${filePath}"!`);
+    console.log(`Dash finished updating ${filesToTransform.size} files!`);
   }
   async compileFile(filePath, fileData) {
     let file = this.includedFiles.get(filePath);
@@ -2826,7 +2863,7 @@ class Dash {
   }
   async rename(oldPath, newPath) {
     await this.unlink(oldPath, false);
-    await this.updateFile(newPath);
+    await this.updateFiles([newPath]);
     await this.saveDashFile();
   }
   async getCompilerOutputPath(filePath) {
@@ -2842,8 +2879,11 @@ class Dash {
   }
   async compileIncludedFiles() {
     await this.loadFiles.run(this.includedFiles.all());
+    this.progress.advance();
     const resolvedFileOrder = this.fileOrderResolver.run(this.includedFiles.all());
+    this.progress.advance();
     await this.fileTransformer.run(resolvedFileOrder);
+    this.progress.advance();
   }
   async compileVirtualFiles(filePaths) {
     this.includedFiles.add(filePaths, true);

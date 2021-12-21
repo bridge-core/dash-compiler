@@ -13,7 +13,7 @@ export class Command {
 
 	constructor(
 		protected commandSrc: string,
-		protected mode: 'dev' | 'build',
+		protected mode: 'development' | 'production',
 		protected v1Compat: boolean
 	) {}
 

@@ -1,1 +1,0 @@
-{"id":"lang","type":"text","icon":"mdi-web","detect":{"packType":["behaviorPack","skinPack"],"scope":"texts/","matcher":"texts/**/*.lang"},"formatOnSaveCapable":false}
