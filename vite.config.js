@@ -16,6 +16,7 @@ export default defineConfig({
 				'fs',
 				'bridge-common-utils',
 				'is-glob',
+				'typescript',
 			],
 		},
 	},

@@ -6,8 +6,8 @@ export declare class AllPlugins {
     protected plugins: Plugin[];
     constructor(dash: Dash<any>);
     loadPlugins(scriptEnv?: any): Promise<void>;
-    protected addBuiltInPlugins(): void;
-    protected getPluginContext(pluginId: string): {
+    getCompilerOptions(): Promise<any>;
+    protected getPluginContext(pluginId: string, pluginOpts?: any): Promise<{
         options: any;
         fileSystem: import("../main").FileSystem;
         outputFileSystem: import("../main").FileSystem;
@@ -20,9 +20,7 @@ export declare class AllPlugins {
         getAliases: (filePath: string) => string[];
         hasComMojangDirectory: boolean;
         compileFiles: (filePaths: string[]) => Promise<void>;
-    };
-    protected getPluginOptions(pluginId: string): any;
-    protected usesPlugin(pluginId: string): boolean | undefined;
+    }>;
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<string[]>;
     runTransformPathHooks(filePath: string): Promise<string | null>;

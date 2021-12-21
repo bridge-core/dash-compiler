@@ -60,6 +60,15 @@ export class DashFile {
 				.flat()
 		)
 	}
+	setUpdateFiles(files: string[]) {
+		this.updateFiles = new Set<DashFile>(
+			<DashFile[]>(
+				files
+					.map((filePath) => this.dash.includedFiles.get(filePath))
+					.filter((file) => file !== undefined)
+			)
+		)
+	}
 	addUpdateFile(file: DashFile) {
 		this.updateFiles.add(file)
 	}
@@ -147,4 +156,13 @@ export class DashFile {
 		this.data = null
 		if (!this.isVirtual) this.setDefaultFileHandle()
 	}
+}
+
+export interface ISerializedDashFile {
+	isVirtual: boolean
+	filePath: string
+	lastModified: number
+	aliases: string[]
+	requiredFiles: string[]
+	updateFiles: string[]
 }

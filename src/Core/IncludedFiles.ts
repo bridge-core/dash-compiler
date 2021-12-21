@@ -1,6 +1,6 @@
 import { isMatch } from 'bridge-common-utils'
 import type { Dash } from '../Dash'
-import { DashFile } from './DashFile'
+import { DashFile, ISerializedDashFile } from './DashFile'
 
 export class IncludedFiles {
 	protected files = new Map<string, DashFile>()
@@ -75,6 +75,31 @@ export class IncludedFiles {
 			filePath,
 			this.all().map((file) => file.serialize())
 		)
+	}
+	async load(filePath: string) {
+		const sFiles: ISerializedDashFile[] =
+			await this.dash.fileSystem.readJson(filePath)
+		const files: DashFile[] = []
+
+		for (const sFile of sFiles) {
+			const file = new DashFile(
+				this.dash,
+				sFile.filePath,
+				sFile.isVirtual
+			)
+
+			file.setAliases(new Set(sFile.aliases))
+			file.setRequiredFiles(new Set(sFile.requiredFiles))
+			files.push(file)
+		}
+
+		this.files = new Map(files.map((file) => [file.filePath, file]))
+
+		for (let i = 0; i < files.length; i++) {
+			const file = files[i]
+
+			file.setUpdateFiles(sFiles[i].updateFiles)
+		}
 	}
 
 	resetAll() {

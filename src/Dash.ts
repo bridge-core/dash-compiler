@@ -16,9 +16,17 @@ export interface IDashOptions<TSetupArg = void> {
 	 */
 	mode?: 'development' | 'production'
 	/**
-	 * A path that points to the config file for the current project
+	 * A path that points to the project config file
 	 */
 	config: string
+
+	/**
+	 * Dedicated compiler config file to use for the compilation
+	 * Optional; defaults to loading from the project config
+	 *
+	 * @example "projects/myProject/.bridge/compiler/mcaddon.json"
+	 */
+	compilerConfig?: string
 
 	/**
 	 * An environment for the plugins to execute in
@@ -63,6 +71,9 @@ export class Dash<TSetupArg = void> {
 	getMode() {
 		return this.options.mode ?? 'development'
 	}
+	getCompilerConfigPath() {
+		return this.options.compilerConfig
+	}
 	get requestJsonData() {
 		return this.options.requestJsonData
 	}
@@ -80,6 +91,10 @@ export class Dash<TSetupArg = void> {
 		await this.fileType?.setup(setupArg)
 		await this.packType?.setup(setupArg)
 
+		await this.plugins.loadPlugins(this.options.pluginEnvironment)
+	}
+
+	async reloadPlugins() {
 		await this.plugins.loadPlugins(this.options.pluginEnvironment)
 	}
 
@@ -114,6 +129,7 @@ export class Dash<TSetupArg = void> {
 
 		await this.saveDashFile()
 		this.includedFiles.resetAll()
+
 		this.progress.advance()
 
 		console.log(
@@ -129,6 +145,7 @@ export class Dash<TSetupArg = void> {
 		// Update files in output
 		console.log(`Dash is starting to update ${filePaths.length} files...`)
 
+		await this.includedFiles.load(this.dashFilePath)
 		await this.plugins.runBuildStartHooks()
 
 		const files: DashFile[] = []

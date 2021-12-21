@@ -10,6 +10,7 @@ import { Progress } from './Core/Progress';
 export interface IDashOptions<TSetupArg = void> {
     mode?: 'development' | 'production';
     config: string;
+    compilerConfig?: string;
     pluginEnvironment?: any;
     packType: PackType<TSetupArg>;
     fileType: FileType<TSetupArg>;
@@ -31,9 +32,11 @@ export declare class Dash<TSetupArg = void> {
     fileTransformer: FileTransformer;
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
+    getCompilerConfigPath(): string | undefined;
     get requestJsonData(): <T = any>(dataPath: string) => Promise<T>;
     protected get dashFilePath(): string;
     setup(setupArg: TSetupArg): Promise<void>;
+    reloadPlugins(): Promise<void>;
     get isCompilerActivated(): boolean;
     build(): Promise<void>;
     updateFiles(filePaths: string[]): Promise<void>;

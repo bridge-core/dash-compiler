@@ -1,7 +1,10 @@
 import { TCompilerPlugin } from './TCompilerPlugin'
 
 export class Plugin {
-	constructor(protected plugin: Partial<TCompilerPlugin>) {}
+	constructor(
+		public readonly pluginId: string,
+		protected plugin: Partial<TCompilerPlugin>
+	) {}
 
 	/**
 	 * Methods for running the various plugin hooks

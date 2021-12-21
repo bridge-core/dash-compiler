@@ -13,6 +13,7 @@ import {
 	CustomItemComponentPlugin,
 } from './BuiltIn/Components/Plugins'
 import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
+import { TypeScriptPlugin } from './BuiltIn/TypeScript'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -22,6 +23,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	customItemComponents: CustomItemComponentPlugin,
 	customBlockComponents: CustomBlockComponentPlugin,
 	customCommands: CustomCommandsPlugin,
+	typeScript: TypeScriptPlugin,
 }
 
 export class AllPlugins {
@@ -30,6 +32,8 @@ export class AllPlugins {
 	constructor(protected dash: Dash<any>) {}
 
 	async loadPlugins(scriptEnv: any = {}) {
+		this.plugins = []
+
 		// Loading all available extensions
 		const extensions = [
 			...(
@@ -78,40 +82,63 @@ export class AllPlugins {
 			}
 		}
 
-		// Execute plugins
-		for (const [pluginId, pluginPath] of Object.entries(plugins)) {
-			if (!this.usesPlugin(pluginId)) continue
+		const usedPlugins: (string | [string, any])[] =
+			(await this.getCompilerOptions()).plugins ?? []
+		for (const usedPlugin of usedPlugins) {
+			const pluginId =
+				typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
+			const pluginOpts =
+				typeof usedPlugin === 'string' ? {} : usedPlugin[1]
 
-			const pluginSrc = await this.dash.fileSystem
-				.readFile(pluginPath)
-				.then((file) => file.text())
+			if (plugins[pluginId]) {
+				const pluginSrc = await this.dash.fileSystem
+					.readFile(plugins[pluginId])
+					.then((file) => file.text())
 
-			const module: { exports?: TCompilerPluginFactory } = {}
-			await run({
-				async: true,
-				script: pluginSrc,
-				env: {
-					require: undefined,
-					module,
-					...scriptEnv,
-				},
-			})
+				const module: { exports?: TCompilerPluginFactory } = {}
+				await run({
+					async: true,
+					script: pluginSrc,
+					env: {
+						require: undefined,
+						module,
+						...scriptEnv,
+					},
+				})
 
-			if (typeof module.exports === 'function')
+				if (typeof module.exports === 'function')
+					this.plugins.push(
+						new Plugin(
+							pluginId,
+							module.exports(
+								await this.getPluginContext(
+									pluginId,
+									pluginOpts
+								)
+							)
+						)
+					)
+			} else if (builtInPlugins[pluginId]) {
 				this.plugins.push(
-					new Plugin(module.exports(this.getPluginContext(pluginId)))
+					new Plugin(
+						pluginId,
+						builtInPlugins[pluginId](
+							await this.getPluginContext(pluginId, pluginOpts)
+						)
+					)
 				)
+			} else {
+				console.error(`Unknown compiler plugin: ${pluginId}`)
+			}
 		}
-
-		this.addBuiltInPlugins()
 	}
 
-	protected addBuiltInPlugins() {
-		for (const [pluginId, plugin] of Object.entries(builtInPlugins)) {
-			this.plugins.push(
-				new Plugin(plugin(this.getPluginContext(pluginId)))
-			)
-		}
+	async getCompilerOptions(): Promise<any> {
+		const compilerConfigPath = await this.dash.getCompilerConfigPath()
+		if (!compilerConfigPath)
+			return this.dash.projectConfig.get().compiler ?? {}
+
+		return await this.dash.fileSystem.readJson(compilerConfigPath)
 	}
 
 	/**
@@ -119,11 +146,11 @@ export class AllPlugins {
 	 * @param pluginId The plugin ID to get the context for
 	 * @returns The plugin context
 	 */
-	protected getPluginContext(pluginId: string) {
+	protected async getPluginContext(pluginId: string, pluginOpts: any = {}) {
 		return {
 			options: {
 				mode: this.dash.getMode(),
-				...this.getPluginOptions(pluginId),
+				...pluginOpts,
 			},
 			fileSystem: this.dash.fileSystem,
 			outputFileSystem: this.dash.outputFileSystem,
@@ -144,28 +171,6 @@ export class AllPlugins {
 			compileFiles: (filePaths: string[]) =>
 				this.dash.compileVirtualFiles(filePaths),
 		}
-	}
-	/**
-	 * Get plugin options for a specific plugin from the project config
-	 * @param pluginId The plugin ID to get options for
-	 * @returns Plugin options
-	 */
-	protected getPluginOptions(pluginId: string) {
-		const entry = this.dash.projectConfig
-			.get()
-			.compiler?.plugins?.find((p) =>
-				typeof p === 'string' ? p === pluginId : p[0] === pluginId
-			)
-
-		if (entry) return typeof entry === 'string' ? {} : entry[1]
-		return {}
-	}
-	protected usesPlugin(pluginId: string) {
-		return this.dash.projectConfig
-			.get()
-			.compiler?.plugins?.some((p) =>
-				typeof p === 'string' ? p === pluginId : p[0] === pluginId
-			)
 	}
 
 	async runBuildStartHooks() {

@@ -1,7 +1,8 @@
 import { TCompilerPlugin } from './TCompilerPlugin';
 export declare class Plugin {
+    readonly pluginId: string;
     protected plugin: Partial<TCompilerPlugin>;
-    constructor(plugin: Partial<TCompilerPlugin>);
+    constructor(pluginId: string, plugin: Partial<TCompilerPlugin>);
     runBuildStartHook(): void | Promise<void> | undefined;
     runIncludeHook(): Maybe<string[]>;
     runTransformPathHook(filePath: string | null): Maybe<string>;

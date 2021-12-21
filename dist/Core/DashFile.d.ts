@@ -21,6 +21,7 @@ export declare class DashFile {
     setReadData(data: any): void;
     setAliases(aliases: Set<string>): void;
     setRequiredFiles(requiredFiles: Set<string>): void;
+    setUpdateFiles(files: string[]): void;
     addUpdateFile(file: DashFile): void;
     getHotUpdateChain(): Set<DashFile>;
     filesToLoadForHotUpdate(visited?: Set<DashFile>, didFileChange?: boolean): Set<DashFile>;
@@ -34,4 +35,12 @@ export declare class DashFile {
         updateFiles: string[];
     };
     reset(): void;
+}
+export interface ISerializedDashFile {
+    isVirtual: boolean;
+    filePath: string;
+    lastModified: number;
+    aliases: string[];
+    requiredFiles: string[];
+    updateFiles: string[];
 }

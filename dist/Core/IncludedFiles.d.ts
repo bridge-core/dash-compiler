@@ -15,5 +15,6 @@ export declare class IncludedFiles {
     add(filePaths: string[], isVirtual?: boolean): DashFile[];
     remove(filePath: string): void;
     save(filePath: string): Promise<void>;
+    load(filePath: string): Promise<void>;
     resetAll(): void;
 }

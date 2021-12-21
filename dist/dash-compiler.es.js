@@ -18,6 +18,7 @@ import { ProjectConfig } from "mc-project-core";
 import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMoLang, expressions, MoLang } from "molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
+import { transpile } from "typescript";
 import isGlob from "is-glob";
 class DashProjectConfig extends ProjectConfig {
   constructor(fileSystem, configPath) {
@@ -82,7 +83,8 @@ function transformScript(script) {
   });
 }
 class Plugin {
-  constructor(plugin) {
+  constructor(pluginId, plugin) {
+    this.pluginId = pluginId;
     this.plugin = plugin;
   }
   runBuildStartHook() {
@@ -2241,6 +2243,32 @@ const CustomCommandsPlugin = ({
     }
   };
 };
+const TypeScriptPlugin = ({ options }) => ({
+  async transformPath(filePath) {
+    if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
+      return;
+    return `${filePath.slice(0, -3)}.js`;
+  },
+  async read(filePath, fileHandle) {
+    if (!filePath.endsWith(".ts") || !fileHandle)
+      return;
+    const file = await fileHandle.getFile();
+    return await file.text();
+  },
+  load(filePath, fileContent) {
+    if (!filePath.endsWith(".ts"))
+      return;
+    return transpile(fileContent, {
+      target: 99,
+      isolatedModules: true,
+      inlineSourceMap: options == null ? void 0 : options.inlineSourceMap
+    });
+  },
+  finalizeBuild(filePath, fileContent) {
+    if (filePath.endsWith(".ts") && typeof fileContent === "string")
+      return fileContent;
+  }
+});
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   moLang: MoLangPlugin,
@@ -2248,7 +2276,8 @@ const builtInPlugins = {
   customEntityComponents: CustomEntityComponentPlugin,
   customItemComponents: CustomItemComponentPlugin,
   customBlockComponents: CustomBlockComponentPlugin,
-  customCommands: CustomCommandsPlugin
+  customCommands: CustomCommandsPlugin,
+  typeScript: TypeScriptPlugin
 };
 class AllPlugins {
   constructor(dash) {
@@ -2256,7 +2285,8 @@ class AllPlugins {
     this.plugins = [];
   }
   async loadPlugins(scriptEnv = {}) {
-    var _a;
+    var _a, _b;
+    this.plugins = [];
     const extensions = [
       ...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, ".bridge/extensions")).catch(() => [])).map((entry) => entry.kind === "directory" ? join(this.dash.projectRoot, ".bridge/extensions", entry.name) : void 0),
       ...(await this.dash.fileSystem.readdir("extensions").catch(() => [])).map((entry) => entry.kind === "directory" ? join("extensions", entry.name) : void 0)
@@ -2277,34 +2307,42 @@ class AllPlugins {
         plugins[pluginId] = join(extension, manifest.compiler.plugins[pluginId]);
       }
     }
-    for (const [pluginId, pluginPath] of Object.entries(plugins)) {
-      if (!this.usesPlugin(pluginId))
-        continue;
-      const pluginSrc = await this.dash.fileSystem.readFile(pluginPath).then((file) => file.text());
-      const module = {};
-      await run({
-        async: true,
-        script: pluginSrc,
-        env: __spreadValues({
-          require: void 0,
-          module
-        }, scriptEnv)
-      });
-      if (typeof module.exports === "function")
-        this.plugins.push(new Plugin(module.exports(this.getPluginContext(pluginId))));
+    const usedPlugins = (_b = (await this.getCompilerOptions()).plugins) != null ? _b : [];
+    for (const usedPlugin of usedPlugins) {
+      const pluginId = typeof usedPlugin === "string" ? usedPlugin : usedPlugin[0];
+      const pluginOpts = typeof usedPlugin === "string" ? {} : usedPlugin[1];
+      if (plugins[pluginId]) {
+        const pluginSrc = await this.dash.fileSystem.readFile(plugins[pluginId]).then((file) => file.text());
+        const module = {};
+        await run({
+          async: true,
+          script: pluginSrc,
+          env: __spreadValues({
+            require: void 0,
+            module
+          }, scriptEnv)
+        });
+        if (typeof module.exports === "function")
+          this.plugins.push(new Plugin(pluginId, module.exports(await this.getPluginContext(pluginId, pluginOpts))));
+      } else if (builtInPlugins[pluginId]) {
+        this.plugins.push(new Plugin(pluginId, builtInPlugins[pluginId](await this.getPluginContext(pluginId, pluginOpts))));
+      } else {
+        console.error(`Unknown compiler plugin: ${pluginId}`);
+      }
     }
-    this.addBuiltInPlugins();
   }
-  addBuiltInPlugins() {
-    for (const [pluginId, plugin] of Object.entries(builtInPlugins)) {
-      this.plugins.push(new Plugin(plugin(this.getPluginContext(pluginId))));
-    }
+  async getCompilerOptions() {
+    var _a;
+    const compilerConfigPath = await this.dash.getCompilerConfigPath();
+    if (!compilerConfigPath)
+      return (_a = this.dash.projectConfig.get().compiler) != null ? _a : {};
+    return await this.dash.fileSystem.readJson(compilerConfigPath);
   }
-  getPluginContext(pluginId) {
+  async getPluginContext(pluginId, pluginOpts = {}) {
     return {
       options: __spreadValues({
         mode: this.dash.getMode()
-      }, this.getPluginOptions(pluginId)),
+      }, pluginOpts),
       fileSystem: this.dash.fileSystem,
       outputFileSystem: this.dash.outputFileSystem,
       projectConfig: this.dash.projectConfig,
@@ -2322,17 +2360,6 @@ class AllPlugins {
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
       compileFiles: (filePaths) => this.dash.compileVirtualFiles(filePaths)
     };
-  }
-  getPluginOptions(pluginId) {
-    var _a, _b;
-    const entry = (_b = (_a = this.dash.projectConfig.get().compiler) == null ? void 0 : _a.plugins) == null ? void 0 : _b.find((p) => typeof p === "string" ? p === pluginId : p[0] === pluginId);
-    if (entry)
-      return typeof entry === "string" ? {} : entry[1];
-    return {};
-  }
-  usesPlugin(pluginId) {
-    var _a, _b;
-    return (_b = (_a = this.dash.projectConfig.get().compiler) == null ? void 0 : _a.plugins) == null ? void 0 : _b.some((p) => typeof p === "string" ? p === pluginId : p[0] === pluginId);
   }
   async runBuildStartHooks() {
     for (const plugin of this.plugins) {
@@ -2472,6 +2499,9 @@ class DashFile {
       return filePath;
     }).flat());
   }
+  setUpdateFiles(files) {
+    this.updateFiles = new Set(files.map((filePath) => this.dash.includedFiles.get(filePath)).filter((file) => file !== void 0));
+  }
   addUpdateFile(file) {
     this.updateFiles.add(file);
   }
@@ -2598,6 +2628,21 @@ class IncludedFiles {
   }
   async save(filePath) {
     this.dash.fileSystem.writeJson(filePath, this.all().map((file) => file.serialize()));
+  }
+  async load(filePath) {
+    const sFiles = await this.dash.fileSystem.readJson(filePath);
+    const files = [];
+    for (const sFile of sFiles) {
+      const file = new DashFile(this.dash, sFile.filePath, sFile.isVirtual);
+      file.setAliases(new Set(sFile.aliases));
+      file.setRequiredFiles(new Set(sFile.requiredFiles));
+      files.push(file);
+    }
+    this.files = new Map(files.map((file) => [file.filePath, file]));
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      file.setUpdateFiles(sFiles[i].updateFiles);
+    }
   }
   resetAll() {
     for (const file of this.all()) {
@@ -2759,6 +2804,9 @@ class Dash {
     var _a;
     return (_a = this.options.mode) != null ? _a : "development";
   }
+  getCompilerConfigPath() {
+    return this.options.compilerConfig;
+  }
   get requestJsonData() {
     return this.options.requestJsonData;
   }
@@ -2772,6 +2820,9 @@ class Dash {
     (_b = this.packType) == null ? void 0 : _b.setProjectConfig(this.projectConfig);
     await ((_c = this.fileType) == null ? void 0 : _c.setup(setupArg));
     await ((_d = this.packType) == null ? void 0 : _d.setup(setupArg));
+    await this.plugins.loadPlugins(this.options.pluginEnvironment);
+  }
+  async reloadPlugins() {
     await this.plugins.loadPlugins(this.options.pluginEnvironment);
   }
   get isCompilerActivated() {
@@ -2799,6 +2850,7 @@ class Dash {
   async updateFiles(filePaths) {
     var _a;
     console.log(`Dash is starting to update ${filePaths.length} files...`);
+    await this.includedFiles.load(this.dashFilePath);
     await this.plugins.runBuildStartHooks();
     const files = [];
     for (const filePath of filePaths) {
