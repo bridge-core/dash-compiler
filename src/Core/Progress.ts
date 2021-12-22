@@ -18,6 +18,7 @@ export class Progress {
 
 	setTotal(total: number) {
 		this.total = total
+		this.current = 0
 		this.onChangeCbs.forEach((cb) => cb(this))
 	}
 	updateCurrent(current: number) {

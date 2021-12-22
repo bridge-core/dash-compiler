@@ -2800,6 +2800,7 @@ class Progress {
   }
   setTotal(total) {
     this.total = total;
+    this.current = 0;
     this.onChangeCbs.forEach((cb) => cb(this));
   }
   updateCurrent(current) {
