@@ -1691,7 +1691,7 @@ class Component {
     return __spreadValues({
       [animFileName]: this.createAnimations(fileName, fileContent),
       [animControllerFileName]: this.createAnimationControllers(fileName, fileContent),
-      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes[fileName].length > 0 ? JSON.stringify({
+      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? JSON.stringify({
         format_version: this.targetVersion,
         "minecraft:npc_dialogue": {
           scenes: this.dialogueScenes[fileName]

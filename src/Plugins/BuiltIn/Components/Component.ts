@@ -313,6 +313,7 @@ export class Component {
 				fileContent
 			),
 			[`${bpRoot}/dialogue/bridge/${fileName}.json`]:
+				this.dialogueScenes[fileName] &&
 				this.dialogueScenes[fileName].length > 0
 					? JSON.stringify(
 							{
