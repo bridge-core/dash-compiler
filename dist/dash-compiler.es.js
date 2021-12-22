@@ -1620,7 +1620,9 @@ class Component {
         animationController,
         animation,
         dialogueScene: !this.targetVersion || compare(this.targetVersion, "1.17.10", ">=") ? (scene, openDialogue = true) => {
-          this.dialogueScenes[fileName] = scene;
+          if (!this.dialogueScenes[fileName])
+            this.dialogueScenes[fileName] = [];
+          this.dialogueScenes[fileName].push(scene);
           if (scene.scene_tag && openDialogue)
             onActivated({
               run_command: {

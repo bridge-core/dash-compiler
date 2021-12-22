@@ -217,7 +217,9 @@ export class Component {
 					!this.targetVersion ||
 					compare(this.targetVersion, '1.17.10', '>=')
 						? (scene: any, openDialogue = true) => {
-								this.dialogueScenes[fileName] = scene
+								if (!this.dialogueScenes[fileName])
+									this.dialogueScenes[fileName] = []
+								this.dialogueScenes[fileName].push(scene)
 
 								if (scene.scene_tag && openDialogue)
 									onActivated({
