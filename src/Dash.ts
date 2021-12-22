@@ -114,6 +114,8 @@ export class Dash<TSetupArg = void> {
 		console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
 
+		this.includedFiles.removeAll()
+
 		const startTime = Date.now()
 		this.progress.setTotal(7)
 
@@ -128,7 +130,7 @@ export class Dash<TSetupArg = void> {
 		await this.plugins.runBuildEndHooks()
 		this.progress.advance()
 
-		await this.saveDashFile()
+		if (this.getMode() === 'development') await this.saveDashFile()
 		this.includedFiles.resetAll()
 
 		this.progress.advance()

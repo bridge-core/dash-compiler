@@ -13,9 +13,13 @@ export class Component {
 	protected animations: [any, string | false | undefined][] = []
 	protected animationControllers: [any, string | false | undefined][] = []
 	protected createOnPlayer: [string, any, any][] = []
-	protected dialogueScenes: any[] = []
+	protected dialogueScenes: Record<string, any[]> = {}
 	protected clientFiles: Record<string, any> = {}
 	protected projectConfig?: ProjectConfig
+	protected lifecycleHookCount = {
+		activated: 0,
+		deactivated: 0,
+	}
 
 	constructor(
 		protected fileType: string,
@@ -213,7 +217,7 @@ export class Component {
 					!this.targetVersion ||
 					compare(this.targetVersion, '1.17.10', '>=')
 						? (scene: any, openDialogue = true) => {
-								this.dialogueScenes.push(scene)
+								this.dialogueScenes[fileName] = scene
 
 								if (scene.scene_tag && openDialogue)
 									onActivated({
@@ -309,12 +313,12 @@ export class Component {
 				fileContent
 			),
 			[`${bpRoot}/dialogue/bridge/${fileName}.json`]:
-				this.dialogueScenes.length > 0
+				this.dialogueScenes[fileName].length > 0
 					? JSON.stringify(
 							{
 								format_version: this.targetVersion,
 								'minecraft:npc_dialogue': {
-									scenes: this.dialogueScenes,
+									scenes: this.dialogueScenes[fileName],
 								},
 							},
 							null,
@@ -502,7 +506,11 @@ export class Component {
 				)
 
 			const permutation = this.getObjAtLocation(fileContent, [...keys])
-			const eventName = `bridge:${permutationEventName}_${type}`
+			const eventName = `bridge:${permutationEventName}_${type}_${
+				type === 'activated'
+					? this.lifecycleHookCount.activated++
+					: this.lifecycleHookCount.deactivated++
+			}`
 
 			if (permutation.condition)
 				this.animationControllers.push([

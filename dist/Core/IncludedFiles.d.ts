@@ -18,4 +18,5 @@ export declare class IncludedFiles {
     save(filePath: string): Promise<void>;
     load(filePath: string): Promise<void>;
     resetAll(): void;
+    removeAll(): void;
 }

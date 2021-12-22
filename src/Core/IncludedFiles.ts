@@ -122,4 +122,9 @@ export class IncludedFiles {
 			if (file.isVirtual) this.remove(file.filePath)
 		}
 	}
+	removeAll() {
+		this.files = new Map()
+		this.aliases = new Map()
+		this.queryCache = new Map()
+	}
 }

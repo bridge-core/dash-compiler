@@ -33,13 +33,17 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 		async buildStart() {
 			if (options.mode === 'production' || options.restartDevServer) {
 				if (hasComMojangDirectory) {
-					// TODO
-					// for (const pack in folders) {
-					// 	await outputFileSystem
-					// 		.unlink(pathPrefixWithPack(pack))
-					// 		.catch(() => {})
-					// 	await outputFileSystem.mkdir(pathPrefixWithPack(pack))
-					// }
+					for (const packId in folders) {
+						const pack = packType.getFromId(<any>packId)
+						if (!pack) continue
+
+						await outputFileSystem
+							.unlink(
+								// @ts-ignore
+								pathPrefixWithPack(packId, pack.defaultPackPath)
+							)
+							.catch(() => {})
+					}
 				} else {
 					//Using "BP" is fine here because the path doesn't change based on the pack without a com.mojang folder
 					await outputFileSystem

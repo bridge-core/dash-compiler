@@ -154,9 +154,15 @@ const SimpleRewrite = ({
   return {
     async buildStart() {
       if (options.mode === "production" || options.restartDevServer) {
-        if (hasComMojangDirectory)
-          ;
-        else {
+        if (hasComMojangDirectory) {
+          for (const packId in folders) {
+            const pack = packType.getFromId(packId);
+            if (!pack)
+              continue;
+            await outputFileSystem.unlink(pathPrefixWithPack(packId, pack.defaultPackPath)).catch(() => {
+            });
+          }
+        } else {
           await outputFileSystem.unlink(pathPrefix("BP")).catch(() => {
           });
         }
@@ -1493,8 +1499,12 @@ class Component {
     this.animations = [];
     this.animationControllers = [];
     this.createOnPlayer = [];
-    this.dialogueScenes = [];
+    this.dialogueScenes = {};
     this.clientFiles = {};
+    this.lifecycleHookCount = {
+      activated: 0,
+      deactivated: 0
+    };
   }
   setProjectConfig(projectConfig) {
     this.projectConfig = projectConfig;
@@ -1610,7 +1620,7 @@ class Component {
         animationController,
         animation,
         dialogueScene: !this.targetVersion || compare(this.targetVersion, "1.17.10", ">=") ? (scene, openDialogue = true) => {
-          this.dialogueScenes.push(scene);
+          this.dialogueScenes[fileName] = scene;
           if (scene.scene_tag && openDialogue)
             onActivated({
               run_command: {
@@ -1681,10 +1691,10 @@ class Component {
     return __spreadValues({
       [animFileName]: this.createAnimations(fileName, fileContent),
       [animControllerFileName]: this.createAnimationControllers(fileName, fileContent),
-      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes.length > 0 ? JSON.stringify({
+      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes[fileName].length > 0 ? JSON.stringify({
         format_version: this.targetVersion,
         "minecraft:npc_dialogue": {
-          scenes: this.dialogueScenes
+          scenes: this.dialogueScenes[fileName]
         }
       }, null, "	") : void 0
     }, Object.fromEntries(Object.entries(this.clientFiles).map(([filePath, jsonContent]) => [
@@ -1779,7 +1789,7 @@ class Component {
       if (keys.pop() !== "components")
         throw new Error("Invalid component location inside of permutation");
       const permutation = this.getObjAtLocation(fileContent, [...keys]);
-      const eventName = `bridge:${permutationEventName}_${type}`;
+      const eventName = `bridge:${permutationEventName}_${type}_${type === "activated" ? this.lifecycleHookCount.activated++ : this.lifecycleHookCount.deactivated++}`;
       if (permutation.condition)
         this.animationControllers.push([
           {
@@ -2658,6 +2668,11 @@ class IncludedFiles {
         this.remove(file.filePath);
     }
   }
+  removeAll() {
+    this.files = new Map();
+    this.aliases = new Map();
+    this.queryCache = new Map();
+  }
 }
 class LoadFiles {
   constructor(dash) {
@@ -2847,6 +2862,7 @@ class Dash {
     console.log("Starting compilation...");
     if (!this.isCompilerActivated)
       return;
+    this.includedFiles.removeAll();
     const startTime = Date.now();
     this.progress.setTotal(7);
     await this.plugins.runBuildStartHooks();
@@ -2856,7 +2872,8 @@ class Dash {
     await this.compileIncludedFiles();
     await this.plugins.runBuildEndHooks();
     this.progress.advance();
-    await this.saveDashFile();
+    if (this.getMode() === "development")
+      await this.saveDashFile();
     this.includedFiles.resetAll();
     this.progress.advance();
     console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);

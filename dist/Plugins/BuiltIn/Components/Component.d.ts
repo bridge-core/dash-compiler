@@ -12,9 +12,13 @@ export declare class Component {
     protected animations: [any, string | false | undefined][];
     protected animationControllers: [any, string | false | undefined][];
     protected createOnPlayer: [string, any, any][];
-    protected dialogueScenes: any[];
+    protected dialogueScenes: Record<string, any[]>;
     protected clientFiles: Record<string, any>;
     protected projectConfig?: ProjectConfig;
+    protected lifecycleHookCount: {
+        activated: number;
+        deactivated: number;
+    };
     constructor(fileType: string, componentSrc: string, mode: 'production' | 'development', v1Compat: boolean, targetVersion?: string | undefined);
     setProjectConfig(projectConfig: ProjectConfig): void;
     get name(): string | undefined;
