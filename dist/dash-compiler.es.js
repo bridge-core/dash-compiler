@@ -2122,7 +2122,7 @@ class Command {
       compilerMode: this.mode,
       commandNestingDepth: nestingDepth,
       compileCommands: (customCommands) => {
-        return transformCommands(customCommands, dependencies, false, nestingDepth + 1).map((command2) => command2.startsWith("/") ? command2.slice(1) : command2);
+        return transformCommands(customCommands.map((command2) => command2.startsWith("/") ? command2 : `/${command2}`), dependencies, false, nestingDepth + 1).map((command2) => command2.startsWith("/") ? command2.slice(1) : command2);
       }
     });
     let processedCommands = [];
@@ -2886,6 +2886,8 @@ class Dash {
     console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));
     for (const file of filesToLoad) {
+      if (file.isDone)
+        continue;
       file.data = (_a = await this.plugins.runTransformHooks(file)) != null ? _a : file.data;
     }
     const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
@@ -2903,16 +2905,18 @@ class Dash {
       [file] = this.includedFiles.add([filePath]);
     }
     file.setFileHandle({
-      getFile: () => new File([fileData], basename(filePath))
+      getFile: async () => new File([fileData], basename(filePath))
     });
     await this.loadFiles.loadFile(file);
     await this.loadFiles.loadRequiredFiles(file);
     const filesToLoad = file.filesToLoadForHotUpdate();
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => file !== currFile), false);
     for (const file2 of filesToLoad) {
+      if (file2.isDone)
+        continue;
       file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
     }
-    const transformedData = await this.fileTransformer.transformFile(file, true);
+    const transformedData = await this.fileTransformer.transformFile(file, true, true);
     this.includedFiles.resetAll();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }

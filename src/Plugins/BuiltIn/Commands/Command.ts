@@ -81,7 +81,9 @@ export class Command {
 				commandNestingDepth: nestingDepth,
 				compileCommands: (customCommands: string[]) => {
 					return transformCommands(
-						customCommands,
+						customCommands.map((command) =>
+							command.startsWith('/') ? command : `/${command}`
+						),
 						dependencies,
 						false,
 						nestingDepth + 1

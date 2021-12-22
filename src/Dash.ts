@@ -201,6 +201,8 @@ export class Dash<TSetupArg = void> {
 		)
 
 		for (const file of filesToLoad) {
+			if (file.isDone) continue
+
 			file.data =
 				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
@@ -230,7 +232,7 @@ export class Dash<TSetupArg = void> {
 
 		// Update file handle to use provided fileData
 		file.setFileHandle({
-			getFile: () => new File([fileData], basename(filePath)),
+			getFile: async () => new File([fileData], basename(filePath)),
 		})
 
 		// Load files and files that are required by this file
@@ -247,6 +249,8 @@ export class Dash<TSetupArg = void> {
 
 		// Transform all file dependencies
 		for (const file of filesToLoad) {
+			if (file.isDone) continue
+
 			file.data =
 				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
@@ -254,6 +258,7 @@ export class Dash<TSetupArg = void> {
 		// Transform original file data
 		const transformedData = await this.fileTransformer.transformFile(
 			file,
+			true,
 			true
 		)
 
