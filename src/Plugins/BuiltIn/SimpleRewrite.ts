@@ -31,7 +31,7 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 
 	return {
 		async buildStart() {
-			if (options.mode === 'production' || options.restartDevServer) {
+			if (options.mode === 'production' || options.isFullBuild) {
 				if (hasComMojangDirectory) {
 					for (const packId in folders) {
 						const pack = packType.getFromId(<any>packId)

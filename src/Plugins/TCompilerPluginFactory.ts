@@ -8,7 +8,7 @@ export type TCompilerPluginFactory<
 		mode: 'development' | 'production'
 		// TODO: Remove or deprecate
 		// isFileRequest: boolean
-		// restartDevServer: boolean
+		isFullBuild: boolean
 		[key: string]: any
 	}
 > = (context: {

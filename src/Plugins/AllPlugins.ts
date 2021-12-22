@@ -150,6 +150,7 @@ export class AllPlugins {
 		return {
 			options: {
 				mode: this.dash.getMode(),
+				isFullBuild: this.dash.isFullBuild,
 				...pluginOpts,
 			},
 			fileSystem: this.dash.fileSystem,
@@ -164,7 +165,7 @@ export class AllPlugins {
 				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
 			],
 			/**
-			 * TODO: Deprecated in favor of a broader API that is not specific to Minecraft Bedrock
+			 * TODO: Deprecate in favor of a broader API that is not specific to Minecraft Bedrock
 			 */
 			hasComMojangDirectory:
 				this.dash.fileSystem !== this.dash.outputFileSystem,

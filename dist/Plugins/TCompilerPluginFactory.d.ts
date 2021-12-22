@@ -4,6 +4,7 @@ import { DashProjectConfig } from '../DashProjectConfig';
 import { FileType, PackType } from 'mc-project-core';
 export declare type TCompilerPluginFactory<T = {
     mode: 'development' | 'production';
+    isFullBuild: boolean;
     [key: string]: any;
 }> = (context: {
     options: T;

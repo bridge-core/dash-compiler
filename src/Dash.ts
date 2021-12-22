@@ -52,6 +52,7 @@ export class Dash<TSetupArg = void> {
 	public loadFiles: LoadFiles = new LoadFiles(this)
 	public fileOrderResolver: ResolveFileOrder = new ResolveFileOrder(this)
 	public fileTransformer: FileTransformer = new FileTransformer(this)
+	public isFullBuild = false
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -114,6 +115,7 @@ export class Dash<TSetupArg = void> {
 		console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
 
+		this.isFullBuild = true
 		this.includedFiles.removeAll()
 
 		const startTime = Date.now()
@@ -145,6 +147,9 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async updateFiles(filePaths: string[]) {
+		this.isFullBuild = false
+		if (!this.isCompilerActivated) return
+
 		// Update files in output
 		console.log(`Dash is starting to update ${filePaths.length} files...`)
 
@@ -227,6 +232,9 @@ export class Dash<TSetupArg = void> {
 		filePath: string,
 		fileData: Uint8Array
 	): Promise<[string[], any]> {
+		this.isFullBuild = false
+		if (!this.isCompilerActivated) return [[], fileData]
+
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
 			;[file] = this.includedFiles.add([filePath])
@@ -271,6 +279,8 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async unlink(path: string, updateDashFile = true) {
+		if (!this.isCompilerActivated) return
+
 		const outputPath = await this.plugins.runTransformPathHooks(path)
 		if (!outputPath) return
 
@@ -281,12 +291,16 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async rename(oldPath: string, newPath: string) {
+		if (!this.isCompilerActivated) return
+
 		await this.unlink(oldPath, false)
 		await this.updateFiles([newPath])
 
 		await this.saveDashFile()
 	}
 	async getCompilerOutputPath(filePath: string) {
+		if (!this.isCompilerActivated) return
+
 		const outputPath = await this.plugins.runTransformPathHooks(filePath)
 		if (!outputPath) return
 

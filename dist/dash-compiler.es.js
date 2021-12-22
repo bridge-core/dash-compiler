@@ -153,7 +153,7 @@ const SimpleRewrite = ({
   const pathPrefixWithPack = (pack, suffix) => `${pathPrefix(pack)}/${options.packName} ${suffix}`;
   return {
     async buildStart() {
-      if (options.mode === "production" || options.restartDevServer) {
+      if (options.mode === "production" || options.isFullBuild) {
         if (hasComMojangDirectory) {
           for (const packId in folders) {
             const pack = packType.getFromId(packId);
@@ -2353,7 +2353,8 @@ class AllPlugins {
   async getPluginContext(pluginId, pluginOpts = {}) {
     return {
       options: __spreadValues({
-        mode: this.dash.getMode()
+        mode: this.dash.getMode(),
+        isFullBuild: this.dash.isFullBuild
       }, pluginOpts),
       fileSystem: this.dash.fileSystem,
       outputFileSystem: this.dash.outputFileSystem,
@@ -2822,6 +2823,7 @@ class Dash {
     this.loadFiles = new LoadFiles(this);
     this.fileOrderResolver = new ResolveFileOrder(this);
     this.fileTransformer = new FileTransformer(this);
+    this.isFullBuild = false;
     this.outputFileSystem = outputFileSystem != null ? outputFileSystem : fileSystem;
     this.projectRoot = dirname(options.config);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
@@ -2862,6 +2864,7 @@ class Dash {
     console.log("Starting compilation...");
     if (!this.isCompilerActivated)
       return;
+    this.isFullBuild = true;
     this.includedFiles.removeAll();
     const startTime = Date.now();
     this.progress.setTotal(7);
@@ -2880,6 +2883,9 @@ class Dash {
   }
   async updateFiles(filePaths) {
     var _a;
+    this.isFullBuild = false;
+    if (!this.isCompilerActivated)
+      return;
     console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
     await this.plugins.runBuildStartHooks();
@@ -2921,6 +2927,9 @@ class Dash {
   }
   async compileFile(filePath, fileData) {
     var _a;
+    this.isFullBuild = false;
+    if (!this.isCompilerActivated)
+      return [[], fileData];
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);
@@ -2942,6 +2951,8 @@ class Dash {
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlink(path, updateDashFile = true) {
+    if (!this.isCompilerActivated)
+      return;
     const outputPath = await this.plugins.runTransformPathHooks(path);
     if (!outputPath)
       return;
@@ -2951,11 +2962,15 @@ class Dash {
       await this.saveDashFile();
   }
   async rename(oldPath, newPath) {
+    if (!this.isCompilerActivated)
+      return;
     await this.unlink(oldPath, false);
     await this.updateFiles([newPath]);
     await this.saveDashFile();
   }
   async getCompilerOutputPath(filePath) {
+    if (!this.isCompilerActivated)
+      return;
     const outputPath = await this.plugins.runTransformPathHooks(filePath);
     if (!outputPath)
       return;
