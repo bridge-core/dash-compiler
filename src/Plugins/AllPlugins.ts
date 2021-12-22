@@ -253,10 +253,10 @@ export class AllPlugins {
 	}
 	async runTransformHooks(file: DashFile) {
 		const dependencies = Object.fromEntries(
-			[...file.requiredFiles].map((fileId) => [
-				fileId,
-				this.dash.includedFiles.get(fileId)?.data ?? null,
-			])
+			[...file.requiredFiles]
+				.map((query) => this.dash.includedFiles.query(query))
+				.flat()
+				.map((file) => [file.filePath, file.data])
 		)
 
 		let transformedData = file.data

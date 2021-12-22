@@ -208,21 +208,18 @@ export class Dash<TSetupArg = void> {
 		await this.loadFiles.loadFile(file)
 		await this.loadFiles.loadRequiredFiles(file)
 
-		// Resolve all file dependencies
-		const requiredFiles = new Set<DashFile>()
-		this.fileOrderResolver.resolveSingle(file, requiredFiles)
-
+		// Get files we need to load to transform this file
+		const filesToLoad = file.filesToLoadForHotUpdate()
 		// Load all file dependencies
-		for (const depFile of requiredFiles) {
-			if (depFile === file) continue
+		await this.loadFiles.run(
+			[...filesToLoad.values()].filter((currFile) => file !== currFile),
+			false
+		)
 
-			await this.loadFiles.loadFile(depFile)
-		}
-
-		// Run transform hook on file dependencies
-		for (const depFile of requiredFiles) {
-			if (depFile === file) continue
-			await this.fileTransformer.transformFile(depFile)
+		// Transform all file dependencies
+		for (const file of filesToLoad) {
+			file.data =
+				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
 
 		// Transform original file data
@@ -234,10 +231,7 @@ export class Dash<TSetupArg = void> {
 		// Reset includedFiles data
 		this.includedFiles.resetAll()
 
-		return [
-			[...requiredFiles].map((file) => file.filePath),
-			transformedData,
-		]
+		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}
 
 	async unlink(path: string, updateDashFile = true) {

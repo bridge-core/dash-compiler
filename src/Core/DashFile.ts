@@ -48,17 +48,7 @@ export class DashFile {
 		this.aliases = aliases
 	}
 	setRequiredFiles(requiredFiles: Set<string>) {
-		this.requiredFiles = new Set<string>(
-			[...requiredFiles]
-				.map((filePath) => {
-					if (isGlob(filePath))
-						return this.dash.includedFiles
-							.queryGlob(filePath)
-							.map((file) => file.filePath)
-					return filePath
-				})
-				.flat()
-		)
+		this.requiredFiles = requiredFiles
 	}
 	setUpdateFiles(files: string[]) {
 		this.updateFiles = new Set<DashFile>(
@@ -94,9 +84,9 @@ export class DashFile {
 		visited.add(this)
 
 		for (const depFileId of this.requiredFiles) {
-			const depFile = this.dash.includedFiles.get(depFileId)
+			const depFiles = this.dash.includedFiles.query(depFileId)
 
-			if (depFile) {
+			for (const depFile of depFiles) {
 				depFile
 					.filesToLoadForHotUpdate(visited, false)
 					.forEach((file) => {

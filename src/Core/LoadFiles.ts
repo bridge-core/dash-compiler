@@ -4,13 +4,13 @@ import { DashFile } from './DashFile'
 export class LoadFiles {
 	constructor(protected dash: Dash<any>) {}
 
-	async run(files: DashFile[]) {
+	async run(files: DashFile[], writeFiles = true) {
 		for (const file of files) {
 			// Only iterate over files that need further processing
 			// (Ignore files which only needed to be copied over)
 			if (file.isDone) continue
 
-			await this.loadFile(file, true)
+			await this.loadFile(file, writeFiles)
 		}
 
 		for (const file of files) {
@@ -20,7 +20,7 @@ export class LoadFiles {
 		}
 	}
 
-	async loadFile(file: DashFile, writeFiles = false) {
+	async loadFile(file: DashFile, writeFiles = true) {
 		const [outputPath, readData] = await Promise.all([
 			this.dash.plugins.runTransformPathHooks(file.filePath),
 			this.dash.plugins.runReadHooks(file.filePath, file.fileHandle),

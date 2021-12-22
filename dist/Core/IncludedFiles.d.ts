@@ -9,6 +9,7 @@ export declare class IncludedFiles {
     all(): DashFile[];
     filtered(cb: (file: DashFile) => boolean): DashFile[];
     get(fileId: string): DashFile | undefined;
+    query(query: string): DashFile[];
     addAlias(alias: string, DashFile: DashFile): void;
     queryGlob(glob: string): DashFile[];
     loadAll(): Promise<void>;

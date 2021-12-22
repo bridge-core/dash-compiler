@@ -1,4 +1,5 @@
 import { isMatch } from 'bridge-common-utils'
+import isGlob from 'is-glob'
 import type { Dash } from '../Dash'
 import { DashFile, ISerializedDashFile } from './DashFile'
 
@@ -17,6 +18,17 @@ export class IncludedFiles {
 	}
 	get(fileId: string) {
 		return this.aliases.get(fileId) ?? this.files.get(fileId)
+	}
+	query(query: string) {
+		if (isGlob(query)) return this.queryGlob(query)
+
+		const aliasedFile = this.aliases.get(query)
+		if (aliasedFile) return [aliasedFile]
+
+		const file = this.files.get(query)
+		if (file) return [file]
+
+		return []
 	}
 	addAlias(alias: string, DashFile: DashFile) {
 		this.aliases.set(alias, DashFile)

@@ -2430,13 +2430,7 @@ class AllPlugins {
     return requiredFiles;
   }
   async runTransformHooks(file) {
-    const dependencies = Object.fromEntries([...file.requiredFiles].map((fileId) => {
-      var _a, _b;
-      return [
-        fileId,
-        (_b = (_a = this.dash.includedFiles.get(fileId)) == null ? void 0 : _a.data) != null ? _b : null
-      ];
-    }));
+    const dependencies = Object.fromEntries([...file.requiredFiles].map((query) => this.dash.includedFiles.query(query)).flat().map((file2) => [file2.filePath, file2.data]));
     let transformedData = file.data;
     for (const plugin of this.plugins) {
       const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
@@ -2493,11 +2487,7 @@ class DashFile {
     this.aliases = aliases;
   }
   setRequiredFiles(requiredFiles) {
-    this.requiredFiles = new Set([...requiredFiles].map((filePath) => {
-      if (isGlob(filePath))
-        return this.dash.includedFiles.queryGlob(filePath).map((file) => file.filePath);
-      return filePath;
-    }).flat());
+    this.requiredFiles = requiredFiles;
   }
   setUpdateFiles(files) {
     this.updateFiles = new Set(files.map((filePath) => this.dash.includedFiles.get(filePath)).filter((file) => file !== void 0));
@@ -2521,8 +2511,8 @@ class DashFile {
       return chain;
     visited.add(this);
     for (const depFileId of this.requiredFiles) {
-      const depFile = this.dash.includedFiles.get(depFileId);
-      if (depFile) {
+      const depFiles = this.dash.includedFiles.query(depFileId);
+      for (const depFile of depFiles) {
         depFile.filesToLoadForHotUpdate(visited, false).forEach((file) => {
           if (!file.isVirtual)
             chain.add(file);
@@ -2582,6 +2572,17 @@ class IncludedFiles {
   get(fileId) {
     var _a;
     return (_a = this.aliases.get(fileId)) != null ? _a : this.files.get(fileId);
+  }
+  query(query) {
+    if (isGlob(query))
+      return this.queryGlob(query);
+    const aliasedFile = this.aliases.get(query);
+    if (aliasedFile)
+      return [aliasedFile];
+    const file = this.files.get(query);
+    if (file)
+      return [file];
+    return [];
   }
   addAlias(alias, DashFile2) {
     this.aliases.set(alias, DashFile2);
@@ -2656,11 +2657,11 @@ class LoadFiles {
   constructor(dash) {
     this.dash = dash;
   }
-  async run(files) {
+  async run(files, writeFiles = true) {
     for (const file of files) {
       if (file.isDone)
         continue;
-      await this.loadFile(file, true);
+      await this.loadFile(file, writeFiles);
     }
     for (const file of files) {
       if (file.isDone)
@@ -2668,7 +2669,7 @@ class LoadFiles {
       await this.loadRequiredFiles(file);
     }
   }
-  async loadFile(file, writeFiles = false) {
+  async loadFile(file, writeFiles = true) {
     var _a;
     const [outputPath, readData] = await Promise.all([
       this.dash.plugins.runTransformPathHooks(file.filePath),
@@ -2705,18 +2706,20 @@ class ResolveFileOrder {
     const files = this.dash.includedFiles;
     unresolved.add(file);
     for (const depFileId of file.requiredFiles) {
-      const depFile = files.get(depFileId);
-      if (!depFile) {
-        console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
-        continue;
-      }
-      depFile.addUpdateFile(file);
-      if (!resolved.has(depFile)) {
-        if (unresolved.has(depFile)) {
-          console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
+      const depFiles = files.query(depFileId);
+      for (const depFile of depFiles) {
+        if (!depFile) {
+          console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
           continue;
         }
-        this.resolveSingle(depFile, resolved, unresolved);
+        depFile.addUpdateFile(file);
+        if (!resolved.has(depFile)) {
+          if (unresolved.has(depFile)) {
+            console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
+            continue;
+          }
+          this.resolveSingle(depFile, resolved, unresolved);
+        }
       }
     }
     resolved.add(file);
@@ -2876,6 +2879,7 @@ class Dash {
     console.log(`Dash finished updating ${filesToTransform.size} files!`);
   }
   async compileFile(filePath, fileData) {
+    var _a;
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);
@@ -2885,24 +2889,14 @@ class Dash {
     });
     await this.loadFiles.loadFile(file);
     await this.loadFiles.loadRequiredFiles(file);
-    const requiredFiles = new Set();
-    this.fileOrderResolver.resolveSingle(file, requiredFiles);
-    for (const depFile of requiredFiles) {
-      if (depFile === file)
-        continue;
-      await this.loadFiles.loadFile(depFile);
-    }
-    for (const depFile of requiredFiles) {
-      if (depFile === file)
-        continue;
-      await this.fileTransformer.transformFile(depFile);
+    const filesToLoad = file.filesToLoadForHotUpdate();
+    await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => file !== currFile), false);
+    for (const file2 of filesToLoad) {
+      file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
     }
     const transformedData = await this.fileTransformer.transformFile(file, true);
     this.includedFiles.resetAll();
-    return [
-      [...requiredFiles].map((file2) => file2.filePath),
-      transformedData
-    ];
+    return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlink(path, updateDashFile = true) {
     const outputPath = await this.plugins.runTransformPathHooks(path);

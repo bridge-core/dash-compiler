@@ -26,25 +26,28 @@ export class ResolveFileOrder {
 		unresolved.add(file)
 
 		for (const depFileId of file.requiredFiles) {
-			const depFile = files.get(depFileId)
-			if (!depFile) {
-				console.error(
-					`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`
-				)
-				continue
-			}
+			const depFiles = files.query(depFileId)
 
-			depFile.addUpdateFile(file)
-
-			if (!resolved.has(depFile)) {
-				if (unresolved.has(depFile)) {
+			for (const depFile of depFiles) {
+				if (!depFile) {
 					console.error(
-						`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`
+						`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`
 					)
 					continue
 				}
 
-				this.resolveSingle(depFile, resolved, unresolved)
+				depFile.addUpdateFile(file)
+
+				if (!resolved.has(depFile)) {
+					if (unresolved.has(depFile)) {
+						console.error(
+							`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`
+						)
+						continue
+					}
+
+					this.resolveSingle(depFile, resolved, unresolved)
+				}
 			}
 		}
 

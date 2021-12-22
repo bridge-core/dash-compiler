@@ -3,7 +3,7 @@ import { DashFile } from './DashFile';
 export declare class LoadFiles {
     protected dash: Dash<any>;
     constructor(dash: Dash<any>);
-    run(files: DashFile[]): Promise<void>;
+    run(files: DashFile[], writeFiles?: boolean): Promise<void>;
     loadFile(file: DashFile, writeFiles?: boolean): Promise<void>;
     loadRequiredFiles(file: DashFile): Promise<void>;
 }
