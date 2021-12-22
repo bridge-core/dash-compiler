@@ -149,6 +149,7 @@ export class Dash<TSetupArg = void> {
 	async updateFiles(filePaths: string[]) {
 		this.isFullBuild = false
 		if (!this.isCompilerActivated) return
+		this.progress.setTotal(8)
 
 		// Update files in output
 		console.log(`Dash is starting to update ${filePaths.length} files...`)
@@ -165,14 +166,19 @@ export class Dash<TSetupArg = void> {
 
 			files.push(file)
 		}
+		this.progress.advance() // 1
 
 		const oldDeps: Set<string>[] = []
 		for (const file of files) {
 			oldDeps.push(new Set([...file.requiredFiles]))
 		}
 
+		this.progress.advance() // 2
+
 		// Load files and files that are required by this file
 		await this.loadFiles.run(files)
+
+		this.progress.advance() // 3
 
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i]
@@ -197,6 +203,8 @@ export class Dash<TSetupArg = void> {
 			)
 		}
 
+		this.progress.advance() // 4
+
 		const filesToLoad = new Set(
 			files.map((file) => [...file.filesToLoadForHotUpdate()]).flat()
 		)
@@ -207,12 +215,16 @@ export class Dash<TSetupArg = void> {
 			)
 		)
 
+		this.progress.advance() // 5
+
 		for (const file of filesToLoad) {
 			if (file.isDone) continue
 
 			file.data =
 				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
+
+		this.progress.advance() // 6
 
 		const filesToTransform = new Set(
 			files.map((file) => [...file.getHotUpdateChain()]).flat()
@@ -222,11 +234,15 @@ export class Dash<TSetupArg = void> {
 		// We need to run the whole transformation pipeline
 		await this.fileTransformer.run(filesToTransform, true)
 
+		this.progress.advance() // 7
+
 		await this.plugins.runBuildEndHooks()
 
 		await this.saveDashFile()
 		this.includedFiles.resetAll()
 		console.log(`Dash finished updating ${filesToTransform.size} files!`)
+
+		this.progress.advance() // 8
 	}
 	async compileFile(
 		filePath: string,
@@ -234,6 +250,7 @@ export class Dash<TSetupArg = void> {
 	): Promise<[string[], any]> {
 		this.isFullBuild = false
 		if (!this.isCompilerActivated) return [[], fileData]
+		this.progress.setTotal(7)
 
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
@@ -249,6 +266,8 @@ export class Dash<TSetupArg = void> {
 		await this.loadFiles.loadFile(file)
 		await this.loadFiles.loadRequiredFiles(file)
 
+		this.progress.advance() // 1
+
 		// Get files we need to load to transform this file
 		const filesToLoad = file.filesToLoadForHotUpdate()
 		// Load all file dependencies
@@ -256,6 +275,8 @@ export class Dash<TSetupArg = void> {
 			[...filesToLoad.values()].filter((currFile) => file !== currFile),
 			false
 		)
+
+		this.progress.advance() // 2
 
 		// Transform all file dependencies
 		for (const file of filesToLoad) {
@@ -265,6 +286,8 @@ export class Dash<TSetupArg = void> {
 				(await this.plugins.runTransformHooks(file)) ?? file.data
 		}
 
+		this.progress.advance() // 3
+
 		// Transform original file data
 		const transformedData = await this.fileTransformer.transformFile(
 			file,
@@ -272,8 +295,12 @@ export class Dash<TSetupArg = void> {
 			true
 		)
 
+		this.progress.advance() // 4
+
 		// Reset includedFiles data
 		await this.includedFiles.load(this.dashFilePath)
+
+		this.progress.advance() // 5
 
 		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}

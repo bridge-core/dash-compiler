@@ -2888,6 +2888,7 @@ class Dash {
     this.isFullBuild = false;
     if (!this.isCompilerActivated)
       return;
+    this.progress.setTotal(8);
     console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
     await this.plugins.runBuildStartHooks();
@@ -2899,11 +2900,14 @@ class Dash {
       }
       files.push(file);
     }
+    this.progress.advance();
     const oldDeps = [];
     for (const file of files) {
       oldDeps.push(new Set([...file.requiredFiles]));
     }
+    this.progress.advance();
     await this.loadFiles.run(files);
+    this.progress.advance();
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const newDeps = [...file.requiredFiles].filter((dep) => !oldDeps[i].has(dep));
@@ -2911,27 +2915,33 @@ class Dash {
       const removedDeps = [...oldDeps[i]].filter((dep) => !file.requiredFiles.has(dep));
       removedDeps.forEach((dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.removeUpdateFile(file)));
     }
+    this.progress.advance();
     const filesToLoad = new Set(files.map((file) => [...file.filesToLoadForHotUpdate()]).flat());
     console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));
+    this.progress.advance();
     for (const file of filesToLoad) {
       if (file.isDone)
         continue;
       file.data = (_a = await this.plugins.runTransformHooks(file)) != null ? _a : file.data;
     }
+    this.progress.advance();
     const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
     console.log(`Dash is compiling ${filesToTransform.size} files...`);
     await this.fileTransformer.run(filesToTransform, true);
+    this.progress.advance();
     await this.plugins.runBuildEndHooks();
     await this.saveDashFile();
     this.includedFiles.resetAll();
     console.log(`Dash finished updating ${filesToTransform.size} files!`);
+    this.progress.advance();
   }
   async compileFile(filePath, fileData) {
     var _a;
     this.isFullBuild = false;
     if (!this.isCompilerActivated)
       return [[], fileData];
+    this.progress.setTotal(7);
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);
@@ -2941,15 +2951,20 @@ class Dash {
     });
     await this.loadFiles.loadFile(file);
     await this.loadFiles.loadRequiredFiles(file);
+    this.progress.advance();
     const filesToLoad = file.filesToLoadForHotUpdate();
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => file !== currFile), false);
+    this.progress.advance();
     for (const file2 of filesToLoad) {
       if (file2.isDone)
         continue;
       file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
     }
+    this.progress.advance();
     const transformedData = await this.fileTransformer.transformFile(file, true, true);
+    this.progress.advance();
     await this.includedFiles.load(this.dashFilePath);
+    this.progress.advance();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlink(path, updateDashFile = true) {
