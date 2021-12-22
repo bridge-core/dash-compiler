@@ -28,4 +28,8 @@ export class Progress {
 		this.current++
 		this.onChangeCbs.forEach((cb) => cb(this))
 	}
+	addToTotal(amount: number) {
+		this.total += amount
+		this.onChangeCbs.forEach((cb) => cb(this))
+	}
 }

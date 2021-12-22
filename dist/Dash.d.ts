@@ -6,6 +6,7 @@ import { LoadFiles } from './Core/LoadFiles';
 import { ResolveFileOrder } from './Core/ResolveFileOrder';
 import { FileTransformer } from './Core/TransformFiles';
 import { FileType, PackType } from 'mc-project-core';
+import type { DashFile } from './Core/DashFile';
 import { Progress } from './Core/Progress';
 export interface IDashOptions<TSetupArg = void> {
     mode?: 'development' | 'production';
@@ -46,6 +47,6 @@ export declare class Dash<TSetupArg = void> {
     getCompilerOutputPath(filePath: string): Promise<string | undefined>;
     watch(): void;
     protected saveDashFile(): Promise<void>;
-    protected compileIncludedFiles(): Promise<void>;
+    protected compileIncludedFiles(files?: DashFile[]): Promise<void>;
     compileVirtualFiles(filePaths: string[]): Promise<void>;
 }

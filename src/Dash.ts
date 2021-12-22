@@ -263,7 +263,7 @@ export class Dash<TSetupArg = void> {
 		)
 
 		// Reset includedFiles data
-		this.includedFiles.resetAll()
+		await this.includedFiles.load(this.dashFilePath)
 
 		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}
@@ -300,13 +300,13 @@ export class Dash<TSetupArg = void> {
 		await this.includedFiles.save(this.dashFilePath)
 	}
 
-	protected async compileIncludedFiles() {
-		await this.loadFiles.run(this.includedFiles.all())
+	protected async compileIncludedFiles(
+		files: DashFile[] = this.includedFiles.all()
+	) {
+		await this.loadFiles.run(files)
 		this.progress.advance()
 
-		const resolvedFileOrder = this.fileOrderResolver.run(
-			this.includedFiles.all()
-		)
+		const resolvedFileOrder = this.fileOrderResolver.run(files)
 		this.progress.advance()
 
 		// console.log(resolvedFileOrder)
@@ -321,6 +321,9 @@ export class Dash<TSetupArg = void> {
 	 */
 	async compileVirtualFiles(filePaths: string[]) {
 		this.includedFiles.add(filePaths, true)
-		await this.compileIncludedFiles()
+		this.progress.addToTotal(3)
+		await this.compileIncludedFiles(
+			this.includedFiles.filtered((file) => file.isVirtual)
+		)
 	}
 }

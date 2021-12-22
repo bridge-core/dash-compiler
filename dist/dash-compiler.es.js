@@ -2792,6 +2792,10 @@ class Progress {
     this.current++;
     this.onChangeCbs.forEach((cb) => cb(this));
   }
+  addToTotal(amount) {
+    this.total += amount;
+    this.onChangeCbs.forEach((cb) => cb(this));
+  }
 }
 class Dash {
   constructor(fileSystem, outputFileSystem, options) {
@@ -2917,7 +2921,7 @@ class Dash {
       file2.data = (_a = await this.plugins.runTransformHooks(file2)) != null ? _a : file2.data;
     }
     const transformedData = await this.fileTransformer.transformFile(file, true, true);
-    this.includedFiles.resetAll();
+    await this.includedFiles.load(this.dashFilePath);
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlink(path, updateDashFile = true) {
@@ -2945,17 +2949,18 @@ class Dash {
   async saveDashFile() {
     await this.includedFiles.save(this.dashFilePath);
   }
-  async compileIncludedFiles() {
-    await this.loadFiles.run(this.includedFiles.all());
+  async compileIncludedFiles(files = this.includedFiles.all()) {
+    await this.loadFiles.run(files);
     this.progress.advance();
-    const resolvedFileOrder = this.fileOrderResolver.run(this.includedFiles.all());
+    const resolvedFileOrder = this.fileOrderResolver.run(files);
     this.progress.advance();
     await this.fileTransformer.run(resolvedFileOrder);
     this.progress.advance();
   }
   async compileVirtualFiles(filePaths) {
     this.includedFiles.add(filePaths, true);
-    await this.compileIncludedFiles();
+    this.progress.addToTotal(3);
+    await this.compileIncludedFiles(this.includedFiles.filtered((file) => file.isVirtual));
   }
 }
 class FileSystem {

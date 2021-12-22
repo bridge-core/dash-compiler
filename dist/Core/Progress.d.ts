@@ -10,4 +10,5 @@ export declare class Progress {
     setTotal(total: number): void;
     updateCurrent(current: number): void;
     advance(): void;
+    addToTotal(amount: number): void;
 }
