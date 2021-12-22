@@ -1243,6 +1243,7 @@ const MoLangPlugin = ({
   requestJsonData,
   options: { include = {}, isFileRequest = false, mode } = {}
 }) => {
+  const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
   const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith("BP/scripts/molang/");
@@ -1298,8 +1299,9 @@ const MoLangPlugin = ({
     async require(filePath) {
       if (loadMoLangFrom(filePath)) {
         return [
-          `.${projectConfig.getPackRoot("behaviorPack")}/scripts/molang/**/*.[jt]s`,
-          "**/molang/**/*.molang"
+          resolve("behaviorPack", "scripts/molang/**/*.[jt]s"),
+          resolve("behaviorPack", "molang/**/*.molang"),
+          resolve("resourcePack", "molang/**/*.molang")
         ];
       }
     },
@@ -2164,7 +2166,7 @@ const CustomCommandsPlugin = ({
     v1CompatMode = false
   } = {}
 }) => {
-  const bpRoot = projectConfig.getPackRoot("behaviorPack");
+  const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const isCommand = (filePath) => filePath && fileTypeLib.getId(filePath) === "customCommand";
   const isMcfunction = (filePath) => filePath && fileTypeLib.getId(filePath) === "function";
   const loadCommandsFor = (filePath) => {
@@ -2215,8 +2217,8 @@ const CustomCommandsPlugin = ({
     async require(filePath) {
       if (loadCommandsFor(filePath) || isMcfunction(filePath)) {
         return [
-          `.${bpRoot}/commands/**/*.[jt]s`,
-          `.${bpRoot}/commands/*.[jt]s`
+          resolve("behaviorPack", "commands/**/*.[jt]s"),
+          resolve("behaviorPack", "commands/*.[jt]s")
         ];
       }
     },
@@ -2430,7 +2432,10 @@ class AllPlugins {
     return requiredFiles;
   }
   async runTransformHooks(file) {
-    const dependencies = Object.fromEntries([...file.requiredFiles].map((query) => this.dash.includedFiles.query(query)).flat().map((file2) => [file2.filePath, file2.data]));
+    const dependencies = Object.fromEntries([...file.requiredFiles].map((query) => this.dash.includedFiles.query(query)).flat().map((file2) => [
+      [file2.filePath, file2.data],
+      ...[...file2.aliases].map((alias) => [alias, file2.data])
+    ]).flat());
     let transformedData = file.data;
     for (const plugin of this.plugins) {
       const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
@@ -2461,7 +2466,6 @@ class DashFile {
     this.isDone = false;
     this.requiredFiles = new Set();
     this.aliases = new Set();
-    this.lastModified = 0;
     this.updateFiles = new Set();
     this.outputPath = filePath;
     if (!this.isVirtual)
@@ -2494,6 +2498,9 @@ class DashFile {
   }
   addUpdateFile(file) {
     this.updateFiles.add(file);
+  }
+  removeUpdateFile(file) {
+    this.updateFiles.delete(file);
   }
   getHotUpdateChain() {
     const chain = new Set([this]);
@@ -2543,7 +2550,6 @@ class DashFile {
     return {
       isVirtual: this.isVirtual,
       filePath: this.filePath,
-      lastModified: this.lastModified,
       aliases: [...this.aliases],
       requiredFiles: [...this.requiredFiles],
       updateFiles: [...this.updateFiles].map((file) => file.filePath)
@@ -2628,7 +2634,7 @@ class IncludedFiles {
     }
   }
   async save(filePath) {
-    this.dash.fileSystem.writeJson(filePath, this.all().map((file) => file.serialize()));
+    this.dash.fileSystem.writeJson(filePath, this.all().filter((file) => !file.isVirtual).map((file) => file.serialize()));
   }
   async load(filePath) {
     const sFiles = await this.dash.fileSystem.readJson(filePath);
@@ -2825,7 +2831,8 @@ class Dash {
     await ((_d = this.packType) == null ? void 0 : _d.setup(setupArg));
     await this.plugins.loadPlugins(this.options.pluginEnvironment);
   }
-  async reloadPlugins() {
+  async reload() {
+    await this.projectConfig.setup();
     await this.plugins.loadPlugins(this.options.pluginEnvironment);
   }
   get isCompilerActivated() {
@@ -2863,7 +2870,18 @@ class Dash {
       }
       files.push(file);
     }
+    const oldDeps = [];
+    for (const file of files) {
+      oldDeps.push(new Set([...file.requiredFiles]));
+    }
     await this.loadFiles.run(files);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const newDeps = [...file.requiredFiles].filter((dep) => !oldDeps[i].has(dep));
+      newDeps.forEach((dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.addUpdateFile(file)));
+      const removedDeps = [...oldDeps[i]].filter((dep) => !file.requiredFiles.has(dep));
+      removedDeps.forEach((dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.removeUpdateFile(file)));
+    }
     const filesToLoad = new Set(files.map((file) => [...file.filesToLoadForHotUpdate()]).flat());
     console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));

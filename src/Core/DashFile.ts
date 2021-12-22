@@ -11,10 +11,8 @@ export class DashFile {
 	public fileHandle?: IFileHandle
 	public requiredFiles = new Set<string>()
 	public aliases = new Set<string>()
-	public lastModified: number = 0
+	// public lastModified: number = 0
 	protected updateFiles = new Set<DashFile>()
-	// TODO(@solvedDev): Test adding a file hash property that helps determining whether a file gets rewritten to disk
-	// Could help with compilation speed of platforms with low file writing speeds (File System Access API)
 
 	constructor(
 		protected dash: Dash<any>,
@@ -61,6 +59,9 @@ export class DashFile {
 	}
 	addUpdateFile(file: DashFile) {
 		this.updateFiles.add(file)
+	}
+	removeUpdateFile(file: DashFile) {
+		this.updateFiles.delete(file)
 	}
 
 	getHotUpdateChain() {
@@ -135,7 +136,7 @@ export class DashFile {
 		return {
 			isVirtual: this.isVirtual,
 			filePath: this.filePath,
-			lastModified: this.lastModified,
+			// lastModified: this.lastModified,
 			aliases: [...this.aliases],
 			requiredFiles: [...this.requiredFiles],
 			updateFiles: [...this.updateFiles].map((file) => file.filePath),
@@ -151,7 +152,7 @@ export class DashFile {
 export interface ISerializedDashFile {
 	isVirtual: boolean
 	filePath: string
-	lastModified: number
+	// lastModified: number
 	aliases: string[]
 	requiredFiles: string[]
 	updateFiles: string[]

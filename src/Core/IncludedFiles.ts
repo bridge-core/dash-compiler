@@ -85,7 +85,9 @@ export class IncludedFiles {
 	async save(filePath: string) {
 		this.dash.fileSystem.writeJson(
 			filePath,
-			this.all().map((file) => file.serialize())
+			this.all()
+				.filter((file) => !file.isVirtual)
+				.map((file) => file.serialize())
 		)
 	}
 	async load(filePath: string) {

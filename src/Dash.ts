@@ -94,7 +94,8 @@ export class Dash<TSetupArg = void> {
 		await this.plugins.loadPlugins(this.options.pluginEnvironment)
 	}
 
-	async reloadPlugins() {
+	async reload() {
+		await this.projectConfig.setup()
 		await this.plugins.loadPlugins(this.options.pluginEnvironment)
 	}
 
@@ -158,8 +159,36 @@ export class Dash<TSetupArg = void> {
 			files.push(file)
 		}
 
+		const oldDeps: Set<string>[] = []
+		for (const file of files) {
+			oldDeps.push(new Set([...file.requiredFiles]))
+		}
+
 		// Load files and files that are required by this file
 		await this.loadFiles.run(files)
+
+		for (let i = 0; i < files.length; i++) {
+			const file = files[i]
+			const newDeps = [...file.requiredFiles].filter(
+				(dep) => !oldDeps[i].has(dep)
+			)
+
+			newDeps.forEach((dep) =>
+				this.includedFiles
+					.query(dep)
+					.forEach((depFile) => depFile.addUpdateFile(file))
+			)
+
+			const removedDeps = [...oldDeps[i]].filter(
+				(dep) => !file.requiredFiles.has(dep)
+			)
+
+			removedDeps.forEach((dep) =>
+				this.includedFiles
+					.query(dep)
+					.forEach((depFile) => depFile.removeUpdateFile(file))
+			)
+		}
 
 		const filesToLoad = new Set(
 			files.map((file) => [...file.filesToLoadForHotUpdate()]).flat()

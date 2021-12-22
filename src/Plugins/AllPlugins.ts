@@ -256,7 +256,11 @@ export class AllPlugins {
 			[...file.requiredFiles]
 				.map((query) => this.dash.includedFiles.query(query))
 				.flat()
-				.map((file) => [file.filePath, file.data])
+				.map((file) => [
+					[file.filePath, file.data],
+					...[...file.aliases].map((alias) => [alias, file.data]),
+				])
+				.flat()
 		)
 
 		let transformedData = file.data

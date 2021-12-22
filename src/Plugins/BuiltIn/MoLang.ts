@@ -14,6 +14,9 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 	requestJsonData,
 	options: { include = {}, isFileRequest = false, mode } = {},
 }) => {
+	const resolve = (packId: string, path: string) =>
+		projectConfig.resolvePackPath(<any>packId, path)
+
 	//Custom MoLang parser from https://github.com/bridge-core/MoLang
 	const customMoLang = new CustomMoLang({})
 	const isMoLangFile = (filePath: string | null) =>
@@ -91,14 +94,12 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async require(filePath) {
-			// Setting these
 			if (loadMoLangFrom(filePath)) {
 				// Register molang files & molang scripts as JSON file dependencies
 				return [
-					`.${projectConfig.getPackRoot(
-						'behaviorPack'
-					)}/scripts/molang/**/*.[jt]s`,
-					'**/molang/**/*.molang',
+					resolve('behaviorPack', 'scripts/molang/**/*.[jt]s'),
+					resolve('behaviorPack', 'molang/**/*.molang'),
+					resolve('resourcePack', 'molang/**/*.molang'),
 				]
 			}
 		},

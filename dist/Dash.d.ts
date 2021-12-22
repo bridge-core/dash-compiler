@@ -36,7 +36,7 @@ export declare class Dash<TSetupArg = void> {
     get requestJsonData(): <T = any>(dataPath: string) => Promise<T>;
     protected get dashFilePath(): string;
     setup(setupArg: TSetupArg): Promise<void>;
-    reloadPlugins(): Promise<void>;
+    reload(): Promise<void>;
     get isCompilerActivated(): boolean;
     build(): Promise<void>;
     updateFiles(filePaths: string[]): Promise<void>;

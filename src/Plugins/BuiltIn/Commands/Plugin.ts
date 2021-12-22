@@ -20,7 +20,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 		v1CompatMode = false,
 	} = {},
 }) => {
-	const bpRoot = projectConfig.getPackRoot('behaviorPack')
+	const resolve = (packId: string, path: string) =>
+		projectConfig.resolvePackPath(<any>packId, path)
 
 	const isCommand = (filePath: string | null) =>
 		filePath && fileTypeLib.getId(filePath) === 'customCommand'
@@ -80,8 +81,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			if (loadCommandsFor(filePath) || isMcfunction(filePath)) {
 				// Register custom commands as JSON/mcfunction file dependencies
 				return [
-					`.${bpRoot}/commands/**/*.[jt]s`,
-					`.${bpRoot}/commands/*.[jt]s`,
+					resolve('behaviorPack', 'commands/**/*.[jt]s'),
+					resolve('behaviorPack', 'commands/*.[jt]s'),
 				]
 			}
 		},
