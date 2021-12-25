@@ -2633,7 +2633,7 @@ class IncludedFiles {
     let files = [];
     for (const filePath of filePaths) {
       files.push(new DashFile(this.dash, filePath, isVirtual));
-      this.files.set(filePath, files.at(-1));
+      this.files.set(filePath, files[files.length - 1]);
     }
     return files;
   }
