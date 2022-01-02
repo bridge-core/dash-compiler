@@ -2650,6 +2650,7 @@ class IncludedFiles {
     this.dash.fileSystem.writeJson(filePath, this.all().filter((file) => !file.isVirtual).map((file) => file.serialize()));
   }
   async load(filePath) {
+    this.removeAll();
     const sFiles = await this.dash.fileSystem.readJson(filePath);
     const files = [];
     for (const sFile of sFiles) {
@@ -2943,6 +2944,7 @@ class Dash {
     if (!this.isCompilerActivated)
       return [[], fileData];
     this.progress.setTotal(7);
+    await this.includedFiles.load(this.dashFilePath);
     let file = this.includedFiles.get(filePath);
     if (!file) {
       [file] = this.includedFiles.add([filePath]);

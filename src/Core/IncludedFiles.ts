@@ -91,6 +91,8 @@ export class IncludedFiles {
 		)
 	}
 	async load(filePath: string) {
+		this.removeAll()
+
 		const sFiles: ISerializedDashFile[] =
 			await this.dash.fileSystem.readJson(filePath)
 		const files: DashFile[] = []

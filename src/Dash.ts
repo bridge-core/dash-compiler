@@ -252,6 +252,8 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return [[], fileData]
 		this.progress.setTotal(7)
 
+		await this.includedFiles.load(this.dashFilePath)
+
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
 			;[file] = this.includedFiles.add([filePath])
