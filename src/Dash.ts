@@ -84,7 +84,9 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async setup(setupArg: TSetupArg) {
-		await this.projectConfig.setup()
+		try {
+			await this.projectConfig.setup()
+		} catch {}
 
 		this.fileType?.setProjectConfig(this.projectConfig)
 		this.packType?.setProjectConfig(this.projectConfig)
@@ -96,7 +98,10 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async reload() {
-		await this.projectConfig.setup()
+		try {
+			await this.projectConfig.refreshConfig()
+		} catch {}
+
 		await this.plugins.loadPlugins(this.options.pluginEnvironment)
 	}
 
@@ -105,9 +110,11 @@ export class Dash<TSetupArg = void> {
 	 * or setting it to false will disable the compiler.
 	 */
 	get isCompilerActivated() {
+		const config = this.projectConfig.get()
+
 		return (
-			!!this.projectConfig.get().compiler ||
-			!Array.isArray(this.projectConfig.get().compiler?.plugins)
+			config.compiler !== undefined &&
+			Array.isArray(config.compiler.plugins)
 		)
 	}
 

@@ -2849,7 +2849,10 @@ class Dash {
   }
   async setup(setupArg) {
     var _a, _b, _c, _d;
-    await this.projectConfig.setup();
+    try {
+      await this.projectConfig.setup();
+    } catch {
+    }
     (_a = this.fileType) == null ? void 0 : _a.setProjectConfig(this.projectConfig);
     (_b = this.packType) == null ? void 0 : _b.setProjectConfig(this.projectConfig);
     await ((_c = this.fileType) == null ? void 0 : _c.setup(setupArg));
@@ -2857,12 +2860,15 @@ class Dash {
     await this.plugins.loadPlugins(this.options.pluginEnvironment);
   }
   async reload() {
-    await this.projectConfig.setup();
+    try {
+      await this.projectConfig.refreshConfig();
+    } catch {
+    }
     await this.plugins.loadPlugins(this.options.pluginEnvironment);
   }
   get isCompilerActivated() {
-    var _a;
-    return !!this.projectConfig.get().compiler || !Array.isArray((_a = this.projectConfig.get().compiler) == null ? void 0 : _a.plugins);
+    const config = this.projectConfig.get();
+    return config.compiler !== void 0 && Array.isArray(config.compiler.plugins);
   }
   async build() {
     console.log("Starting compilation...");
