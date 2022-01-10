@@ -2353,10 +2353,15 @@ class AllPlugins {
     return await this.dash.fileSystem.readJson(compilerConfigPath);
   }
   async getPluginContext(pluginId, pluginOpts = {}) {
+    const dash = this.dash;
     return {
       options: __spreadValues({
-        mode: this.dash.getMode(),
-        isFullBuild: this.dash.isFullBuild
+        get mode() {
+          return dash.getMode();
+        },
+        get isFullBuild() {
+          return dash.isFullBuild;
+        }
       }, pluginOpts),
       fileSystem: this.dash.fileSystem,
       outputFileSystem: this.dash.outputFileSystem,
@@ -2890,12 +2895,13 @@ class Dash {
     this.includedFiles.resetAll();
     this.progress.advance();
     console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
+    this.isFullBuild = false;
   }
   async updateFiles(filePaths) {
     var _a;
-    this.isFullBuild = false;
     if (!this.isCompilerActivated)
       return;
+    this.isFullBuild = false;
     this.progress.setTotal(8);
     console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
@@ -2946,9 +2952,9 @@ class Dash {
   }
   async compileFile(filePath, fileData) {
     var _a;
-    this.isFullBuild = false;
     if (!this.isCompilerActivated)
       return [[], fileData];
+    this.isFullBuild = false;
     this.progress.setTotal(7);
     await this.includedFiles.load(this.dashFilePath);
     let file = this.includedFiles.get(filePath);

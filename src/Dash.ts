@@ -149,13 +149,15 @@ export class Dash<TSetupArg = void> {
 				Date.now() - startTime
 			}ms!`
 		)
+		this.isFullBuild = false
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
 
 	async updateFiles(filePaths: string[]) {
-		this.isFullBuild = false
 		if (!this.isCompilerActivated) return
+		this.isFullBuild = false
+
 		this.progress.setTotal(8)
 
 		// Update files in output
@@ -255,8 +257,9 @@ export class Dash<TSetupArg = void> {
 		filePath: string,
 		fileData: Uint8Array
 	): Promise<[string[], any]> {
-		this.isFullBuild = false
 		if (!this.isCompilerActivated) return [[], fileData]
+		this.isFullBuild = false
+
 		this.progress.setTotal(7)
 
 		await this.includedFiles.load(this.dashFilePath)

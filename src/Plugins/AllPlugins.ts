@@ -147,10 +147,16 @@ export class AllPlugins {
 	 * @returns The plugin context
 	 */
 	protected async getPluginContext(pluginId: string, pluginOpts: any = {}) {
+		const dash = this.dash
+
 		return {
 			options: {
-				mode: this.dash.getMode(),
-				isFullBuild: this.dash.isFullBuild,
+				get mode() {
+					return dash.getMode()
+				},
+				get isFullBuild() {
+					return dash.isFullBuild
+				},
 				...pluginOpts,
 			},
 			fileSystem: this.dash.fileSystem,
