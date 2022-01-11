@@ -321,7 +321,7 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return
 
 		const outputPath = await this.plugins.runTransformPathHooks(path)
-		if (!outputPath) return
+		if (!outputPath || outputPath === path) return
 
 		await this.outputFileSystem.unlink(outputPath)
 		this.includedFiles.remove(path)
