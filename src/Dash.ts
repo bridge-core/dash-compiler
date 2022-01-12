@@ -52,7 +52,7 @@ export class Dash<TSetupArg = void> {
 	public loadFiles: LoadFiles = new LoadFiles(this)
 	public fileOrderResolver: ResolveFileOrder = new ResolveFileOrder(this)
 	public fileTransformer: FileTransformer = new FileTransformer(this)
-	public isFullBuild = false
+	public buildType = 'fullBuild'
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -122,7 +122,7 @@ export class Dash<TSetupArg = void> {
 		console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
 
-		this.isFullBuild = true
+		this.buildType = 'fullBuild'
 		this.includedFiles.removeAll()
 
 		const startTime = Date.now()
@@ -149,14 +149,13 @@ export class Dash<TSetupArg = void> {
 				Date.now() - startTime
 			}ms!`
 		)
-		this.isFullBuild = false
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
 
 	async updateFiles(filePaths: string[]) {
 		if (!this.isCompilerActivated) return
-		this.isFullBuild = false
+		this.buildType = 'hotUpdate'
 
 		this.progress.setTotal(8)
 
@@ -258,10 +257,11 @@ export class Dash<TSetupArg = void> {
 		fileData: Uint8Array
 	): Promise<[string[], any]> {
 		if (!this.isCompilerActivated) return [[], fileData]
-		this.isFullBuild = false
+		this.buildType = 'fileRequest'
 
 		this.progress.setTotal(7)
 
+		await this.plugins.runBuildStartHooks()
 		await this.includedFiles.load(this.dashFilePath)
 
 		let file = this.includedFiles.get(filePath)
@@ -313,6 +313,8 @@ export class Dash<TSetupArg = void> {
 		await this.includedFiles.load(this.dashFilePath)
 
 		this.progress.advance() // 5
+
+		await this.plugins.runBuildEndHooks()
 
 		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}

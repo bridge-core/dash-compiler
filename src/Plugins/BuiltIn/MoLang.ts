@@ -6,14 +6,7 @@ import { run } from '../../Common/runScript'
 
 export const MoLangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
-	isFileRequest?: boolean
-	mode: 'production' | 'development'
-}> = ({
-	fileType,
-	projectConfig,
-	requestJsonData,
-	options: { include = {}, isFileRequest = false, mode } = {},
-}) => {
+}> = ({ fileType, projectConfig, requestJsonData, options }) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
@@ -22,23 +15,24 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 	const isMoLangFile = (filePath: string | null) =>
 		filePath?.endsWith('.molang')
 	const isMoLangScript = (filePath: string | null) =>
-		filePath?.startsWith('BP/scripts/molang/')
+		filePath?.startsWith(
+			projectConfig.resolvePackPath('behaviorPack', 'scripts/molang/')
+		)
 	const loadMoLangFrom = (filePath: string) =>
-		Object.entries(include).find(
+		Object.entries(options.include).find(
 			([currentId]) => fileType?.getId(filePath) === currentId
 		)?.[1]
 
-	const astTransformers: ((expr: IExpression) => IExpression | undefined)[] =
-		[]
+	let astTransformers: ((expr: IExpression) => IExpression | undefined)[] = []
 
 	return {
 		async buildStart() {
 			// Load default MoLang locations and merge them with user defined locations
-			include = Object.assign(
+			options.include = Object.assign(
 				await requestJsonData(
 					'data/packages/minecraftBedrock/location/validMoLang.json'
 				),
-				include
+				options.include
 			)
 		},
 		transformPath(filePath) {
@@ -64,7 +58,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				try {
 					return json5.parse(await file.text())
 				} catch (err) {
-					if (!isFileRequest)
+					if (options.buildType !== 'fileRequest')
 						console.error(`Error within file "${filePath}": ${err}`)
 					return {
 						__error__: `Failed to load original file: ${err}`,
@@ -85,7 +79,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 					modules: {
 						'@molang/expressions': expressions,
 						'@molang/core': MoLang,
-						'@bridge/compiler': { mode },
+						'@bridge/compiler': { mode: options.mode },
 					},
 				})
 
@@ -123,7 +117,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 							try {
 								ast = customMoLang.parse(molang)
 							} catch (err) {
-								if (!isFileRequest)
+								if (options.buildType !== 'fileRequest')
 									console.error(
 										`Error within file "${filePath}"; script "${molang}": ${err}`
 									)
@@ -140,7 +134,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 						try {
 							return customMoLang.transform(molang)
 						} catch (err) {
-							if (!isFileRequest)
+							if (options.buildType !== 'fileRequest')
 								console.error(
 									`Error within file "${filePath}"; script "${molang}": ${err}`
 								)
@@ -153,9 +147,16 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		},
 
 		finalizeBuild(filePath, fileContent) {
+			// Reset astTransformers
+			if (astTransformers.length > 0) astTransformers = []
+
 			// Make sure JSON files are transformed back into a format that we can write to disk
 			if (loadMoLangFrom(filePath) && typeof fileContent !== 'string')
 				return JSON.stringify(fileContent, null, '\t')
+		},
+
+		buildEnd() {
+			astTransformers = []
 		},
 	}
 }

@@ -1,7 +1,11 @@
 import { relative, join } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
-export const SimpleRewrite: TCompilerPluginFactory = ({
+export const SimpleRewrite: TCompilerPluginFactory<{
+	buildName?: string
+	packName?: string
+	rewriteToComMojang?: boolean
+}> = ({
 	options,
 	outputFileSystem,
 	hasComMojangDirectory,
@@ -31,7 +35,10 @@ export const SimpleRewrite: TCompilerPluginFactory = ({
 
 	return {
 		async buildStart() {
-			if (options.mode === 'production' || options.isFullBuild) {
+			if (
+				options.mode === 'production' ||
+				options.buildType === 'fullBuild'
+			) {
 				if (hasComMojangDirectory) {
 					for (const packId in folders) {
 						const pack = packType.getFromId(<any>packId)

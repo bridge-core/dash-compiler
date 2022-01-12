@@ -154,8 +154,8 @@ export class AllPlugins {
 				get mode() {
 					return dash.getMode()
 				},
-				get isFullBuild() {
-					return dash.isFullBuild
+				get buildType() {
+					return dash.buildType
 				},
 				...pluginOpts,
 			},

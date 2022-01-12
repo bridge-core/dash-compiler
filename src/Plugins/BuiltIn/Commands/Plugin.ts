@@ -6,20 +6,8 @@ import { setObjectAt } from 'bridge-common-utils'
 
 export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
-	isFileRequest: boolean
-	mode: 'development' | 'production'
 	v1CompatMode?: boolean
-}> = ({
-	projectConfig,
-	fileType: fileTypeLib,
-	requestJsonData,
-	options: {
-		include = {},
-		isFileRequest,
-		mode = 'development',
-		v1CompatMode = false,
-	} = {},
-}) => {
+}> = ({ projectConfig, fileType: fileTypeLib, requestJsonData, options }) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
@@ -29,7 +17,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 		filePath && fileTypeLib.getId(filePath) === 'function'
 
 	const loadCommandsFor = (filePath: string) =>
-		Object.entries(include).find(
+		Object.entries(options.include).find(
 			([fileType]) => fileTypeLib.getId(filePath) === fileType
 		)?.[1]
 	const withSlashPrefix = (filePath: string) =>
@@ -38,15 +26,16 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	return {
 		async buildStart() {
 			// Load default command locations and merge them with user defined locations
-			include = Object.assign(
+			options.include = Object.assign(
 				await requestJsonData(
 					'data/packages/minecraftBedrock/location/validCommand.json'
 				),
-				include
+				options.include
 			)
 		},
 		transformPath(filePath) {
-			if (isCommand(filePath) && !isFileRequest) return null
+			if (isCommand(filePath) && options.buildType !== 'fileRequest')
+				return null
 		},
 		async read(filePath, fileHandle) {
 			if (!fileHandle) return
@@ -68,7 +57,11 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 		},
 		async load(filePath, fileContent) {
 			if (isCommand(filePath)) {
-				const command = new Command(fileContent, mode, v1CompatMode)
+				const command = new Command(
+					fileContent,
+					options.mode,
+					options.v1CompatMode ?? false
+				)
 
 				await command.load()
 				return command

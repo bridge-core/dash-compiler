@@ -3,16 +3,11 @@ import { FileSystem } from '../FileSystem/FileSystem'
 import { DashProjectConfig } from '../DashProjectConfig'
 import { FileType, PackType } from 'mc-project-core'
 
-export type TCompilerPluginFactory<
-	T = {
+export type TCompilerPluginFactory<T = void> = (context: {
+	options: T & {
 		mode: 'development' | 'production'
-		// TODO: Remove or deprecate
-		// isFileRequest: boolean
-		isFullBuild: boolean
-		[key: string]: any
+		buildType: 'fileRequest' | 'fullBuild' | 'hotUpdate'
 	}
-> = (context: {
-	options: T
 	fileSystem: FileSystem
 	outputFileSystem: FileSystem
 	projectConfig: DashProjectConfig

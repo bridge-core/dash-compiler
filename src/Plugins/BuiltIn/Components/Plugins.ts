@@ -14,8 +14,6 @@ export function createCustomComponentPlugin({
 	fileType,
 	getComponentObjects,
 }: IOpts): TCompilerPluginFactory<{
-	isFileRequest: boolean
-	mode: 'development' | 'production'
 	v1CompatMode?: boolean
 }> {
 	const usedComponents = new Map<string, [string, string][]>()
@@ -54,7 +52,11 @@ export function createCustomComponentPlugin({
 				createAdditionalFiles = {}
 			},
 			transformPath(filePath) {
-				if (isComponent(filePath) && !options.isFileRequest) return null
+				if (
+					isComponent(filePath) &&
+					options.buildType !== 'fileRequest'
+				)
+					return null
 			},
 			async read(filePath, fileHandle) {
 				// Even if the fileHandle being undefined has nothing to do with custom components,
@@ -75,7 +77,7 @@ export function createCustomComponentPlugin({
 					try {
 						return json5.parse(await file.text())
 					} catch (err) {
-						if (!options.isFileRequest)
+						if (options.buildType !== 'fileRequest')
 							console.error(
 								`Error within file "${filePath}": ${err}`
 							)
@@ -207,6 +209,10 @@ export function createCustomComponentPlugin({
 					return JSON.stringify(fileContent, null, '\t')
 			},
 			async buildEnd() {
+				// TODO: Calling compileFiles within file request mode currently causes an error
+				// inside of bridge. We should look into properly enabling support for this in the future
+				if (options.buildType === 'fileRequest') return
+
 				createAdditionalFiles = Object.fromEntries(
 					Object.entries(createAdditionalFiles).map(
 						([file, fileContent]) => [

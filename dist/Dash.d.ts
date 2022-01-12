@@ -31,7 +31,7 @@ export declare class Dash<TSetupArg = void> {
     loadFiles: LoadFiles;
     fileOrderResolver: ResolveFileOrder;
     fileTransformer: FileTransformer;
-    isFullBuild: boolean;
+    buildType: string;
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
     getCompilerConfigPath(): string | undefined;

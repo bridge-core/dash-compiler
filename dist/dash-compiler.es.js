@@ -153,7 +153,7 @@ const SimpleRewrite = ({
   const pathPrefixWithPack = (pack, suffix) => `${pathPrefix(pack)}/${options.packName} ${suffix}`;
   return {
     async buildStart() {
-      if (options.mode === "production" || options.isFullBuild) {
+      if (options.mode === "production" || options.buildType === "fullBuild") {
         if (hasComMojangDirectory) {
           for (const packId in folders) {
             const pack = packType.getFromId(packId);
@@ -1243,24 +1243,19 @@ const JSON5 = {
   stringify
 };
 var lib = JSON5;
-const MoLangPlugin = ({
-  fileType,
-  projectConfig,
-  requestJsonData,
-  options: { include = {}, isFileRequest = false, mode } = {}
-}) => {
+const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
-  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith("BP/scripts/molang/");
+  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(projectConfig.resolvePackPath("behaviorPack", "scripts/molang/"));
   const loadMoLangFrom = (filePath) => {
     var _a;
-    return (_a = Object.entries(include).find(([currentId]) => (fileType == null ? void 0 : fileType.getId(filePath)) === currentId)) == null ? void 0 : _a[1];
+    return (_a = Object.entries(options.include).find(([currentId]) => (fileType == null ? void 0 : fileType.getId(filePath)) === currentId)) == null ? void 0 : _a[1];
   };
-  const astTransformers = [];
+  let astTransformers = [];
   return {
     async buildStart() {
-      include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), include);
+      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
     },
     transformPath(filePath) {
       if (isMoLangFile(filePath) || isMoLangScript(filePath))
@@ -1275,7 +1270,7 @@ const MoLangPlugin = ({
         try {
           return lib.parse(await file.text());
         } catch (err) {
-          if (!isFileRequest)
+          if (options.buildType !== "fileRequest")
             console.error(`Error within file "${filePath}": ${err}`);
           return {
             __error__: `Failed to load original file: ${err}`
@@ -1295,7 +1290,7 @@ const MoLangPlugin = ({
           modules: {
             "@molang/expressions": expressions,
             "@molang/core": MoLang,
-            "@bridge/compiler": { mode }
+            "@bridge/compiler": { mode: options.mode }
           }
         });
         if (typeof module.exports === "function")
@@ -1324,7 +1319,7 @@ const MoLangPlugin = ({
             try {
               ast = customMoLang.parse(molang);
             } catch (err) {
-              if (!isFileRequest)
+              if (options.buildType !== "fileRequest")
                 console.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
               return molang;
             }
@@ -1336,7 +1331,7 @@ const MoLangPlugin = ({
           try {
             return customMoLang.transform(molang);
           } catch (err) {
-            if (!isFileRequest)
+            if (options.buildType !== "fileRequest")
               console.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
             return molang;
           }
@@ -1344,8 +1339,13 @@ const MoLangPlugin = ({
       }
     },
     finalizeBuild(filePath, fileContent) {
+      if (astTransformers.length > 0)
+        astTransformers = [];
       if (loadMoLangFrom(filePath) && typeof fileContent !== "string")
         return JSON.stringify(fileContent, null, "	");
+    },
+    buildEnd() {
+      astTransformers = [];
     }
   };
 };
@@ -1878,7 +1878,7 @@ function createCustomComponentPlugin({
         createAdditionalFiles = {};
       },
       transformPath(filePath) {
-        if (isComponent(filePath) && !options.isFileRequest)
+        if (isComponent(filePath) && options.buildType !== "fileRequest")
           return null;
       },
       async read(filePath, fileHandle) {
@@ -1892,7 +1892,7 @@ function createCustomComponentPlugin({
           try {
             return lib.parse(await file.text());
           } catch (err) {
-            if (!options.isFileRequest)
+            if (options.buildType !== "fileRequest")
               console.error(`Error within file "${filePath}": ${err}`);
             return {
               __error__: `Failed to load original file: ${err}`
@@ -1963,6 +1963,8 @@ function createCustomComponentPlugin({
           return JSON.stringify(fileContent, null, "	");
       },
       async buildEnd() {
+        if (options.buildType === "fileRequest")
+          return;
         createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).map(([file, fileContent]) => [
           join(projectRoot, file),
           fileContent
@@ -2167,23 +2169,13 @@ class Command {
     return this.commandSrc;
   }
 }
-const CustomCommandsPlugin = ({
-  projectConfig,
-  fileType: fileTypeLib,
-  requestJsonData,
-  options: {
-    include = {},
-    isFileRequest,
-    mode = "development",
-    v1CompatMode = false
-  } = {}
-}) => {
+const CustomCommandsPlugin = ({ projectConfig, fileType: fileTypeLib, requestJsonData, options }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const isCommand = (filePath) => filePath && fileTypeLib.getId(filePath) === "customCommand";
   const isMcfunction = (filePath) => filePath && fileTypeLib.getId(filePath) === "function";
   const loadCommandsFor = (filePath) => {
     var _a;
-    return (_a = Object.entries(include).find(([fileType]) => fileTypeLib.getId(filePath) === fileType)) == null ? void 0 : _a[1];
+    return (_a = Object.entries(options.include).find(([fileType]) => fileTypeLib.getId(filePath) === fileType)) == null ? void 0 : _a[1];
   };
   const withSlashPrefix = (filePath) => {
     var _a, _b, _c;
@@ -2191,10 +2183,10 @@ const CustomCommandsPlugin = ({
   };
   return {
     async buildStart() {
-      include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), include);
+      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), options.include);
     },
     transformPath(filePath) {
-      if (isCommand(filePath) && !isFileRequest)
+      if (isCommand(filePath) && options.buildType !== "fileRequest")
         return null;
     },
     async read(filePath, fileHandle) {
@@ -2216,8 +2208,9 @@ const CustomCommandsPlugin = ({
       }
     },
     async load(filePath, fileContent) {
+      var _a;
       if (isCommand(filePath)) {
-        const command = new Command(fileContent, mode, v1CompatMode);
+        const command = new Command(fileContent, options.mode, (_a = options.v1CompatMode) != null ? _a : false);
         await command.load();
         return command;
       }
@@ -2359,8 +2352,8 @@ class AllPlugins {
         get mode() {
           return dash.getMode();
         },
-        get isFullBuild() {
-          return dash.isFullBuild;
+        get buildType() {
+          return dash.buildType;
         }
       }, pluginOpts),
       fileSystem: this.dash.fileSystem,
@@ -2832,7 +2825,7 @@ class Dash {
     this.loadFiles = new LoadFiles(this);
     this.fileOrderResolver = new ResolveFileOrder(this);
     this.fileTransformer = new FileTransformer(this);
-    this.isFullBuild = false;
+    this.buildType = "fullBuild";
     this.outputFileSystem = outputFileSystem != null ? outputFileSystem : fileSystem;
     this.projectRoot = dirname(options.config);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
@@ -2879,7 +2872,7 @@ class Dash {
     console.log("Starting compilation...");
     if (!this.isCompilerActivated)
       return;
-    this.isFullBuild = true;
+    this.buildType = "fullBuild";
     this.includedFiles.removeAll();
     const startTime = Date.now();
     this.progress.setTotal(7);
@@ -2895,13 +2888,12 @@ class Dash {
     this.includedFiles.resetAll();
     this.progress.advance();
     console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
-    this.isFullBuild = false;
   }
   async updateFiles(filePaths) {
     var _a;
     if (!this.isCompilerActivated)
       return;
-    this.isFullBuild = false;
+    this.buildType = "hotUpdate";
     this.progress.setTotal(8);
     console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
@@ -2954,8 +2946,9 @@ class Dash {
     var _a;
     if (!this.isCompilerActivated)
       return [[], fileData];
-    this.isFullBuild = false;
+    this.buildType = "fileRequest";
     this.progress.setTotal(7);
+    await this.plugins.runBuildStartHooks();
     await this.includedFiles.load(this.dashFilePath);
     let file = this.includedFiles.get(filePath);
     if (!file) {
@@ -2980,6 +2973,7 @@ class Dash {
     this.progress.advance();
     await this.includedFiles.load(this.dashFilePath);
     this.progress.advance();
+    await this.plugins.runBuildEndHooks();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlink(path, updateDashFile = true) {

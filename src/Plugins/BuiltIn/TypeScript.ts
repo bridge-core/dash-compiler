@@ -1,7 +1,9 @@
 import { transpile } from 'typescript'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
-export const TypeScriptPlugin: TCompilerPluginFactory = ({ options }) => ({
+export const TypeScriptPlugin: TCompilerPluginFactory<{
+	inlineSourceMap?: boolean
+}> = ({ options }) => ({
 	async transformPath(filePath) {
 		if (!filePath?.endsWith('.ts')) return
 
