@@ -2622,10 +2622,18 @@ class IncludedFiles {
         allFiles.add(file);
     }
     const includeFiles = await this.dash.plugins.runIncludeHooks();
-    for (const filePath of includeFiles) {
-      allFiles.add(filePath);
+    for (const includedFile of includeFiles) {
+      if (typeof includedFile === "string")
+        allFiles.add(includedFile);
+      else
+        this.addOne(includedFile[0], includedFile[1].isVirtual);
     }
     this.add([...allFiles]);
+  }
+  addOne(filePath, isVirtual = false) {
+    const file = new DashFile(this.dash, filePath, isVirtual);
+    this.files.set(filePath, file);
+    return file;
   }
   add(filePaths, isVirtual = false) {
     let files = [];
@@ -3038,7 +3046,12 @@ class FileSystem {
     await this.writeFile(path, JSON.stringify(content, null, beautify ? "	" : 0));
   }
   async readJson(path) {
-    return JSON.parse(await this.readFile(path).then((file) => file.text()));
+    const file = await this.readFile(path);
+    try {
+      return await JSON.parse(await file.text());
+    } catch {
+      throw new Error(`Invalid JSON: ${path}`);
+    }
   }
   watchDirectory(path, onChange) {
     console.warn("Watching a directory for changes is not supported on this platform!");

@@ -22,7 +22,9 @@ export declare class AllPlugins {
         compileFiles: (filePaths: string[]) => Promise<void>;
     }>;
     runBuildStartHooks(): Promise<void>;
-    runIncludeHooks(): Promise<string[]>;
+    runIncludeHooks(): Promise<(string | [string, {
+        isVirtual?: boolean | undefined;
+    }])[]>;
     runTransformPathHooks(filePath: string): Promise<string | null>;
     runReadHooks(filePath: string, fileHandle?: {
         getFile: () => Promise<File> | File;

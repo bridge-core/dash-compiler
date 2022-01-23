@@ -6,7 +6,7 @@ export type TCompilerPlugin = {
 	/**
 	 * Register files that should be loaded too
 	 */
-	include(): Maybe<string[]>
+	include(): Maybe<(string | [string, { isVirtual?: boolean }])[]>
 
 	/**
 	 * Transform file path

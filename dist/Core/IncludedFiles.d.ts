@@ -13,6 +13,7 @@ export declare class IncludedFiles {
     addAlias(alias: string, DashFile: DashFile): void;
     queryGlob(glob: string): DashFile[];
     loadAll(): Promise<void>;
+    addOne(filePath: string, isVirtual?: boolean): DashFile;
     add(filePaths: string[], isVirtual?: boolean): DashFile[];
     remove(filePath: string): void;
     save(filePath: string): Promise<void>;

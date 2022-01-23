@@ -40,7 +40,13 @@ export abstract class FileSystem {
 		)
 	}
 	async readJson(path: string): Promise<any> {
-		return JSON.parse(await this.readFile(path).then((file) => file.text()))
+		const file = await this.readFile(path)
+		try {
+			// TODO: Switch to json5
+			return await JSON.parse(await file.text())
+		} catch {
+			throw new Error(`Invalid JSON: ${path}`)
+		}
 	}
 	abstract lastModified(filePath: string): Promise<number>
 

@@ -56,11 +56,17 @@ export class IncludedFiles {
 
 		const includeFiles = await this.dash.plugins.runIncludeHooks()
 
-		for (const filePath of includeFiles) {
-			allFiles.add(filePath)
+		for (const includedFile of includeFiles) {
+			if (typeof includedFile === 'string') allFiles.add(includedFile)
+			else this.addOne(includedFile[0], includedFile[1].isVirtual)
 		}
 
 		this.add([...allFiles])
+	}
+	addOne(filePath: string, isVirtual = false) {
+		const file = new DashFile(this.dash, filePath, isVirtual)
+		this.files.set(filePath, file)
+		return file
 	}
 	add(filePaths: string[], isVirtual = false) {
 		let files: DashFile[] = []

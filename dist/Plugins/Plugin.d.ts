@@ -4,7 +4,9 @@ export declare class Plugin {
     protected plugin: Partial<TCompilerPlugin>;
     constructor(pluginId: string, plugin: Partial<TCompilerPlugin>);
     runBuildStartHook(): void | Promise<void> | undefined;
-    runIncludeHook(): Maybe<string[]>;
+    runIncludeHook(): Maybe<(string | [string, {
+        isVirtual?: boolean | undefined;
+    }])[]>;
     runTransformPathHook(filePath: string | null): Maybe<string>;
     runReadHook(filePath: string, fileHandle?: {
         getFile(): Promise<File> | File;
