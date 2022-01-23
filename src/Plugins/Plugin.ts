@@ -9,9 +9,9 @@ export class Plugin {
 	/**
 	 * Methods for running the various plugin hooks
 	 */
-	runBuildStartHook() {
+	async runBuildStartHook() {
 		try {
-			return this.plugin.buildStart?.()
+			return await this.plugin.buildStart?.()
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`,
@@ -19,9 +19,9 @@ export class Plugin {
 			)
 		}
 	}
-	runIncludeHook() {
+	async runIncludeHook() {
 		try {
-			return this.plugin.include?.()
+			return await this.plugin.include?.()
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "include" hook:`,
@@ -29,9 +29,9 @@ export class Plugin {
 			)
 		}
 	}
-	runTransformPathHook(filePath: string | null) {
+	async runTransformPathHook(filePath: string | null) {
 		try {
-			return this.plugin.transformPath?.(filePath)
+			return await this.plugin.transformPath?.(filePath)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`,
@@ -39,12 +39,12 @@ export class Plugin {
 			)
 		}
 	}
-	runReadHook(
+	async runReadHook(
 		filePath: string,
 		fileHandle?: { getFile(): Promise<File> | File }
 	) {
 		try {
-			return this.plugin.read?.(filePath, fileHandle)
+			return await this.plugin.read?.(filePath, fileHandle)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`,
@@ -52,9 +52,9 @@ export class Plugin {
 			)
 		}
 	}
-	runLoadHook(filePath: string, fileContent: any) {
+	async runLoadHook(filePath: string, fileContent: any) {
 		try {
-			return this.plugin.load?.(filePath, fileContent)
+			return await this.plugin.load?.(filePath, fileContent)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`,
@@ -62,9 +62,9 @@ export class Plugin {
 			)
 		}
 	}
-	runRegisterAliasesHook(filePath: string, fileContent: any) {
+	async runRegisterAliasesHook(filePath: string, fileContent: any) {
 		try {
-			return this.plugin.registerAliases?.(filePath, fileContent)
+			return await this.plugin.registerAliases?.(filePath, fileContent)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`,
@@ -72,9 +72,9 @@ export class Plugin {
 			)
 		}
 	}
-	runRequireHook(filePath: string, fileContent: any) {
+	async runRequireHook(filePath: string, fileContent: any) {
 		try {
-			return this.plugin.require?.(filePath, fileContent)
+			return await this.plugin.require?.(filePath, fileContent)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`,
@@ -82,13 +82,17 @@ export class Plugin {
 			)
 		}
 	}
-	runTransformHook(
+	async runTransformHook(
 		filePath: string,
 		fileContent: any,
 		dependencies?: Record<string, any>
 	) {
 		try {
-			return this.plugin.transform?.(filePath, fileContent, dependencies)
+			return await this.plugin.transform?.(
+				filePath,
+				fileContent,
+				dependencies
+			)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`,
@@ -96,9 +100,9 @@ export class Plugin {
 			)
 		}
 	}
-	runFinalizeBuildHook(filePath: string, fileContent: any) {
+	async runFinalizeBuildHook(filePath: string, fileContent: any) {
 		try {
-			return this.plugin.finalizeBuild?.(filePath, fileContent)
+			return await this.plugin.finalizeBuild?.(filePath, fileContent)
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`,
@@ -106,9 +110,9 @@ export class Plugin {
 			)
 		}
 	}
-	runBuildEndHook() {
+	async runBuildEndHook() {
 		try {
-			return this.plugin.buildEnd?.()
+			return await this.plugin.buildEnd?.()
 		} catch (err) {
 			console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`,

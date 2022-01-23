@@ -87,82 +87,82 @@ class Plugin {
     this.pluginId = pluginId;
     this.plugin = plugin;
   }
-  runBuildStartHook() {
+  async runBuildStartHook() {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).buildStart) == null ? void 0 : _b.call(_a);
+      return await ((_b = (_a = this.plugin).buildStart) == null ? void 0 : _b.call(_a));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`, err);
     }
   }
-  runIncludeHook() {
+  async runIncludeHook() {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).include) == null ? void 0 : _b.call(_a);
+      return await ((_b = (_a = this.plugin).include) == null ? void 0 : _b.call(_a));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "include" hook:`, err);
     }
   }
-  runTransformPathHook(filePath) {
+  async runTransformPathHook(filePath) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).transformPath) == null ? void 0 : _b.call(_a, filePath);
+      return await ((_b = (_a = this.plugin).transformPath) == null ? void 0 : _b.call(_a, filePath));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`, err);
     }
   }
-  runReadHook(filePath, fileHandle) {
+  async runReadHook(filePath, fileHandle) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).read) == null ? void 0 : _b.call(_a, filePath, fileHandle);
+      return await ((_b = (_a = this.plugin).read) == null ? void 0 : _b.call(_a, filePath, fileHandle));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`, err);
     }
   }
-  runLoadHook(filePath, fileContent) {
+  async runLoadHook(filePath, fileContent) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).load) == null ? void 0 : _b.call(_a, filePath, fileContent);
+      return await ((_b = (_a = this.plugin).load) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`, err);
     }
   }
-  runRegisterAliasesHook(filePath, fileContent) {
+  async runRegisterAliasesHook(filePath, fileContent) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).registerAliases) == null ? void 0 : _b.call(_a, filePath, fileContent);
+      return await ((_b = (_a = this.plugin).registerAliases) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`, err);
     }
   }
-  runRequireHook(filePath, fileContent) {
+  async runRequireHook(filePath, fileContent) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).require) == null ? void 0 : _b.call(_a, filePath, fileContent);
+      return await ((_b = (_a = this.plugin).require) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`, err);
     }
   }
-  runTransformHook(filePath, fileContent, dependencies) {
+  async runTransformHook(filePath, fileContent, dependencies) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).transform) == null ? void 0 : _b.call(_a, filePath, fileContent, dependencies);
+      return await ((_b = (_a = this.plugin).transform) == null ? void 0 : _b.call(_a, filePath, fileContent, dependencies));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`, err);
     }
   }
-  runFinalizeBuildHook(filePath, fileContent) {
+  async runFinalizeBuildHook(filePath, fileContent) {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).finalizeBuild) == null ? void 0 : _b.call(_a, filePath, fileContent);
+      return await ((_b = (_a = this.plugin).finalizeBuild) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`, err);
     }
   }
-  runBuildEndHook() {
+  async runBuildEndHook() {
     var _a, _b;
     try {
-      return (_b = (_a = this.plugin).buildEnd) == null ? void 0 : _b.call(_a);
+      return await ((_b = (_a = this.plugin).buildEnd) == null ? void 0 : _b.call(_a));
     } catch (err) {
       console.error(`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`, err);
     }
