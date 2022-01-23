@@ -98,8 +98,27 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 								? commands
 								: [commands]
 
+							/**
+							 * Filter out invalid commands as those were commonly
+							 * accidentally created with bridge.'s tree editor
+							 *
+							 * e.g. [{ '/say Hi': {} }]
+							 */
+							const filteredCommands = []
+							for (const command of commands) {
+								if (typeof command === 'string') {
+									filteredCommands.push(command)
+									continue
+								}
+
+								// Produce a helpful warning to inform user about invalid input
+								console.error(
+									`The file "${filePath}" contains invalid commands. Expected type "string" within array but got type "${typeof command}"`
+								)
+							}
+
 							return transformCommands(
-								commands.map((command) =>
+								filteredCommands.map((command) =>
 									!hasSlashPrefix && !command.startsWith('/')
 										? `/${command}`
 										: command

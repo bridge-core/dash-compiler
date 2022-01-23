@@ -10,40 +10,110 @@ export class Plugin {
 	 * Methods for running the various plugin hooks
 	 */
 	runBuildStartHook() {
-		return this.plugin.buildStart?.()
+		try {
+			return this.plugin.buildStart?.()
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`,
+				err
+			)
+		}
 	}
 	runIncludeHook() {
-		return this.plugin.include?.()
+		try {
+			return this.plugin.include?.()
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "include" hook:`,
+				err
+			)
+		}
 	}
 	runTransformPathHook(filePath: string | null) {
-		return this.plugin.transformPath?.(filePath)
+		try {
+			return this.plugin.transformPath?.(filePath)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runReadHook(
 		filePath: string,
 		fileHandle?: { getFile(): Promise<File> | File }
 	) {
-		return this.plugin.read?.(filePath, fileHandle)
+		try {
+			return this.plugin.read?.(filePath, fileHandle)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runLoadHook(filePath: string, fileContent: any) {
-		return this.plugin.load?.(filePath, fileContent)
+		try {
+			return this.plugin.load?.(filePath, fileContent)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runRegisterAliasesHook(filePath: string, fileContent: any) {
-		return this.plugin.registerAliases?.(filePath, fileContent)
+		try {
+			return this.plugin.registerAliases?.(filePath, fileContent)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runRequireHook(filePath: string, fileContent: any) {
-		return this.plugin.require?.(filePath, fileContent)
+		try {
+			return this.plugin.require?.(filePath, fileContent)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runTransformHook(
 		filePath: string,
 		fileContent: any,
 		dependencies?: Record<string, any>
 	) {
-		return this.plugin.transform?.(filePath, fileContent, dependencies)
+		try {
+			return this.plugin.transform?.(filePath, fileContent, dependencies)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runFinalizeBuildHook(filePath: string, fileContent: any) {
-		return this.plugin.finalizeBuild?.(filePath, fileContent)
+		try {
+			return this.plugin.finalizeBuild?.(filePath, fileContent)
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`,
+				err
+			)
+		}
 	}
 	runBuildEndHook() {
-		return this.plugin.buildEnd?.()
+		try {
+			return this.plugin.buildEnd?.()
+		} catch (err) {
+			console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`,
+				err
+			)
+		}
 	}
 }
