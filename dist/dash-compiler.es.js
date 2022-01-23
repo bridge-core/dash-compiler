@@ -2653,7 +2653,7 @@ class IncludedFiles {
     }
   }
   async save(filePath) {
-    this.dash.fileSystem.writeJson(filePath, this.all().filter((file) => !file.isVirtual).map((file) => file.serialize()));
+    await this.dash.fileSystem.writeJson(filePath, this.all().filter((file) => !file.isVirtual).map((file) => file.serialize()));
   }
   async load(filePath) {
     this.removeAll();

@@ -89,7 +89,7 @@ export class IncludedFiles {
 	}
 
 	async save(filePath: string) {
-		this.dash.fileSystem.writeJson(
+		await this.dash.fileSystem.writeJson(
 			filePath,
 			this.all()
 				.filter((file) => !file.isVirtual)
