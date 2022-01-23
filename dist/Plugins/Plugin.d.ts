@@ -3,7 +3,7 @@ export declare class Plugin {
     readonly pluginId: string;
     protected plugin: Partial<TCompilerPlugin>;
     constructor(pluginId: string, plugin: Partial<TCompilerPlugin>);
-    runBuildStartHook(): void | Promise<void> | undefined;
+    runBuildStartHook(): void | Promise<void>;
     runIncludeHook(): Maybe<(string | [string, {
         isVirtual?: boolean | undefined;
     }])[]>;
@@ -16,5 +16,5 @@ export declare class Plugin {
     runRequireHook(filePath: string, fileContent: any): Maybe<string[]>;
     runTransformHook(filePath: string, fileContent: any, dependencies?: Record<string, any>): any;
     runFinalizeBuildHook(filePath: string, fileContent: any): Maybe<string | ArrayBuffer | Uint8Array | Blob>;
-    runBuildEndHook(): void | Promise<void> | undefined;
+    runBuildEndHook(): void | Promise<void>;
 }
