@@ -2565,8 +2565,7 @@ class DashFile {
     const chain = new Set([this]);
     for (const updateFile of this.updateFiles) {
       updateFile.getHotUpdateChain().forEach((file) => {
-        if (!file.isVirtual)
-          chain.add(file);
+        chain.add(file);
       });
     }
     return chain;
@@ -2580,8 +2579,7 @@ class DashFile {
       const depFiles = this.dash.includedFiles.query(depFileId);
       for (const depFile of depFiles) {
         depFile.filesToLoadForHotUpdate(visited, false).forEach((file) => {
-          if (!file.isVirtual)
-            chain.add(file);
+          chain.add(file);
         });
       }
     }
@@ -2589,8 +2587,7 @@ class DashFile {
     if (didFileChange) {
       for (const updateFile of this.updateFiles) {
         updateFile.filesToLoadForHotUpdate(visited, true).forEach((file) => {
-          if (!file.isVirtual)
-            chain.add(file);
+          chain.add(file);
         });
       }
     }

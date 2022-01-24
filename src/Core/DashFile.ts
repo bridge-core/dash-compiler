@@ -69,7 +69,7 @@ export class DashFile {
 
 		for (const updateFile of this.updateFiles) {
 			updateFile.getHotUpdateChain().forEach((file) => {
-				if (!file.isVirtual) chain.add(file)
+				chain.add(file)
 			})
 		}
 
@@ -91,7 +91,7 @@ export class DashFile {
 				depFile
 					.filesToLoadForHotUpdate(visited, false)
 					.forEach((file) => {
-						if (!file.isVirtual) chain.add(file)
+						chain.add(file)
 					})
 			}
 		}
@@ -103,7 +103,7 @@ export class DashFile {
 				updateFile
 					.filesToLoadForHotUpdate(visited, true)
 					.forEach((file) => {
-						if (!file.isVirtual) chain.add(file)
+						chain.add(file)
 					})
 			}
 		}
