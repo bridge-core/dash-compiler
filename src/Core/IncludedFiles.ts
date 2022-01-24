@@ -91,9 +91,7 @@ export class IncludedFiles {
 	async save(filePath: string) {
 		await this.dash.fileSystem.writeJson(
 			filePath,
-			this.all()
-				.filter((file) => !file.isVirtual)
-				.map((file) => file.serialize())
+			this.all().map((file) => file.serialize())
 		)
 	}
 	async load(filePath: string) {
@@ -127,7 +125,6 @@ export class IncludedFiles {
 	resetAll() {
 		for (const file of this.all()) {
 			file.reset()
-			if (file.isVirtual) this.remove(file.filePath)
 		}
 	}
 	removeAll() {
