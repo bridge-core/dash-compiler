@@ -227,12 +227,15 @@ export function createCustomComponentPlugin({
 				if (options.buildType === 'fileRequest') return
 
 				createAdditionalFiles = Object.fromEntries(
-					Object.entries(createAdditionalFiles).map(
-						([filePath, fileData]) => [
+					Object.entries(createAdditionalFiles)
+						.filter(
+							([_, fileData]) =>
+								fileData.fileContent !== undefined
+						)
+						.map(([filePath, fileData]) => [
 							join(projectRoot, filePath),
 							fileData,
-						]
-					)
+						])
 				)
 				const compilePaths = Object.keys(createAdditionalFiles)
 				if (compilePaths.length > 0) await compileFiles(compilePaths)

@@ -2019,7 +2019,7 @@ function createCustomComponentPlugin({
       async buildEnd() {
         if (options.buildType === "fileRequest")
           return;
-        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).map(([filePath, fileData]) => [
+        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).filter(([_, fileData]) => fileData.fileContent !== void 0).map(([filePath, fileData]) => [
           join(projectRoot, filePath),
           fileData
         ]));
