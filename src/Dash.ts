@@ -153,7 +153,7 @@ export class Dash<TSetupArg = void> {
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
 
-	async updateFiles(filePaths: string[]) {
+	async updateFiles(filePaths: string[], saveDashFile = true) {
 		if (!this.isCompilerActivated) return
 		this.buildType = 'hotUpdate'
 
@@ -246,7 +246,7 @@ export class Dash<TSetupArg = void> {
 
 		await this.plugins.runBuildEndHooks()
 
-		await this.saveDashFile()
+		if (saveDashFile) await this.saveDashFile()
 		this.includedFiles.resetAll()
 		console.log(`Dash finished updating ${filesToTransform.size} files!`)
 
@@ -335,7 +335,7 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return
 
 		await this.unlink(oldPath, false)
-		await this.updateFiles([newPath])
+		await this.updateFiles([newPath], false)
 
 		await this.saveDashFile()
 	}
@@ -377,10 +377,10 @@ export class Dash<TSetupArg = void> {
 	 * @param filePaths
 	 */
 	async compileVirtualFiles(filePaths: string[]) {
-		this.includedFiles.add(filePaths, true)
+		const virtualFiles = this.includedFiles.add(filePaths, true)
 		this.progress.addToTotal(3)
-		await this.compileIncludedFiles(
-			this.includedFiles.filtered((file) => file.isVirtual)
-		)
+
+		virtualFiles.forEach((virtual) => virtual.reset())
+		await this.compileIncludedFiles(virtualFiles)
 	}
 }

@@ -1379,8 +1379,6 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => 
       }
     },
     finalizeBuild(filePath, fileContent) {
-      if (astTransformers.length > 0)
-        astTransformers = [];
       if (loadMoLangFrom(filePath) && typeof fileContent !== "string")
         return JSON.stringify(fileContent, null, "	");
     },
@@ -2019,7 +2017,7 @@ function createCustomComponentPlugin({
       async buildEnd() {
         if (options.buildType === "fileRequest")
           return;
-        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).filter(([_, fileData]) => fileData.fileContent !== void 0).map(([filePath, fileData]) => [
+        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).filter(([_, fileData]) => (fileData == null ? void 0 : fileData.fileContent) !== void 0).map(([filePath, fileData]) => [
           join(projectRoot, filePath),
           fileData
         ]));
@@ -2521,7 +2519,7 @@ class AllPlugins {
   async runFinalizeBuildHooks(file) {
     for (const plugin of this.plugins) {
       const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data);
-      if (finalizedData !== void 0 && finalizedData !== null)
+      if (finalizedData !== void 0)
         return finalizedData;
     }
   }
@@ -2697,6 +2695,11 @@ class IncludedFiles {
   add(filePaths, isVirtual = false) {
     let files = [];
     for (const filePath of filePaths) {
+      const file = this.files.get(filePath);
+      if (file) {
+        files.push(file);
+        continue;
+      }
       files.push(new DashFile(this.dash, filePath, isVirtual));
       this.files.set(filePath, files[files.length - 1]);
     }
@@ -2723,6 +2726,9 @@ class IncludedFiles {
       file.setAliases(new Set(sFile.aliases));
       file.setRequiredFiles(new Set(sFile.requiredFiles));
       files.push(file);
+      for (const alias of sFile.aliases) {
+        this.aliases.set(alias, file);
+      }
     }
     this.files = new Map(files.map((file) => [file.filePath, file]));
     for (let i = 0; i < files.length; i++) {
@@ -2827,23 +2833,25 @@ class FileTransformer {
       if (writeData !== void 0 && writeData !== null && file.outputPath) {
         await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);
       }
-      file.isDone = true;
     }
   }
   async transformFile(file, runFinalizeHook = false, skipTransform = false) {
-    var _a, _b;
+    var _a;
     if (!skipTransform) {
       file.data = (_a = await this.dash.plugins.runTransformHooks(file)) != null ? _a : file.data;
     }
     if (!runFinalizeHook)
       return file.data;
-    let writeData = (_b = await this.dash.plugins.runFinalizeBuildHooks(file)) != null ? _b : file.data;
+    let writeData = await this.dash.plugins.runFinalizeBuildHooks(file);
+    if (writeData === void 0)
+      writeData = file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
         console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
         writeData = JSON.stringify(writeData);
       }
     }
+    file.isDone = true;
     return writeData;
   }
 }
@@ -2954,7 +2962,7 @@ class Dash {
     this.progress.advance();
     console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
   }
-  async updateFiles(filePaths) {
+  async updateFiles(filePaths, saveDashFile = true) {
     var _a;
     if (!this.isCompilerActivated)
       return;
@@ -3002,7 +3010,8 @@ class Dash {
     await this.fileTransformer.run(filesToTransform, true);
     this.progress.advance();
     await this.plugins.runBuildEndHooks();
-    await this.saveDashFile();
+    if (saveDashFile)
+      await this.saveDashFile();
     this.includedFiles.resetAll();
     console.log(`Dash finished updating ${filesToTransform.size} files!`);
     this.progress.advance();
@@ -3056,7 +3065,7 @@ class Dash {
     if (!this.isCompilerActivated)
       return;
     await this.unlink(oldPath, false);
-    await this.updateFiles([newPath]);
+    await this.updateFiles([newPath], false);
     await this.saveDashFile();
   }
   async getCompilerOutputPath(filePath) {
@@ -3081,9 +3090,10 @@ class Dash {
     this.progress.advance();
   }
   async compileVirtualFiles(filePaths) {
-    this.includedFiles.add(filePaths, true);
+    const virtualFiles = this.includedFiles.add(filePaths, true);
     this.progress.addToTotal(3);
-    await this.compileIncludedFiles(this.includedFiles.filtered((file) => file.isVirtual));
+    virtualFiles.forEach((virtual) => virtual.reset());
+    await this.compileIncludedFiles(virtualFiles);
   }
 }
 class FileSystem {

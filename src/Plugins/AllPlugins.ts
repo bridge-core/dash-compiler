@@ -292,8 +292,7 @@ export class AllPlugins {
 				file.data
 			)
 
-			if (finalizedData !== undefined && finalizedData !== null)
-				return finalizedData
+			if (finalizedData !== undefined) return finalizedData
 		}
 	}
 

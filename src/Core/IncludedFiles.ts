@@ -72,6 +72,12 @@ export class IncludedFiles {
 		let files: DashFile[] = []
 
 		for (const filePath of filePaths) {
+			const file = this.files.get(filePath)
+			if (file) {
+				files.push(file)
+				continue
+			}
+
 			files.push(new DashFile(this.dash, filePath, isVirtual))
 			this.files.set(filePath, files[files.length - 1])
 		}
@@ -111,6 +117,10 @@ export class IncludedFiles {
 			file.setAliases(new Set(sFile.aliases))
 			file.setRequiredFiles(new Set(sFile.requiredFiles))
 			files.push(file)
+
+			for (const alias of sFile.aliases) {
+				this.aliases.set(alias, file)
+			}
 		}
 
 		this.files = new Map(files.map((file) => [file.filePath, file]))

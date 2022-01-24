@@ -33,6 +33,6 @@ export declare class AllPlugins {
     runRegisterAliasesHooks(filePath: string, data: any): Promise<Set<string>>;
     runRequireHooks(filePath: string, data: any): Promise<Set<string>>;
     runTransformHooks(file: DashFile): Promise<any>;
-    runFinalizeBuildHooks(file: DashFile): Promise<string | ArrayBuffer | Blob | undefined>;
+    runFinalizeBuildHooks(file: DashFile): Promise<string | ArrayBuffer | Blob | null | undefined>;
     runBuildEndHooks(): Promise<void>;
 }

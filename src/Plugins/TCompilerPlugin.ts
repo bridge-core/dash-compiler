@@ -51,6 +51,8 @@ export type TCompilerPlugin = {
 
 	/**
 	 * Prepare data before it gets written to disk
+	 *
+	 * - Return null to omit file from output
 	 */
 	finalizeBuild(
 		filePath: string,

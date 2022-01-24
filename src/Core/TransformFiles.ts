@@ -19,8 +19,6 @@ export class FileTransformer {
 					writeData
 				)
 			}
-
-			file.isDone = true
 		}
 	}
 
@@ -36,8 +34,8 @@ export class FileTransformer {
 
 		if (!runFinalizeHook) return file.data
 
-		let writeData =
-			(await this.dash.plugins.runFinalizeBuildHooks(file)) ?? file.data
+		let writeData = await this.dash.plugins.runFinalizeBuildHooks(file)
+		if (writeData === undefined) writeData = file.data
 
 		if (writeData !== undefined && writeData !== null) {
 			if (!isWritableData(writeData)) {
@@ -50,6 +48,8 @@ export class FileTransformer {
 				writeData = JSON.stringify(writeData)
 			}
 		}
+
+		file.isDone = true
 
 		return writeData
 	}

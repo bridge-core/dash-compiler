@@ -230,7 +230,7 @@ export function createCustomComponentPlugin({
 					Object.entries(createAdditionalFiles)
 						.filter(
 							([_, fileData]) =>
-								fileData.fileContent !== undefined
+								fileData?.fileContent !== undefined
 						)
 						.map(([filePath, fileData]) => [
 							join(projectRoot, filePath),
