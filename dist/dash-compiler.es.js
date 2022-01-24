@@ -1718,7 +1718,7 @@ class Component {
       });
     }
   }
-  async processAdditionalFiles(fileContent) {
+  async processAdditionalFiles(filePath, fileContent) {
     var _a, _b, _c, _d;
     const bpRoot = (_a = this.projectConfig) == null ? void 0 : _a.getPackRoot("behaviorPack");
     const identifier = (_d = (_c = (_b = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _b.description) == null ? void 0 : _c.identifier) != null ? _d : "bridge:no_identifier";
@@ -1731,17 +1731,29 @@ class Component {
       });
     }
     return __spreadValues({
-      [animFileName]: this.createAnimations(fileName, fileContent),
-      [animControllerFileName]: this.createAnimationControllers(fileName, fileContent),
-      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? JSON.stringify({
-        format_version: this.targetVersion,
-        "minecraft:npc_dialogue": {
-          scenes: this.dialogueScenes[fileName]
-        }
-      }, null, "	") : void 0
-    }, Object.fromEntries(Object.entries(this.clientFiles).map(([filePath, jsonContent]) => [
-      filePath,
-      JSON.stringify(jsonContent, null, "	")
+      [animFileName]: {
+        baseFile: filePath,
+        fileContent: this.createAnimations(fileName, fileContent)
+      },
+      [animControllerFileName]: {
+        baseFile: filePath,
+        fileContent: this.createAnimationControllers(fileName, fileContent)
+      },
+      [`${bpRoot}/dialogue/bridge/${fileName}.json`]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
+        baseFile: filePath,
+        fileContent: JSON.stringify({
+          format_version: this.targetVersion,
+          "minecraft:npc_dialogue": {
+            scenes: this.dialogueScenes[fileName]
+          }
+        }, null, "	")
+      } : void 0
+    }, Object.fromEntries(Object.entries(this.clientFiles).map(([filePath2, jsonContent]) => [
+      filePath2,
+      {
+        baseFile: filePath2,
+        fileContent: JSON.stringify(jsonContent, null, "	")
+      }
     ])));
   }
   createAnimations(fileName, fileContent) {
@@ -1923,7 +1935,7 @@ function createCustomComponentPlugin({
       },
       async read(filePath, fileHandle) {
         if (!fileHandle)
-          return createAdditionalFiles[filePath] ? lib.parse(createAdditionalFiles[filePath]) : void 0;
+          return createAdditionalFiles[filePath] ? lib.parse(createAdditionalFiles[filePath].fileContent) : void 0;
         if (isComponent(filePath) && filePath.endsWith(".js")) {
           const file = await fileHandle.getFile();
           return await file.text();
@@ -1963,6 +1975,8 @@ function createCustomComponentPlugin({
           const components = findCustomComponents(getComponentObjects(fileContent));
           usedComponents.set(filePath, components);
           return components.map((component) => `${fileType}Component#${component[0]}`);
+        } else if (createAdditionalFiles[filePath]) {
+          return [createAdditionalFiles[filePath].baseFile];
         }
       },
       async transform(filePath, fileContent, dependencies = {}) {
@@ -1972,7 +1986,7 @@ function createCustomComponentPlugin({
           for (const component of itemComponents) {
             if (!component)
               return;
-            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(fileContent));
+            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
           }
         } else if (mayUseComponent(filePath)) {
           const components = new Set();
@@ -1989,7 +2003,7 @@ function createCustomComponentPlugin({
           if (fileType !== "entity")
             return;
           for (const component of components) {
-            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(fileContent));
+            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
           }
           for (const component of components) {
             component.reset();
@@ -2005,9 +2019,9 @@ function createCustomComponentPlugin({
       async buildEnd() {
         if (options.buildType === "fileRequest")
           return;
-        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).map(([file, fileContent]) => [
-          join(projectRoot, file),
-          fileContent
+        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).map(([filePath, fileData]) => [
+          join(projectRoot, filePath),
+          fileData
         ]));
         const compilePaths = Object.keys(createAdditionalFiles);
         if (compilePaths.length > 0)

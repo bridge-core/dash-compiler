@@ -291,7 +291,7 @@ export class Component {
 		}
 	}
 
-	async processAdditionalFiles(fileContent: any) {
+	async processAdditionalFiles(filePath: string, fileContent: any) {
 		const bpRoot = this.projectConfig?.getPackRoot('behaviorPack')
 		// Try getting file identifier
 		const identifier =
@@ -309,30 +309,46 @@ export class Component {
 		}
 
 		return {
-			[animFileName]: this.createAnimations(fileName, fileContent),
-			[animControllerFileName]: this.createAnimationControllers(
-				fileName,
-				fileContent
-			),
+			[animFileName]: {
+				baseFile: filePath,
+				fileContent: this.createAnimations(fileName, fileContent),
+			},
+			[animControllerFileName]: {
+				baseFile: filePath,
+				fileContent: this.createAnimationControllers(
+					fileName,
+					fileContent
+				),
+			},
 			[`${bpRoot}/dialogue/bridge/${fileName}.json`]:
 				this.dialogueScenes[fileName] &&
 				this.dialogueScenes[fileName].length > 0
-					? JSON.stringify(
-							{
-								format_version: this.targetVersion,
-								'minecraft:npc_dialogue': {
-									scenes: this.dialogueScenes[fileName],
+					? {
+							baseFile: filePath,
+							fileContent: JSON.stringify(
+								{
+									format_version: this.targetVersion,
+									'minecraft:npc_dialogue': {
+										scenes: this.dialogueScenes[fileName],
+									},
 								},
-							},
-							null,
-							'\t'
-					  )
+								null,
+								'\t'
+							),
+					  }
 					: undefined,
 			...Object.fromEntries(
 				Object.entries(this.clientFiles).map(
 					([filePath, jsonContent]) => [
 						filePath,
-						JSON.stringify(jsonContent, null, '\t'),
+						{
+							baseFile: filePath,
+							fileContent: JSON.stringify(
+								jsonContent,
+								null,
+								'\t'
+							),
+						},
 					]
 				)
 			),

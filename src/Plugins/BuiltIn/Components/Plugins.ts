@@ -17,7 +17,10 @@ export function createCustomComponentPlugin({
 	v1CompatMode?: boolean
 }> {
 	const usedComponents = new Map<string, [string, string][]>()
-	let createAdditionalFiles: Record<string, any> = {}
+	let createAdditionalFiles: Record<
+		string,
+		{ baseFile: string; fileContent: any }
+	> = {}
 
 	return ({
 		projectConfig,
@@ -63,7 +66,9 @@ export function createCustomComponentPlugin({
 				// we still just return "undefined" so we might as well keep the code simple
 				if (!fileHandle)
 					return createAdditionalFiles[filePath]
-						? json5.parse(createAdditionalFiles[filePath])
+						? json5.parse(
+								createAdditionalFiles[filePath].fileContent
+						  )
 						: undefined
 
 				if (isComponent(filePath) && filePath.endsWith('.js')) {
@@ -127,6 +132,8 @@ export function createCustomComponentPlugin({
 					return components.map(
 						(component) => `${fileType}Component#${component[0]}`
 					)
+				} else if (createAdditionalFiles[filePath]) {
+					return [createAdditionalFiles[filePath].baseFile]
 				}
 				// else if (filePath.startsWith('RP/entity/')) {
 				// 	return ['BP/components/entity/**/*.js']
@@ -148,7 +155,10 @@ export function createCustomComponentPlugin({
 
 						createAdditionalFiles = deepMerge(
 							createAdditionalFiles,
-							await component.processAdditionalFiles(fileContent)
+							await component.processAdditionalFiles(
+								filePath,
+								fileContent
+							)
 						)
 					}
 				} else if (mayUseComponent(filePath)) {
@@ -188,7 +198,10 @@ export function createCustomComponentPlugin({
 					for (const component of components) {
 						createAdditionalFiles = deepMerge(
 							createAdditionalFiles,
-							await component.processAdditionalFiles(fileContent)
+							await component.processAdditionalFiles(
+								filePath,
+								fileContent
+							)
 						)
 					}
 
@@ -215,9 +228,9 @@ export function createCustomComponentPlugin({
 
 				createAdditionalFiles = Object.fromEntries(
 					Object.entries(createAdditionalFiles).map(
-						([file, fileContent]) => [
-							join(projectRoot, file),
-							fileContent,
+						([filePath, fileData]) => [
+							join(projectRoot, filePath),
+							fileData,
 						]
 					)
 				)
