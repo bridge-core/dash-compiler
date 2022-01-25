@@ -2336,8 +2336,55 @@ const TypeScriptPlugin = ({ options }) => ({
       return fileContent;
   }
 });
+const RewriteForPackaging = ({ options, outputFileSystem, projectRoot, packType, fileType }) => {
+  if (!options.packName)
+    options.packName = "bridge project";
+  const relevantFilePath = (path) => path.split(/\\|\//g).filter((part) => part !== ".." && part !== ".").slice(1).join("/");
+  const rewriteForMcaddon = (filePath) => {
+    const packId = packType.getId(filePath);
+    const relativePath = relative(projectRoot, filePath);
+    if (packId === "behaviorPack" || packId === "resourcePack" || packId === "skinPack")
+      return join(projectRoot, "builds/dist", packId, relevantFilePath(relativePath));
+  };
+  const rewriteForMctemplate = (filePath) => {
+    const packId = packType.getId(filePath);
+    const relativePath = relative(projectRoot, filePath);
+    if (packId === "worldTemplate")
+      return join(projectRoot, "builds/dist", relevantFilePath(relativePath));
+    else if (packId === "behaviorPack" || packId === "resourcePack") {
+      return join(projectRoot, "builds/dist", packId === "behaviorPack" ? "behavior_packs" : "resource_packs", options.packName, relevantFilePath(relativePath));
+    }
+  };
+  const rewriteForMcworld = (filePath) => {
+    const fileId = fileType.getId(filePath);
+    if (fileId === "worldManifest")
+      return null;
+    return rewriteForMctemplate(filePath);
+  };
+  return {
+    async buildStart() {
+      await outputFileSystem.unlink(`${projectRoot}/builds/dist`).catch(() => {
+      });
+    },
+    transformPath(filePath) {
+      if (!filePath)
+        return;
+      switch (options.format) {
+        case "mcaddon":
+          return rewriteForMcaddon(filePath);
+        case "mcworld":
+          return rewriteForMcworld(filePath);
+        case "mctemplate":
+          return rewriteForMctemplate(filePath);
+        default:
+          console.error(`Unknown packaging format: ${options.format}`);
+      }
+    }
+  };
+};
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
+  rewriteForPackaging: RewriteForPackaging,
   moLang: MoLangPlugin,
   entityIdentifierAlias: EntityIdentifierAlias,
   customEntityComponents: CustomEntityComponentPlugin,

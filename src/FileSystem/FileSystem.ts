@@ -42,7 +42,6 @@ export abstract class FileSystem {
 	async readJson(path: string): Promise<any> {
 		const file = await this.readFile(path)
 		try {
-			// TODO: Switch to json5
 			return await JSON.parse(await file.text())
 		} catch {
 			throw new Error(`Invalid JSON: ${path}`)

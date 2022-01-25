@@ -14,9 +14,11 @@ import {
 } from './BuiltIn/Components/Plugins'
 import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
 import { TypeScriptPlugin } from './BuiltIn/TypeScript'
+import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
+	rewriteForPackaging: RewriteForPackaging,
 	moLang: MoLangPlugin,
 	entityIdentifierAlias: EntityIdentifierAlias,
 	customEntityComponents: CustomEntityComponentPlugin,
