@@ -2876,6 +2876,8 @@ class FileTransformer {
   }
   async run(resolvedFileOrder, skipTransform = false) {
     for (const file of resolvedFileOrder) {
+      if (file.isDone)
+        continue;
       let writeData = await this.transformFile(file, true, skipTransform);
       if (writeData !== void 0 && writeData !== null && file.outputPath) {
         await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);

@@ -7,6 +7,8 @@ export class FileTransformer {
 
 	async run(resolvedFileOrder: Set<DashFile>, skipTransform = false) {
 		for (const file of resolvedFileOrder) {
+			if (file.isDone) continue
+
 			let writeData = await this.transformFile(file, true, skipTransform)
 
 			if (
