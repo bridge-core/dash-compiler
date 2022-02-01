@@ -36,13 +36,13 @@ class DashProjectConfig extends ProjectConfig {
 function run(context) {
   if (context.async)
     return createRunner(context)(...Object.values(context.env)).catch((err) => {
-      console.error(context.script);
+      context.console.error(context.script);
       throw new Error(`Error within script: ${err}`);
     });
   try {
     return createRunner(context)(...Object.values(context.env));
   } catch (err) {
-    console.error(context.script);
+    context.console.error(context.script);
     throw new Error(`Error within script: ${err}`);
   }
 }
@@ -50,7 +50,8 @@ function createRunner({
   script,
   env,
   modules,
-  async = false
+  async = false,
+  console: console2
 }) {
   let transformedScript = transformScript(script);
   if (modules) {
@@ -71,7 +72,7 @@ ${transformedScript}
 })()`);
     return new Function(...Object.keys(env), transformedScript);
   } catch (err) {
-    console.error(script);
+    console2.error(script);
     throw new Error(`Error within script: ${err}`);
   }
 }
@@ -83,7 +84,8 @@ function transformScript(script) {
   });
 }
 class Plugin {
-  constructor(pluginId, plugin) {
+  constructor(dash, pluginId, plugin) {
+    this.dash = dash;
     this.pluginId = pluginId;
     this.plugin = plugin;
   }
@@ -92,7 +94,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).buildStart) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`, err);
     }
   }
   async runIncludeHook() {
@@ -100,7 +102,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).include) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "include" hook:`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "include" hook:`, err);
     }
   }
   async runTransformPathHook(filePath) {
@@ -108,7 +110,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).transformPath) == null ? void 0 : _b.call(_a, filePath));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`, err);
     }
   }
   async runReadHook(filePath, fileHandle) {
@@ -116,7 +118,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).read) == null ? void 0 : _b.call(_a, filePath, fileHandle));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`, err);
     }
   }
   async runLoadHook(filePath, fileContent) {
@@ -124,7 +126,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).load) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`, err);
     }
   }
   async runRegisterAliasesHook(filePath, fileContent) {
@@ -132,7 +134,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).registerAliases) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`, err);
     }
   }
   async runRequireHook(filePath, fileContent) {
@@ -140,7 +142,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).require) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`, err);
     }
   }
   async runTransformHook(filePath, fileContent, dependencies) {
@@ -148,7 +150,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).transform) == null ? void 0 : _b.call(_a, filePath, fileContent, dependencies));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`, err);
     }
   }
   async runFinalizeBuildHook(filePath, fileContent) {
@@ -156,7 +158,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).finalizeBuild) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`, err);
     }
   }
   async runBuildEndHook() {
@@ -164,7 +166,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).buildEnd) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      console.error(`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`, err);
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`, err);
     }
   }
 }
@@ -1283,7 +1285,7 @@ const JSON5 = {
   stringify
 };
 var lib = JSON5;
-const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => {
+const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options, console: console2 }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
@@ -1311,7 +1313,7 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => 
           return lib.parse(await file.text());
         } catch (err) {
           if (options.buildType !== "fileRequest")
-            console.error(`Error within file "${filePath}": ${err}`);
+            console2.error(`Error within file "${filePath}": ${err}`);
           return {
             __error__: `Failed to load original file: ${err}`
           };
@@ -1325,8 +1327,9 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => 
         const module = { exports: {} };
         await run({
           script: fileContent,
-          env: { module },
+          env: { module, console: console2 },
           async: true,
+          console: console2,
           modules: {
             "@molang/expressions": expressions,
             "@molang/core": MoLang,
@@ -1360,7 +1363,7 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => 
               ast = customMoLang.parse(molang);
             } catch (err) {
               if (options.buildType !== "fileRequest")
-                console.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
+                console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
               return molang;
             }
             for (const transformer of astTransformers) {
@@ -1372,7 +1375,7 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options }) => 
             return customMoLang.transform(molang);
           } catch (err) {
             if (options.buildType !== "fileRequest")
-              console.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
+              console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
             return molang;
           }
         }));
@@ -1528,7 +1531,8 @@ function transformV1Value(value) {
   }
 }
 class Component {
-  constructor(fileType, componentSrc, mode, v1Compat2, targetVersion) {
+  constructor(console2, fileType, componentSrc, mode, v1Compat2, targetVersion) {
+    this.console = console2;
     this.fileType = fileType;
     this.componentSrc = componentSrc;
     this.mode = mode;
@@ -1555,14 +1559,16 @@ class Component {
     try {
       run({
         script: this.componentSrc,
+        console: this.console,
         env: {
           module,
+          console: this.console,
           defineComponent: (x) => x,
           Bridge: this.v1Compat ? v1Compat$1(module, this.fileType) : void 0
         }
       });
     } catch (err) {
-      console.error(err);
+      this.console.error(err);
     }
     if (typeof module.exports !== "function")
       return false;
@@ -1578,8 +1584,8 @@ class Component {
           try {
             func(componentArgs, opts);
           } catch (err) {
-            console.log(func.toString());
-            console.error(err);
+            this.console.log(func.toString());
+            this.console.error(err);
           }
         };
       };
@@ -1911,6 +1917,7 @@ function createCustomComponentPlugin({
   const usedComponents = new Map();
   let createAdditionalFiles = {};
   return ({
+    console: console2,
     projectConfig,
     projectRoot,
     compileFiles,
@@ -1943,7 +1950,7 @@ function createCustomComponentPlugin({
             return lib.parse(await file.text());
           } catch (err) {
             if (options.buildType !== "fileRequest")
-              console.error(`Error within file "${filePath}": ${err}`);
+              console2.error(`Error within file "${filePath}": ${err}`);
             return {
               __error__: `Failed to load original file: ${err}`
             };
@@ -1952,7 +1959,7 @@ function createCustomComponentPlugin({
       },
       async load(filePath, fileContent) {
         if (isComponent(filePath) && typeof fileContent === "string") {
-          const component = new Component(fileType, fileContent, options.mode, !!options.v1CompatMode, targetVersion);
+          const component = new Component(console2, fileType, fileContent, options.mode, !!options.v1CompatMode, targetVersion);
           component.setProjectConfig(projectConfig);
           const loadedCorrectly = await component.load();
           return loadedCorrectly ? component : fileContent;
@@ -2130,7 +2137,8 @@ const v1Compat = (module) => ({
   }
 });
 class Command {
-  constructor(commandSrc, mode, v1Compat2) {
+  constructor(console2, commandSrc, mode, v1Compat2) {
+    this.console = console2;
     this.commandSrc = commandSrc;
     this.mode = mode;
     this.v1Compat = v1Compat2;
@@ -2144,14 +2152,16 @@ class Command {
     try {
       run({
         script: this.commandSrc,
+        console: this.console,
         env: {
           module,
+          console: this.console,
           defineCommand: (x) => x,
           Bridge: this.v1Compat ? v1Compat(module) : void 0
         }
       });
     } catch (err) {
-      console.error(err);
+      this.console.error(err);
     }
     if (typeof module.exports !== "function")
       return;
@@ -2167,7 +2177,7 @@ class Command {
           try {
             return func(commandArgs, opts);
           } catch (err) {
-            console.error(err);
+            this.console.error(err);
             return [];
           }
         };
@@ -2198,7 +2208,7 @@ class Command {
       processedCommands = commands.filter((command2) => typeof command2 === "string");
     else {
       const errrorMsg = `Failed to process command ${this._name}; Invalid command template return type: Expected string[] or string, received ${typeof commands}`;
-      console.error(errrorMsg);
+      this.console.error(errrorMsg);
       processedCommands.push(`# ${errrorMsg}`);
     }
     return processedCommands.map((command2) => command2.startsWith("/") || command2.startsWith("#") ? command2 : `/${command2}`);
@@ -2221,7 +2231,13 @@ class Command {
     return this.commandSrc;
   }
 }
-const CustomCommandsPlugin = ({ projectConfig, fileType: fileTypeLib, requestJsonData, options }) => {
+const CustomCommandsPlugin = ({
+  projectConfig,
+  console: console2,
+  fileType: fileTypeLib,
+  requestJsonData,
+  options
+}) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const isCommand = (filePath) => filePath && fileTypeLib.getId(filePath) === "customCommand";
   const isMcfunction = (filePath) => filePath && fileTypeLib.getId(filePath) === "function";
@@ -2255,14 +2271,14 @@ const CustomCommandsPlugin = ({ projectConfig, fileType: fileTypeLib, requestJso
         try {
           return lib.parse(await file.text());
         } catch (err) {
-          console.error(err);
+          console2.error(err);
         }
       }
     },
     async load(filePath, fileContent) {
       var _a;
       if (isCommand(filePath)) {
-        const command = new Command(fileContent, options.mode, (_a = options.v1CompatMode) != null ? _a : false);
+        const command = new Command(console2, fileContent, options.mode, (_a = options.v1CompatMode) != null ? _a : false);
         await command.load();
         return command;
       }
@@ -2293,7 +2309,7 @@ const CustomCommandsPlugin = ({ projectConfig, fileType: fileTypeLib, requestJso
               filteredCommands.push(command);
               continue;
             }
-            console.error(`The file "${filePath}" contains invalid commands. Expected type "string" within array but got type "${typeof command}"`);
+            console2.error(`The file "${filePath}" contains invalid commands. Expected type "string" within array but got type "${typeof command}"`);
           }
           return transformCommands(filteredCommands.map((command) => !hasSlashPrefix && !command.startsWith("/") ? `/${command}` : command), dependencies, false).map((command) => hasSlashPrefix ? command : command.slice(1));
         }));
@@ -2336,7 +2352,14 @@ const TypeScriptPlugin = ({ options }) => ({
       return fileContent;
   }
 });
-const RewriteForPackaging = ({ options, outputFileSystem, projectRoot, packType, fileType }) => {
+const RewriteForPackaging = ({
+  options,
+  outputFileSystem,
+  projectRoot,
+  packType,
+  fileType,
+  console: console2
+}) => {
   if (!options.packName)
     options.packName = "bridge project";
   const relevantFilePath = (path) => path.split(/\\|\//g).filter((part) => part !== ".." && part !== ".").slice(1).join("/");
@@ -2377,7 +2400,7 @@ const RewriteForPackaging = ({ options, outputFileSystem, projectRoot, packType,
         case "mctemplate":
           return rewriteForMctemplate(filePath);
         default:
-          console.error(`Unknown packaging format: ${options.format}`);
+          console2.error(`Unknown packaging format: ${options.format}`);
       }
     }
   };
@@ -2431,17 +2454,19 @@ class AllPlugins {
         await run({
           async: true,
           script: pluginSrc,
+          console: this.dash.console,
           env: __spreadValues({
             require: void 0,
-            module
+            module,
+            console: this.dash.console
           }, scriptEnv)
         });
         if (typeof module.exports === "function")
-          this.plugins.push(new Plugin(pluginId, module.exports(await this.getPluginContext(pluginId, pluginOpts))));
+          this.plugins.push(new Plugin(this.dash, pluginId, module.exports(await this.getPluginContext(pluginId, pluginOpts))));
       } else if (builtInPlugins[pluginId]) {
-        this.plugins.push(new Plugin(pluginId, builtInPlugins[pluginId](await this.getPluginContext(pluginId, pluginOpts))));
+        this.plugins.push(new Plugin(this.dash, pluginId, builtInPlugins[pluginId](await this.getPluginContext(pluginId, pluginOpts))));
       } else {
-        console.error(`Unknown compiler plugin: ${pluginId}`);
+        this.dash.console.error(`Unknown compiler plugin: ${pluginId}`);
       }
     }
   }
@@ -2463,6 +2488,7 @@ class AllPlugins {
           return dash.buildType;
         }
       }, pluginOpts),
+      console: this.dash.console,
       fileSystem: this.dash.fileSystem,
       outputFileSystem: this.dash.outputFileSystem,
       projectConfig: this.dash.projectConfig,
@@ -2850,13 +2876,13 @@ class ResolveFileOrder {
       const depFiles = files.query(depFileId);
       for (const depFile of depFiles) {
         if (!depFile) {
-          console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
+          this.dash.console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
           continue;
         }
         depFile.addUpdateFile(file);
         if (!resolved.has(depFile)) {
           if (unresolved.has(depFile)) {
-            console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
+            this.dash.console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
             continue;
           }
           this.resolveSingle(depFile, resolved, unresolved);
@@ -2896,7 +2922,7 @@ class FileTransformer {
       writeData = file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
-        console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
+        this.dash.console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
         writeData = JSON.stringify(writeData);
       }
     }
@@ -2937,8 +2963,46 @@ class Progress {
     this.onChangeCbs.forEach((cb) => cb(this));
   }
 }
+class Console {
+  constructor() {
+    this._timers = new Map();
+  }
+  time(timerName) {
+    if (this._timers.has(timerName)) {
+      this.warn(`Timer "${timerName}" already exists.`);
+      return;
+    } else {
+      this._timers.set(timerName, Date.now());
+    }
+  }
+  timeEnd(timerName) {
+    const time = this._timers.get(timerName);
+    if (!time) {
+      this.warn(`Timer "${timerName}" does not exist.`);
+      return;
+    } else {
+      this._timers.delete(timerName);
+      this.log(`${timerName}: ${Date.now() - time}ms`);
+    }
+  }
+}
+class DefaultConsole extends Console {
+  log(...args) {
+    console.log(...args);
+  }
+  error(...args) {
+    console.error(...args);
+  }
+  warn(...args) {
+    console.warn(...args);
+  }
+  info(...args) {
+    console.info(...args);
+  }
+}
 class Dash {
   constructor(fileSystem, outputFileSystem, options) {
+    var _a;
     this.fileSystem = fileSystem;
     this.options = options;
     this.progress = new Progress();
@@ -2951,6 +3015,7 @@ class Dash {
     this.outputFileSystem = outputFileSystem != null ? outputFileSystem : fileSystem;
     this.projectRoot = dirname(options.config);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
+    this.console = (_a = options.console) != null ? _a : new DefaultConsole();
     this.packType = options.packType;
     this.fileType = options.fileType;
   }
@@ -2991,7 +3056,7 @@ class Dash {
     return config.compiler !== void 0 && Array.isArray(config.compiler.plugins);
   }
   async build() {
-    console.log("Starting compilation...");
+    this.console.log("Starting compilation...");
     if (!this.isCompilerActivated)
       return;
     this.buildType = "fullBuild";
@@ -3009,7 +3074,7 @@ class Dash {
       await this.saveDashFile();
     this.includedFiles.resetAll();
     this.progress.advance();
-    console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
+    this.console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
   }
   async updateFiles(filePaths, saveDashFile = true) {
     var _a;
@@ -3017,7 +3082,7 @@ class Dash {
       return;
     this.buildType = "hotUpdate";
     this.progress.setTotal(8);
-    console.log(`Dash is starting to update ${filePaths.length} files...`);
+    this.console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
     await this.plugins.runBuildStartHooks();
     const files = [];
@@ -3045,7 +3110,7 @@ class Dash {
     }
     this.progress.advance();
     const filesToLoad = new Set(files.map((file) => [...file.filesToLoadForHotUpdate()]).flat());
-    console.log(`Dash is loading ${filesToLoad.size} files...`);
+    this.console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));
     this.progress.advance();
     for (const file of filesToLoad) {
@@ -3055,14 +3120,14 @@ class Dash {
     }
     this.progress.advance();
     const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
-    console.log(`Dash is compiling ${filesToTransform.size} files...`);
+    this.console.log(`Dash is compiling ${filesToTransform.size} files...`);
     await this.fileTransformer.run(filesToTransform, true);
     this.progress.advance();
     await this.plugins.runBuildEndHooks();
     if (saveDashFile)
       await this.saveDashFile();
     this.includedFiles.resetAll();
-    console.log(`Dash finished updating ${filesToTransform.size} files!`);
+    this.console.log(`Dash finished updating ${filesToTransform.size} files!`);
     this.progress.advance();
   }
   async compileFile(filePath, fileData) {

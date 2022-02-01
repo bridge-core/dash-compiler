@@ -4,7 +4,14 @@ import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 export const RewriteForPackaging: TCompilerPluginFactory<{
 	format?: 'mcaddon' | 'mcworld' | 'mctemplate'
 	packName?: string
-}> = ({ options, outputFileSystem, projectRoot, packType, fileType }) => {
+}> = ({
+	options,
+	outputFileSystem,
+	projectRoot,
+	packType,
+	fileType,
+	console,
+}) => {
 	if (!options.packName) options.packName = 'bridge project'
 
 	/**

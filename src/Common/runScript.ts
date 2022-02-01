@@ -1,15 +1,18 @@
+import { Console } from './Console'
+
 export interface IScriptContext {
 	script: string
 	env: Record<string, unknown>
 	async?: boolean
 	modules?: Record<string, unknown>
+	console: Console
 }
 
 export function run(context: IScriptContext) {
 	if (context.async)
 		return createRunner(context)(...Object.values(context.env)).catch(
 			(err: any) => {
-				console.error(context.script)
+				context.console.error(context.script)
 				throw new Error(`Error within script: ${err}`)
 			}
 		)
@@ -17,7 +20,7 @@ export function run(context: IScriptContext) {
 	try {
 		return createRunner(context)(...Object.values(context.env))
 	} catch (err) {
-		console.error(context.script)
+		context.console.error(context.script)
 		throw new Error(`Error within script: ${err}`)
 	}
 }
@@ -27,6 +30,7 @@ export function createRunner({
 	env,
 	modules,
 	async = false,
+	console,
 }: IScriptContext) {
 	let transformedScript = transformScript(script)
 

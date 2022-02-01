@@ -3,7 +3,7 @@ import { transformCommands } from './transformCommands'
 import { v1Compat } from './v1Compat'
 import { tokenizeCommand } from 'bridge-common-utils'
 import { castType } from 'bridge-common-utils'
-
+import { Console } from '../../../Common/Console'
 export type TTemplate = (commandArgs: unknown[], opts: any) => string | string[]
 
 export class Command {
@@ -12,6 +12,7 @@ export class Command {
 	protected template?: TTemplate
 
 	constructor(
+		protected console: Console,
 		protected commandSrc: string,
 		protected mode: 'development' | 'production',
 		protected v1Compat: boolean
@@ -26,14 +27,16 @@ export class Command {
 		try {
 			run({
 				script: this.commandSrc,
+				console: this.console,
 				env: {
 					module: module,
+					console: this.console,
 					defineCommand: (x: any) => x,
 					Bridge: this.v1Compat ? v1Compat(module) : undefined,
 				},
 			})
 		} catch (err) {
-			console.error(err)
+			this.console.error(err)
 		}
 
 		if (typeof module.exports !== 'function') return
@@ -49,7 +52,7 @@ export class Command {
 					try {
 						return func(commandArgs, opts)
 					} catch (err) {
-						console.error(err)
+						this.console.error(err)
 						return []
 					}
 				}
@@ -104,7 +107,7 @@ export class Command {
 			const errrorMsg = `Failed to process command ${
 				this._name
 			}; Invalid command template return type: Expected string[] or string, received ${typeof commands}`
-			console.error(errrorMsg)
+			this.console.error(errrorMsg)
 			processedCommands.push(`# ${errrorMsg}`)
 		}
 

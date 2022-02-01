@@ -30,7 +30,7 @@ export class ResolveFileOrder {
 
 			for (const depFile of depFiles) {
 				if (!depFile) {
-					console.error(
+					this.dash.console.error(
 						`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`
 					)
 					continue
@@ -40,7 +40,7 @@ export class ResolveFileOrder {
 
 				if (!resolved.has(depFile)) {
 					if (unresolved.has(depFile)) {
-						console.error(
+						this.dash.console.error(
 							`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`
 						)
 						continue

@@ -101,9 +101,11 @@ export class AllPlugins {
 				await run({
 					async: true,
 					script: pluginSrc,
+					console: this.dash.console,
 					env: {
 						require: undefined,
 						module,
+						console: this.dash.console,
 						...scriptEnv,
 					},
 				})
@@ -111,6 +113,7 @@ export class AllPlugins {
 				if (typeof module.exports === 'function')
 					this.plugins.push(
 						new Plugin(
+							this.dash,
 							pluginId,
 							module.exports(
 								await this.getPluginContext(
@@ -123,6 +126,7 @@ export class AllPlugins {
 			} else if (builtInPlugins[pluginId]) {
 				this.plugins.push(
 					new Plugin(
+						this.dash,
 						pluginId,
 						builtInPlugins[pluginId](
 							await this.getPluginContext(pluginId, pluginOpts)
@@ -130,7 +134,7 @@ export class AllPlugins {
 					)
 				)
 			} else {
-				console.error(`Unknown compiler plugin: ${pluginId}`)
+				this.dash.console.error(`Unknown compiler plugin: ${pluginId}`)
 			}
 		}
 	}
@@ -161,6 +165,7 @@ export class AllPlugins {
 				},
 				...pluginOpts,
 			},
+			console: this.dash.console,
 			fileSystem: this.dash.fileSystem,
 			outputFileSystem: this.dash.outputFileSystem,
 			projectConfig: this.dash.projectConfig,

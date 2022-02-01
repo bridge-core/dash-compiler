@@ -7,7 +7,13 @@ import { setObjectAt } from 'bridge-common-utils'
 export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
 	v1CompatMode?: boolean
-}> = ({ projectConfig, fileType: fileTypeLib, requestJsonData, options }) => {
+}> = ({
+	projectConfig,
+	console,
+	fileType: fileTypeLib,
+	requestJsonData,
+	options,
+}) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
@@ -58,6 +64,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 		async load(filePath, fileContent) {
 			if (isCommand(filePath)) {
 				const command = new Command(
+					console,
 					fileContent,
 					options.mode,
 					options.v1CompatMode ?? false

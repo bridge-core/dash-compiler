@@ -1,7 +1,9 @@
+import { Dash } from '../Dash'
 import { TCompilerPlugin } from './TCompilerPlugin'
 
 export class Plugin {
 	constructor(
+		protected dash: Dash,
 		public readonly pluginId: string,
 		protected plugin: Partial<TCompilerPlugin>
 	) {}
@@ -13,7 +15,7 @@ export class Plugin {
 		try {
 			return await this.plugin.buildStart?.()
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`,
 				err
 			)
@@ -23,7 +25,7 @@ export class Plugin {
 		try {
 			return await this.plugin.include?.()
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "include" hook:`,
 				err
 			)
@@ -33,7 +35,7 @@ export class Plugin {
 		try {
 			return await this.plugin.transformPath?.(filePath)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`,
 				err
 			)
@@ -46,7 +48,7 @@ export class Plugin {
 		try {
 			return await this.plugin.read?.(filePath, fileHandle)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`,
 				err
 			)
@@ -56,7 +58,7 @@ export class Plugin {
 		try {
 			return await this.plugin.load?.(filePath, fileContent)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`,
 				err
 			)
@@ -66,7 +68,7 @@ export class Plugin {
 		try {
 			return await this.plugin.registerAliases?.(filePath, fileContent)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`,
 				err
 			)
@@ -76,7 +78,7 @@ export class Plugin {
 		try {
 			return await this.plugin.require?.(filePath, fileContent)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`,
 				err
 			)
@@ -94,7 +96,7 @@ export class Plugin {
 				dependencies
 			)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`,
 				err
 			)
@@ -104,7 +106,7 @@ export class Plugin {
 		try {
 			return await this.plugin.finalizeBuild?.(filePath, fileContent)
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`,
 				err
 			)
@@ -114,7 +116,7 @@ export class Plugin {
 		try {
 			return await this.plugin.buildEnd?.()
 		} catch (err) {
-			console.error(
+			this.dash.console.error(
 				`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`,
 				err
 			)

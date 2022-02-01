@@ -23,6 +23,7 @@ export function createCustomComponentPlugin({
 	> = {}
 
 	return ({
+		console,
 		projectConfig,
 		projectRoot,
 		compileFiles,
@@ -95,6 +96,7 @@ export function createCustomComponentPlugin({
 			async load(filePath, fileContent) {
 				if (isComponent(filePath) && typeof fileContent === 'string') {
 					const component = new Component(
+						console,
 						fileType,
 						fileContent,
 						options.mode,

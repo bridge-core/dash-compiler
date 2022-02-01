@@ -9,7 +9,8 @@ import { FileTransformer } from './Core/TransformFiles'
 import { FileType, PackType } from 'mc-project-core'
 import type { DashFile } from './Core/DashFile'
 import { Progress } from './Core/Progress'
-
+import { Console } from './Common/Console'
+import { DefaultConsole } from './Common/DefaultConsole'
 export interface IDashOptions<TSetupArg = void> {
 	/**
 	 * mode: Either 'development' or 'production'
@@ -27,6 +28,11 @@ export interface IDashOptions<TSetupArg = void> {
 	 * @example "projects/myProject/.bridge/compiler/mcaddon.json"
 	 */
 	compilerConfig?: string
+
+	/**
+	 * A console to use for logging
+	 */
+	console?: Console
 
 	/**
 	 * An environment for the plugins to execute in
@@ -53,6 +59,7 @@ export class Dash<TSetupArg = void> {
 	public fileOrderResolver: ResolveFileOrder = new ResolveFileOrder(this)
 	public fileTransformer: FileTransformer = new FileTransformer(this)
 	public buildType = 'fullBuild'
+	public readonly console: Console
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -64,6 +71,7 @@ export class Dash<TSetupArg = void> {
 		this.outputFileSystem = outputFileSystem ?? fileSystem
 		this.projectRoot = dirname(options.config)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
+		this.console = options.console ?? new DefaultConsole()
 
 		this.packType = options.packType
 		this.fileType = options.fileType
@@ -119,7 +127,7 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async build() {
-		console.log('Starting compilation...')
+		this.console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
 
 		this.buildType = 'fullBuild'
@@ -144,7 +152,7 @@ export class Dash<TSetupArg = void> {
 
 		this.progress.advance()
 
-		console.log(
+		this.console.log(
 			`Dash compiled ${this.includedFiles.all().length} files in ${
 				Date.now() - startTime
 			}ms!`
@@ -160,7 +168,9 @@ export class Dash<TSetupArg = void> {
 		this.progress.setTotal(8)
 
 		// Update files in output
-		console.log(`Dash is starting to update ${filePaths.length} files...`)
+		this.console.log(
+			`Dash is starting to update ${filePaths.length} files...`
+		)
 
 		await this.includedFiles.load(this.dashFilePath)
 		await this.plugins.runBuildStartHooks()
@@ -216,7 +226,7 @@ export class Dash<TSetupArg = void> {
 		const filesToLoad = new Set(
 			files.map((file) => [...file.filesToLoadForHotUpdate()]).flat()
 		)
-		console.log(`Dash is loading ${filesToLoad.size} files...`)
+		this.console.log(`Dash is loading ${filesToLoad.size} files...`)
 		await this.loadFiles.run(
 			[...filesToLoad.values()].filter(
 				(currFile) => !files.includes(currFile)
@@ -237,7 +247,7 @@ export class Dash<TSetupArg = void> {
 		const filesToTransform = new Set(
 			files.map((file) => [...file.getHotUpdateChain()]).flat()
 		)
-		console.log(`Dash is compiling ${filesToTransform.size} files...`)
+		this.console.log(`Dash is compiling ${filesToTransform.size} files...`)
 
 		// We need to run the whole transformation pipeline
 		await this.fileTransformer.run(filesToTransform, true)
@@ -248,7 +258,9 @@ export class Dash<TSetupArg = void> {
 
 		if (saveDashFile) await this.saveDashFile()
 		this.includedFiles.resetAll()
-		console.log(`Dash finished updating ${filesToTransform.size} files!`)
+		this.console.log(
+			`Dash finished updating ${filesToTransform.size} files!`
+		)
 
 		this.progress.advance() // 8
 	}
@@ -366,7 +378,7 @@ export class Dash<TSetupArg = void> {
 		const resolvedFileOrder = this.fileOrderResolver.run(files)
 		this.progress.advance()
 
-		// console.log(resolvedFileOrder)
+		// this.console.log(resolvedFileOrder)
 		await this.fileTransformer.run(resolvedFileOrder)
 		this.progress.advance()
 	}

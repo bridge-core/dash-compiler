@@ -8,10 +8,12 @@ import { FileTransformer } from './Core/TransformFiles';
 import { FileType, PackType } from 'mc-project-core';
 import type { DashFile } from './Core/DashFile';
 import { Progress } from './Core/Progress';
+import { Console } from './Common/Console';
 export interface IDashOptions<TSetupArg = void> {
     mode?: 'development' | 'production';
     config: string;
     compilerConfig?: string;
+    console?: Console;
     pluginEnvironment?: any;
     packType: PackType<TSetupArg>;
     fileType: FileType<TSetupArg>;
@@ -32,6 +34,7 @@ export declare class Dash<TSetupArg = void> {
     fileOrderResolver: ResolveFileOrder;
     fileTransformer: FileTransformer;
     buildType: string;
+    readonly console: Console;
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
     getCompilerConfigPath(): string | undefined;

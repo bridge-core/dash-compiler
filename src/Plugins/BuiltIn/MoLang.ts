@@ -6,7 +6,7 @@ import { run } from '../../Common/runScript'
 
 export const MoLangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
-}> = ({ fileType, projectConfig, requestJsonData, options }) => {
+}> = ({ fileType, projectConfig, requestJsonData, options, console }) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
@@ -74,8 +74,9 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				const module = { exports: {} }
 				await run({
 					script: fileContent,
-					env: { module },
+					env: { module, console },
 					async: true,
+					console,
 					modules: {
 						'@molang/expressions': expressions,
 						'@molang/core': MoLang,

@@ -3,6 +3,7 @@ import { ProjectConfig } from 'mc-project-core'
 import { v1Compat } from './v1Compat'
 import { deepMerge, hashString } from 'bridge-common-utils'
 import { run } from '../../../Common/runScript'
+import { Console } from '../../../Common/Console'
 
 export type TTemplate = (componentArgs: any, opts: any) => any
 
@@ -22,6 +23,7 @@ export class Component {
 	}
 
 	constructor(
+		protected console: Console,
 		protected fileType: string,
 		protected componentSrc: string,
 		protected mode: 'production' | 'development',
@@ -44,8 +46,10 @@ export class Component {
 		try {
 			run({
 				script: this.componentSrc,
+				console: this.console,
 				env: {
 					module: module,
+					console: this.console,
 					defineComponent: (x: any) => x,
 					Bridge: this.v1Compat
 						? v1Compat(module, this.fileType)
@@ -53,7 +57,7 @@ export class Component {
 				},
 			})
 		} catch (err) {
-			console.error(err)
+			this.console.error(err)
 		}
 
 		if (typeof module.exports !== 'function') return false
@@ -68,8 +72,8 @@ export class Component {
 					try {
 						func(componentArgs, opts)
 					} catch (err) {
-						console.log(func.toString())
-						console.error(err)
+						this.console.log(func.toString())
+						this.console.error(err)
 					}
 				}
 			}

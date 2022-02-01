@@ -2,12 +2,14 @@ import { TCompilerPlugin } from './TCompilerPlugin'
 import { FileSystem } from '../FileSystem/FileSystem'
 import { DashProjectConfig } from '../DashProjectConfig'
 import { FileType, PackType } from 'mc-project-core'
+import { Console } from '../Common/Console'
 
 export type TCompilerPluginFactory<T = void> = (context: {
 	options: T & {
 		mode: 'development' | 'production'
 		buildType: 'fileRequest' | 'fullBuild' | 'hotUpdate'
 	}
+	console: Console
 	fileSystem: FileSystem
 	outputFileSystem: FileSystem
 	projectConfig: DashProjectConfig

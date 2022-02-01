@@ -1,6 +1,8 @@
 import { ProjectConfig } from 'mc-project-core';
+import { Console } from '../../../Common/Console';
 export declare type TTemplate = (componentArgs: any, opts: any) => any;
 export declare class Component {
+    protected console: Console;
     protected fileType: string;
     protected componentSrc: string;
     protected mode: 'production' | 'development';
@@ -19,7 +21,7 @@ export declare class Component {
         activated: number;
         deactivated: number;
     };
-    constructor(fileType: string, componentSrc: string, mode: 'production' | 'development', v1Compat: boolean, targetVersion?: string | undefined);
+    constructor(console: Console, fileType: string, componentSrc: string, mode: 'production' | 'development', v1Compat: boolean, targetVersion?: string | undefined);
     setProjectConfig(projectConfig: ProjectConfig): void;
     get name(): string | undefined;
     load(type?: 'server' | 'client'): Promise<boolean>;

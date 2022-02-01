@@ -1,8 +1,10 @@
+import { Dash } from '../Dash';
 import { TCompilerPlugin } from './TCompilerPlugin';
 export declare class Plugin {
+    protected dash: Dash;
     readonly pluginId: string;
     protected plugin: Partial<TCompilerPlugin>;
-    constructor(pluginId: string, plugin: Partial<TCompilerPlugin>);
+    constructor(dash: Dash, pluginId: string, plugin: Partial<TCompilerPlugin>);
     runBuildStartHook(): Promise<void>;
     runIncludeHook(): Promise<(string | [string, {
         isVirtual?: boolean | undefined;
