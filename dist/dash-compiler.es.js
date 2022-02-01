@@ -3238,4 +3238,4 @@ class FileSystem {
     console.warn("Watching a directory for changes is not supported on this platform!");
   }
 }
-export { Command, Component, Dash, FileSystem };
+export { Command, Component, Console, Dash, DefaultConsole, FileSystem };

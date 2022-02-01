@@ -9,7 +9,7 @@ export declare class AllPlugins {
     getCompilerOptions(): Promise<any>;
     protected getPluginContext(pluginId: string, pluginOpts?: any): Promise<{
         options: any;
-        console: import("../Common/Console").Console;
+        console: import("../main").Console;
         fileSystem: import("../main").FileSystem;
         outputFileSystem: import("../main").FileSystem;
         projectConfig: import("../DashProjectConfig").DashProjectConfig;
