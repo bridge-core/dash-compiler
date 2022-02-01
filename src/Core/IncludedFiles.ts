@@ -49,7 +49,12 @@ export class IncludedFiles {
 
 		const packPaths = this.dash.projectConfig.getAvailablePackPaths()
 		for (const packPath of packPaths) {
-			const files = await this.dash.fileSystem.allFiles(packPath)
+			const files = await this.dash.fileSystem
+				.allFiles(packPath)
+				.catch((err) => {
+					this.dash.console.warn(err)
+					return []
+				})
 
 			for (const file of files) allFiles.add(file)
 		}
