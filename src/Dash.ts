@@ -235,18 +235,21 @@ export class Dash<TSetupArg = void> {
 
 		this.progress.advance() // 5
 
+		const filesToTransform = new Set(
+			files.map((file) => [...file.getHotUpdateChain()]).flat()
+		)
+
 		for (const file of filesToLoad) {
 			if (file.isDone) continue
 
 			file.data =
 				(await this.plugins.runTransformHooks(file)) ?? file.data
+
+			if (!filesToTransform.has(file)) file.isDone = true
 		}
 
 		this.progress.advance() // 6
 
-		const filesToTransform = new Set(
-			files.map((file) => [...file.getHotUpdateChain()]).flat()
-		)
 		this.console.log(`Dash is compiling ${filesToTransform.size} files...`)
 
 		// We need to run the whole transformation pipeline
