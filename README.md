@@ -1,9 +1,9 @@
-# 💨 Dash Compiler
+# ⚡️ Dash Compiler
 
-- A fast, reliable and platform-independent compiler for Minecraft Add-Ons.
+-   A fast, reliable and platform-independent compiler for Minecraft Add-Ons.
 
-> **We are slowly working on stabilizing the API and integrating it into the core editor *"bridge."*.**
+> As of bridge. v2.2.0, Dash is now powering bridge.'s default compiler.
 
 ## ‼️ Issues
 
-- Please use the issue tracker on [our main repository ↗️](https://github.com/bridge-core/editor) to report issues and request features.
+-   Please use the issue tracker on [our main repository ↗️](https://github.com/bridge-core/editor) to report issues and request features.

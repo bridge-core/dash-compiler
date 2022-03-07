@@ -290,7 +290,7 @@ export class Dash<TSetupArg = void> {
 		})
 
 		// Load files and files that are required by this file
-		await this.loadFiles.loadFile(file)
+		await this.loadFiles.loadFile(file, false)
 		await this.loadFiles.loadRequiredFiles(file)
 
 		this.progress.advance() // 1
