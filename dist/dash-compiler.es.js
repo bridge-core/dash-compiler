@@ -3116,13 +3116,15 @@ class Dash {
     this.console.log(`Dash is loading ${filesToLoad.size} files...`);
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => !files.includes(currFile)));
     this.progress.advance();
+    const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
     for (const file of filesToLoad) {
       if (file.isDone)
         continue;
       file.data = (_a = await this.plugins.runTransformHooks(file)) != null ? _a : file.data;
+      if (!filesToTransform.has(file))
+        file.isDone = true;
     }
     this.progress.advance();
-    const filesToTransform = new Set(files.map((file) => [...file.getHotUpdateChain()]).flat());
     this.console.log(`Dash is compiling ${filesToTransform.size} files...`);
     await this.fileTransformer.run(filesToTransform, true);
     this.progress.advance();
@@ -3148,7 +3150,7 @@ class Dash {
     file.setFileHandle({
       getFile: async () => new File([fileData], basename(filePath))
     });
-    await this.loadFiles.loadFile(file);
+    await this.loadFiles.loadFile(file, false);
     await this.loadFiles.loadRequiredFiles(file);
     this.progress.advance();
     const filesToLoad = file.filesToLoadForHotUpdate();
