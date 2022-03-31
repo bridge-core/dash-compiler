@@ -15,6 +15,7 @@ import {
 import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
 import { TypeScriptPlugin } from './BuiltIn/TypeScript'
 import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
+import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -26,6 +27,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	customBlockComponents: CustomBlockComponentPlugin,
 	customCommands: CustomCommandsPlugin,
 	typeScript: TypeScriptPlugin,
+	contentsFile: ContentsFilePlugin,
 }
 
 export class AllPlugins {
