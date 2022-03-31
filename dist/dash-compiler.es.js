@@ -1358,18 +1358,19 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options, conso
           if (molang[0] === "/" || molang[0] === "@")
             return molang;
           if (astTransformers.length > 0) {
-            let ast;
+            let ast = null;
             try {
               ast = customMoLang.parse(molang);
             } catch (err) {
               if (options.buildType !== "fileRequest")
                 console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
-              return molang;
             }
-            for (const transformer of astTransformers) {
-              ast = ast.walk(transformer);
+            if (ast) {
+              for (const transformer of astTransformers) {
+                ast = ast.walk(transformer);
+              }
+              molang = ast.toString();
             }
-            molang = ast.toString();
           }
           try {
             return customMoLang.transform(molang);

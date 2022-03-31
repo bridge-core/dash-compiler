@@ -113,7 +113,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 							return molang
 
 						if (astTransformers.length > 0) {
-							let ast: IExpression | undefined
+							let ast: IExpression | null = null
 
 							try {
 								ast = customMoLang.parse(molang)
@@ -122,14 +122,15 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 									console.error(
 										`Error within file "${filePath}"; script "${molang}": ${err}`
 									)
-								return molang
 							}
 
-							for (const transformer of astTransformers) {
-								ast = ast.walk(transformer)
-							}
+							if (ast) {
+								for (const transformer of astTransformers) {
+									ast = ast.walk(transformer)
+								}
 
-							molang = ast.toString()
+								molang = ast.toString()
+							}
 						}
 
 						try {
