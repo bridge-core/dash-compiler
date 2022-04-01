@@ -18,6 +18,8 @@ export const ContentsFilePlugin: TCompilerPluginFactory = ({
 
 	if (options.buildType !== 'fullBuild') return {}
 
+	// TODO: This doesn't really work with virtual files.
+	// We should instead use the file system to read the contents.
 	return {
 		include() {
 			return packs.map((id) => [
@@ -38,6 +40,8 @@ export const ContentsFilePlugin: TCompilerPluginFactory = ({
 
 			const packId = packType.getId(filePath)
 			if (packId === 'unknown') return
+			// TODO: Don't push contents.json file to pack content
+			// TODO: Remove project prefix: projects/BridgeTests/manifest.json -> manifest.json
 			packContents[packId].push(filePath)
 
 			return undefined
