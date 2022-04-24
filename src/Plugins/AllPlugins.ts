@@ -16,6 +16,7 @@ import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
 import { TypeScriptPlugin } from './BuiltIn/TypeScript'
 import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
 import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
+import { FormatVersionCorrection } from './BuiltIn/FormatVersionCorrection'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -28,6 +29,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	customCommands: CustomCommandsPlugin,
 	typeScript: TypeScriptPlugin,
 	contentsFile: ContentsFilePlugin,
+	formatVersionCorrection: FormatVersionCorrection
 }
 
 export class AllPlugins {
