@@ -2457,6 +2457,22 @@ const ContentsFilePlugin = ({
     }
   };
 };
+const FormatVersionCorrection = ({
+  fileType
+}) => {
+  return {
+    transform(filePath, fileContent) {
+      const currentFileType = fileType.get(filePath);
+      const formatVersionMap = currentFileType == null ? void 0 : currentFileType.formatVersionMap;
+      if (!formatVersionMap)
+        return;
+      const formatVersion = fileContent == null ? void 0 : fileContent.format_version;
+      if (formatVersion && formatVersionMap[formatVersion])
+        fileContent.format_version = formatVersionMap[formatVersion];
+      return fileContent;
+    }
+  };
+};
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   rewriteForPackaging: RewriteForPackaging,
@@ -2467,7 +2483,8 @@ const builtInPlugins = {
   customBlockComponents: CustomBlockComponentPlugin,
   customCommands: CustomCommandsPlugin,
   typeScript: TypeScriptPlugin,
-  contentsFile: ContentsFilePlugin
+  contentsFile: ContentsFilePlugin,
+  formatVersionCorrection: FormatVersionCorrection
 };
 class AllPlugins {
   constructor(dash) {
