@@ -2460,16 +2460,44 @@ const ContentsFilePlugin = ({
 const FormatVersionCorrection = ({
   fileType
 }) => {
+  const toTransform = [];
+  for (const ft of fileType.all) {
+    if (ft.formatVersionMap)
+      toTransform.push(ft.id);
+  }
+  const needsTransformation = (filePath) => filePath && toTransform.includes(fileType.getId(filePath));
   return {
-    transform(filePath, fileContent) {
-      const currentFileType = fileType.get(filePath);
-      const formatVersionMap = currentFileType == null ? void 0 : currentFileType.formatVersionMap;
-      if (!formatVersionMap)
+    async read(filePath, fileHandle) {
+      if (!fileHandle)
         return;
-      const formatVersion = fileContent == null ? void 0 : fileContent.format_version;
-      if (formatVersion && formatVersionMap[formatVersion])
-        fileContent.format_version = formatVersionMap[formatVersion];
-      return fileContent;
+      if (needsTransformation(filePath)) {
+        const file = await fileHandle.getFile();
+        try {
+          return lib.parse(await file.text());
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    },
+    load(filePath, fileContent) {
+      if (needsTransformation(filePath))
+        return fileContent;
+    },
+    transform(filePath, fileContent) {
+      if (needsTransformation(filePath)) {
+        const currentFileType = fileType.get(filePath);
+        const formatVersionMap = currentFileType == null ? void 0 : currentFileType.formatVersionMap;
+        if (!formatVersionMap)
+          return;
+        const formatVersion = fileContent == null ? void 0 : fileContent.format_version;
+        if (formatVersion && formatVersionMap[formatVersion])
+          fileContent.format_version = formatVersionMap[formatVersion];
+        return fileContent;
+      }
+    },
+    finalizeBuild(filePath, fileContent) {
+      if (needsTransformation(filePath))
+        return JSON.stringify(fileContent);
     }
   };
 };
