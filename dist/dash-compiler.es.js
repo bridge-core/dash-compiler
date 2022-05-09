@@ -2320,7 +2320,7 @@ const CustomCommandsPlugin = ({
       }
     },
     finalizeBuild(filePath, fileContent) {
-      if (isCommand(filePath)) {
+      if (isCommand(filePath) && fileContent) {
         return fileContent.toString();
       } else if (loadCommandsFor(filePath) && typeof fileContent !== "string")
         return JSON.stringify(fileContent, null, "	");
