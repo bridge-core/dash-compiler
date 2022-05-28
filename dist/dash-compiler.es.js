@@ -218,8 +218,8 @@ const SimpleRewrite = ({
       const pack = packType == null ? void 0 : packType.get(filePath);
       if (!pack)
         return;
-      const packRoot = projectConfig.getPackRoot(pack.id);
-      const relPath = relative(join(projectRoot, packRoot), filePath);
+      const packRoot = projectConfig.getAbsolutePackRoot(pack.id);
+      const relPath = relative(packRoot, filePath);
       if ([
         "behaviorPack",
         "resourcePack",
@@ -1725,7 +1725,7 @@ class Component {
   }
   async processAdditionalFiles(filePath, fileContent) {
     var _a, _b, _c, _d;
-    const bpRoot = (_a = this.projectConfig) == null ? void 0 : _a.getPackRoot("behaviorPack");
+    const bpRoot = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack");
     const identifier = (_d = (_c = (_b = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _b.description) == null ? void 0 : _c.identifier) != null ? _d : "bridge:no_identifier";
     const fileName = await hashString(`${this.name}/${identifier}`);
     const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
@@ -1974,8 +1974,8 @@ function createCustomComponentPlugin({
       async require(filePath, fileContent) {
         if (isPlayerFile(filePath, getAliases))
           return [
-            `.${projectConfig.getPackRoot("behaviorPack")}/components/item/**/*.[jt]s`,
-            `.${projectConfig.getPackRoot("behaviorPack")}/items/**/*.json`
+            `.${projectConfig.getRelativePackRoot("behaviorPack")}/components/item/**/*.[jt]s`,
+            `.${projectConfig.getRelativePackRoot("behaviorPack")}/items/**/*.json`
           ];
         if (mayUseComponent(filePath)) {
           const components = findCustomComponents(getComponentObjects(fileContent));

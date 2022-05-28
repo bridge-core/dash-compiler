@@ -296,7 +296,7 @@ export class Component {
 	}
 
 	async processAdditionalFiles(filePath: string, fileContent: any) {
-		const bpRoot = this.projectConfig?.getPackRoot('behaviorPack')
+		const bpRoot = this.projectConfig?.getRelativePackRoot('behaviorPack')
 		// Try getting file identifier
 		const identifier =
 			fileContent[`minecraft:${this.fileType}`]?.description

@@ -117,10 +117,10 @@ export function createCustomComponentPlugin({
 			async require(filePath, fileContent) {
 				if (isPlayerFile(filePath, getAliases))
 					return [
-						`.${projectConfig.getPackRoot(
+						`.${projectConfig.getRelativePackRoot(
 							'behaviorPack'
 						)}/components/item/**/*.[jt]s`,
-						`.${projectConfig.getPackRoot(
+						`.${projectConfig.getRelativePackRoot(
 							'behaviorPack'
 						)}/items/**/*.json`,
 					]

@@ -71,8 +71,8 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 			const pack = packType?.get(filePath)
 			if (!pack) return
 
-			const packRoot = projectConfig.getPackRoot(pack.id)
-			const relPath = relative(join(projectRoot, packRoot), filePath)
+			const packRoot = projectConfig.getAbsolutePackRoot(pack.id)
+			const relPath = relative(packRoot, filePath)
 
 			if (
 				[
