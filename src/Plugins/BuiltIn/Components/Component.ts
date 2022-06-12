@@ -190,7 +190,7 @@ export class Component {
 				'lt',
 				fileName,
 				this.serverFiles.length
-			)}`
+			)}.json`
 			this.serverFiles.push([lootId, lootTableDef])
 
 			return lootId
@@ -200,7 +200,7 @@ export class Component {
 				'tt',
 				fileName,
 				this.serverFiles.length
-			)}`
+			)}.json`
 			this.serverFiles.push([tradeId, tradeTableDef])
 
 			return tradeId
@@ -211,7 +211,7 @@ export class Component {
 					'recipe',
 					fileName,
 					this.serverFiles.length
-				)}`,
+				)}.json`,
 				recipeDef,
 			])
 		}
@@ -221,7 +221,7 @@ export class Component {
 					'sr',
 					fileName,
 					this.serverFiles.length
-				)}`,
+				)}.json`,
 				spawnRuleDef,
 			])
 		}

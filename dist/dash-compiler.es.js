@@ -1652,24 +1652,24 @@ class Component {
       return this.getShortAnimName("ac", fileName, this.animationControllers.length - 1);
     };
     const lootTable = (lootTableDef) => {
-      const lootId = `loot_tables/bridge/${this.getShortAnimName("lt", fileName, this.serverFiles.length)}`;
+      const lootId = `loot_tables/bridge/${this.getShortAnimName("lt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([lootId, lootTableDef]);
       return lootId;
     };
     const tradeTable = (tradeTableDef) => {
-      const tradeId = `trading/bridge/${this.getShortAnimName("tt", fileName, this.serverFiles.length)}`;
+      const tradeId = `trading/bridge/${this.getShortAnimName("tt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([tradeId, tradeTableDef]);
       return tradeId;
     };
     const recipe = (recipeDef) => {
       this.serverFiles.push([
-        `recipes/bridge/${this.getShortAnimName("recipe", fileName, this.serverFiles.length)}`,
+        `recipes/bridge/${this.getShortAnimName("recipe", fileName, this.serverFiles.length)}.json`,
         recipeDef
       ]);
     };
     const spawnRule = (spawnRuleDef) => {
       this.serverFiles.push([
-        `spawn_rules/bridge/${this.getShortAnimName("sr", fileName, this.serverFiles.length)}`,
+        `spawn_rules/bridge/${this.getShortAnimName("sr", fileName, this.serverFiles.length)}.json`,
         spawnRuleDef
       ]);
     };
