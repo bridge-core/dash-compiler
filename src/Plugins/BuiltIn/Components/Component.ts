@@ -4,6 +4,7 @@ import { v1Compat } from './v1Compat'
 import { deepMerge, hashString } from 'bridge-common-utils'
 import { run } from '../../../Common/runScript'
 import { Console } from '../../../Common/Console'
+import { join } from 'path-browserify'
 
 export type TTemplate = (componentArgs: any, opts: any) => any
 
@@ -15,6 +16,7 @@ export class Component {
 	protected animationControllers: [any, string | false | undefined][] = []
 	protected createOnPlayer: [string, any, any][] = []
 	protected dialogueScenes: Record<string, any[]> = {}
+	protected serverFiles: [string, any][] = []
 	protected clientFiles: Record<string, any> = {}
 	protected projectConfig?: ProjectConfig
 	protected lifecycleHookCount = {
@@ -183,6 +185,47 @@ export class Component {
 			)
 		}
 
+		const lootTable = (lootTableDef: any) => {
+			const lootId = `loot_tables/bridge/${this.getShortAnimName(
+				'lt',
+				fileName,
+				this.serverFiles.length
+			)}`
+			this.serverFiles.push([lootId, lootTableDef])
+
+			return lootId
+		}
+		const tradeTable = (tradeTableDef: any) => {
+			const tradeId = `trading/bridge/${this.getShortAnimName(
+				'tt',
+				fileName,
+				this.serverFiles.length
+			)}`
+			this.serverFiles.push([tradeId, tradeTableDef])
+
+			return tradeId
+		}
+		const recipe = (recipeDef: any) => {
+			this.serverFiles.push([
+				`recipes/bridge/${this.getShortAnimName(
+					'recipe',
+					fileName,
+					this.serverFiles.length
+				)}`,
+				recipeDef,
+			])
+		}
+		const spawnRule = (spawnRuleDef: any) => {
+			this.serverFiles.push([
+				`spawn_rules/bridge/${this.getShortAnimName(
+					'sr',
+					fileName,
+					this.serverFiles.length
+				)}`,
+				spawnRuleDef,
+			])
+		}
+
 		const permutationEventName = (
 			await hashString(`${this.name}/${location}`)
 		).slice(0, 16)
@@ -217,6 +260,9 @@ export class Component {
 				projectNamespace,
 				animationController,
 				animation,
+				lootTable,
+				tradeTable,
+				spawnRule,
 				dialogueScene:
 					!this.targetVersion ||
 					compare(this.targetVersion, '1.17.10', '>=')
@@ -239,18 +285,17 @@ export class Component {
 				onDeactivated,
 				client: {
 					create: (clientEntity: any, formatVersion = '1.10.0') => {
-						this.clientFiles[`RP/entity/bridge/${fileName}.json`] =
-							{
-								format_version: formatVersion,
-								'minecraft:client_entity': Object.assign(
-									{
-										description: {
-											identifier,
-										},
+						this.clientFiles[`entity/bridge/${fileName}.json`] = {
+							format_version: formatVersion,
+							'minecraft:client_entity': Object.assign(
+								{
+									description: {
+										identifier,
 									},
-									clientEntity
-								),
-							}
+								},
+								clientEntity
+							),
+						}
 					},
 				},
 			})
@@ -265,6 +310,8 @@ export class Component {
 				location,
 				identifier,
 				projectNamespace,
+				lootTable,
+				recipe,
 				player: {
 					animationController,
 					animation,
@@ -288,6 +335,8 @@ export class Component {
 				sourceBlock: () => JSON.parse(JSON.stringify(fileContent)),
 				create: (template: any, location?: string, operation?: any) =>
 					this.create(fileContent, template, location, operation),
+				lootTable,
+				recipe,
 				location,
 				identifier,
 				projectNamespace,
@@ -296,7 +345,9 @@ export class Component {
 	}
 
 	async processAdditionalFiles(filePath: string, fileContent: any) {
-		const bpRoot = this.projectConfig?.getRelativePackRoot('behaviorPack')
+		const bpRoot =
+			this.projectConfig?.getRelativePackRoot('behaviorPack') ?? 'BP'
+		const rpRoot = this.projectConfig?.getRelativePackRoot('resourcePack')
 		// Try getting file identifier
 		const identifier =
 			fileContent[`minecraft:${this.fileType}`]?.description
@@ -312,6 +363,14 @@ export class Component {
 			})
 		}
 
+		// No rpRoot means that we cannot generate client files
+		if (!rpRoot) {
+			this.clientFiles = {}
+			this.console.error(
+				`[${this.name}] Dash was unable to load the root of your resource pack and therefore cannot generate client files for this component.`
+			)
+		}
+
 		return {
 			[animFileName]: {
 				baseFile: filePath,
@@ -324,7 +383,7 @@ export class Component {
 					fileContent
 				),
 			},
-			[`${bpRoot}/dialogue/bridge/${fileName}.json`]:
+			[join(bpRoot, `dialogue/bridge/${fileName}.json`)]:
 				this.dialogueScenes[fileName] &&
 				this.dialogueScenes[fileName].length > 0
 					? {
@@ -342,9 +401,18 @@ export class Component {
 					  }
 					: undefined,
 			...Object.fromEntries(
+				this.serverFiles.map(([currFilePath, fileDef]) => [
+					join(bpRoot, currFilePath),
+					{
+						baseFile: filePath,
+						fileContent: JSON.stringify(fileDef, null, '\t'),
+					},
+				])
+			),
+			...Object.fromEntries(
 				Object.entries(this.clientFiles).map(
-					([filePath, jsonContent]) => [
-						filePath,
+					([currFilePath, jsonContent]) => [
+						join(rpRoot!, currFilePath),
 						{
 							baseFile: filePath,
 							fileContent: JSON.stringify(
