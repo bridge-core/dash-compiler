@@ -15,6 +15,7 @@ export declare class Component {
     protected animationControllers: [any, string | false | undefined][];
     protected createOnPlayer: [string, any, any][];
     protected dialogueScenes: Record<string, any[]>;
+    protected serverFiles: [string, any][];
     protected clientFiles: Record<string, any>;
     protected projectConfig?: ProjectConfig;
     protected lifecycleHookCount: {
@@ -33,6 +34,9 @@ export declare class Component {
     processTemplates(fileContent: any, componentArgs: any, location: string): Promise<void>;
     processAdditionalFiles(filePath: string, fileContent: any): Promise<{
         [x: string]: {
+            baseFile: string;
+            fileContent: string;
+        } | {
             baseFile: string;
             fileContent: string;
         } | {
