@@ -1602,6 +1602,8 @@ class Component {
   reset() {
     this.animations = [];
     this.animationControllers = [];
+    this.clientFiles = {};
+    this.serverFiles = [];
   }
   getSchema() {
     return this.schema;
@@ -2047,8 +2049,6 @@ function createCustomComponentPlugin({
             await component.processTemplates(fileContent, componentArgs, location);
             components.add(component);
           }
-          if (fileType !== "entity")
-            return;
           for (const component of components) {
             createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
           }

@@ -92,6 +92,8 @@ export class Component {
 		// Clear previous animation (controllers)
 		this.animations = []
 		this.animationControllers = []
+		this.clientFiles = {}
+		this.serverFiles = []
 	}
 
 	getSchema() {

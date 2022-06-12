@@ -193,10 +193,7 @@ export function createCustomComponentPlugin({
 						components.add(component)
 					}
 
-					// Items must not & blocks don't need to process animation(s/ controllers)
-					if (fileType !== 'entity') return
-
-					// Register animation (controllers) that this entity uses
+					// Add virtual files created from components
 					for (const component of components) {
 						createAdditionalFiles = deepMerge(
 							createAdditionalFiles,
