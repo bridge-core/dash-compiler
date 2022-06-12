@@ -5,7 +5,7 @@ export type TCompilerPlugin = {
 	buildStart(): Promise<void> | void
 	/**
 	 * Register files that should be loaded too
-	 * 
+	 *
 	 * Return a tuple like [['path/to/file', { isVirtual: true }]] for fully virtual files
 	 */
 	include(): Maybe<(string | [string, { isVirtual?: boolean }])[]>
@@ -20,10 +20,16 @@ export type TCompilerPlugin = {
 	/**
 	 * Read the file at `filePath` and return its content
 	 * - Return null/undefined to just copy the file over
+	 *
 	 */
 	read(
 		filePath: string,
-		fileHandle?: { getFile(): Promise<File> | File }
+		fileHandle?: {
+			/**
+			 * @returns null if the file no longer exists
+			 */
+			getFile(): Promise<File | null> | File | null
+		}
 	): Promise<any> | any
 
 	/**

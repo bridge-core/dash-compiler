@@ -5,7 +5,7 @@ export declare type TCompilerPlugin = {
     }])[]>;
     transformPath(filePath: string | null): Maybe<string>;
     read(filePath: string, fileHandle?: {
-        getFile(): Promise<File> | File;
+        getFile(): Promise<File | null> | File | null;
     }): Promise<any> | any;
     load(filePath: string, fileContent: any): Promise<any> | any;
     registerAliases(source: string, fileContent: any): Maybe<string[]>;

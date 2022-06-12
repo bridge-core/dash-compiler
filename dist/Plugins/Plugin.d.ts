@@ -1,3 +1,4 @@
+import { IFileHandle } from '../Core/DashFile';
 import { Dash } from '../Dash';
 import { TCompilerPlugin } from './TCompilerPlugin';
 export declare class Plugin {
@@ -10,9 +11,7 @@ export declare class Plugin {
         isVirtual?: boolean | undefined;
     }])[] | null | undefined>;
     runTransformPathHook(filePath: string | null): Promise<string | null | undefined>;
-    runReadHook(filePath: string, fileHandle?: {
-        getFile(): Promise<File> | File;
-    }): Promise<any>;
+    runReadHook(filePath: string, fileHandle?: IFileHandle): Promise<any>;
     runLoadHook(filePath: string, fileContent: any): Promise<any>;
     runRegisterAliasesHook(filePath: string, fileContent: any): Promise<string[] | null | undefined>;
     runRequireHook(filePath: string, fileContent: any): Promise<string[] | null | undefined>;

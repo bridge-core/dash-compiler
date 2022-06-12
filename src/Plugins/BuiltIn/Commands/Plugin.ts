@@ -48,12 +48,14 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 
 			if (isCommand(filePath) && filePath.endsWith('.js')) {
 				const file = await fileHandle.getFile()
-				return await file.text()
+				return await file?.text()
 			} else if (isMcfunction(filePath)) {
 				const file = await fileHandle.getFile()
-				return await file.text()
+				return await file?.text()
 			} else if (loadCommandsFor(filePath) && fileHandle) {
 				const file = await fileHandle.getFile()
+				if (!file) return
+
 				try {
 					return json5.parse(await file.text())
 				} catch (err) {

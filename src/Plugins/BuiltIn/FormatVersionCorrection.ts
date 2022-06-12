@@ -18,6 +18,8 @@ export const FormatVersionCorrection: TCompilerPluginFactory = ({
 
 			if (needsTransformation(filePath)) {
 				const file = await fileHandle.getFile()
+				if (!file) return
+
 				try {
 					return json5.parse(await file.text())
 				} catch (err) {
@@ -37,14 +39,16 @@ export const FormatVersionCorrection: TCompilerPluginFactory = ({
 				if (!formatVersionMap) return
 
 				// Change format version
-				const formatVersion: string | undefined = fileContent?.format_version
+				const formatVersion: string | undefined =
+					fileContent?.format_version
 				if (formatVersion && formatVersionMap[formatVersion])
 					fileContent.format_version = formatVersionMap[formatVersion]
 				return fileContent
 			}
 		},
 		finalizeBuild(filePath, fileContent) {
-			if (needsTransformation(filePath)) return JSON.stringify(fileContent)
+			if (needsTransformation(filePath))
+				return JSON.stringify(fileContent)
 		},
 	}
 }

@@ -1,4 +1,4 @@
-import type { DashFile } from '../Core/DashFile';
+import type { DashFile, IFileHandle } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
 export declare class AllPlugins {
@@ -27,9 +27,7 @@ export declare class AllPlugins {
         isVirtual?: boolean | undefined;
     }])[]>;
     runTransformPathHooks(filePath: string): Promise<string | null>;
-    runReadHooks(filePath: string, fileHandle?: {
-        getFile: () => Promise<File> | File;
-    }): Promise<any>;
+    runReadHooks(filePath: string, fileHandle?: IFileHandle): Promise<any>;
     runLoadHooks(filePath: string, readData: any): Promise<any>;
     runRegisterAliasesHooks(filePath: string, data: any): Promise<Set<string>>;
     runRequireHooks(filePath: string, data: any): Promise<Set<string>>;

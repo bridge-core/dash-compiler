@@ -2,7 +2,7 @@ import { Dash } from '../Dash'
 import isGlob from 'is-glob'
 
 export interface IFileHandle {
-	getFile: () => Promise<File> | File
+	getFile: () => Promise<File | null> | File | null
 }
 export class DashFile {
 	public outputPath: string | null
@@ -29,7 +29,8 @@ export class DashFile {
 	}
 	setDefaultFileHandle() {
 		this.setFileHandle({
-			getFile: () => this.dash.fileSystem.readFile(this.filePath),
+			getFile: () =>
+				this.dash.fileSystem.readFile(this.filePath).catch(() => null),
 		})
 	}
 

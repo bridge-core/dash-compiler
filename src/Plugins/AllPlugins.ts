@@ -1,6 +1,6 @@
 import { join } from 'path-browserify'
 import { run } from '../Common/runScript'
-import type { DashFile } from '../Core/DashFile'
+import type { DashFile, IFileHandle } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
 import { TCompilerPluginFactory } from './TCompilerPluginFactory'
@@ -29,7 +29,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	customCommands: CustomCommandsPlugin,
 	typeScript: TypeScriptPlugin,
 	contentsFile: ContentsFilePlugin,
-	formatVersionCorrection: FormatVersionCorrection
+	formatVersionCorrection: FormatVersionCorrection,
 }
 
 export class AllPlugins {
@@ -220,10 +220,7 @@ export class AllPlugins {
 
 		return currentFilePath
 	}
-	async runReadHooks(
-		filePath: string,
-		fileHandle?: { getFile: () => Promise<File> | File }
-	) {
+	async runReadHooks(filePath: string, fileHandle?: IFileHandle) {
 		for (const plugin of this.plugins) {
 			const data = await plugin.runReadHook(filePath, fileHandle)
 

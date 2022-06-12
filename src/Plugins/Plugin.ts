@@ -1,3 +1,4 @@
+import { IFileHandle } from '../Core/DashFile'
 import { Dash } from '../Dash'
 import { TCompilerPlugin } from './TCompilerPlugin'
 
@@ -41,10 +42,7 @@ export class Plugin {
 			)
 		}
 	}
-	async runReadHook(
-		filePath: string,
-		fileHandle?: { getFile(): Promise<File> | File }
-	) {
+	async runReadHook(filePath: string, fileHandle?: IFileHandle) {
 		try {
 			return await this.plugin.read?.(filePath, fileHandle)
 		} catch (err) {

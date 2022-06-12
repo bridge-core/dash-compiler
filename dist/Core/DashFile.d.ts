@@ -1,6 +1,6 @@
 import { Dash } from '../Dash';
 export interface IFileHandle {
-    getFile: () => Promise<File> | File;
+    getFile: () => Promise<File | null> | File | null;
 }
 export declare class DashFile {
     protected dash: Dash<any>;

@@ -74,12 +74,14 @@ export function createCustomComponentPlugin({
 
 				if (isComponent(filePath) && filePath.endsWith('.js')) {
 					const file = await fileHandle.getFile()
-					return await file.text()
+					return await file?.text()
 				} else if (
 					mayUseComponent(filePath) ||
 					isPlayerFile(filePath, getAliases)
 				) {
 					const file = await fileHandle.getFile()
+					if (!file) return
+
 					try {
 						return json5.parse(await file.text())
 					} catch (err) {

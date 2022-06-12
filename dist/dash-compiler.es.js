@@ -1306,9 +1306,11 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options, conso
     async read(filePath, fileHandle) {
       if ((isMoLangFile(filePath) || isMoLangScript(filePath)) && fileHandle) {
         const file = await fileHandle.getFile();
-        return await file.text();
+        return await (file == null ? void 0 : file.text());
       } else if (loadMoLangFrom(filePath) && filePath.endsWith(".json") && fileHandle) {
         const file = await fileHandle.getFile();
+        if (!file)
+          return;
         try {
           return lib.parse(await file.text());
         } catch (err) {
@@ -1987,9 +1989,11 @@ function createCustomComponentPlugin({
           return createAdditionalFiles[filePath] ? lib.parse(createAdditionalFiles[filePath].fileContent) : void 0;
         if (isComponent(filePath) && filePath.endsWith(".js")) {
           const file = await fileHandle.getFile();
-          return await file.text();
+          return await (file == null ? void 0 : file.text());
         } else if (mayUseComponent(filePath) || isPlayerFile(filePath, getAliases)) {
           const file = await fileHandle.getFile();
+          if (!file)
+            return;
           try {
             return lib.parse(await file.text());
           } catch (err) {
@@ -2304,12 +2308,14 @@ const CustomCommandsPlugin = ({
         return;
       if (isCommand(filePath) && filePath.endsWith(".js")) {
         const file = await fileHandle.getFile();
-        return await file.text();
+        return await (file == null ? void 0 : file.text());
       } else if (isMcfunction(filePath)) {
         const file = await fileHandle.getFile();
-        return await file.text();
+        return await (file == null ? void 0 : file.text());
       } else if (loadCommandsFor(filePath) && fileHandle) {
         const file = await fileHandle.getFile();
+        if (!file)
+          return;
         try {
           return lib.parse(await file.text());
         } catch (err) {
@@ -2378,7 +2384,7 @@ const TypeScriptPlugin = ({ options }) => ({
     if (!filePath.endsWith(".ts") || !fileHandle)
       return;
     const file = await fileHandle.getFile();
-    return await file.text();
+    return await (file == null ? void 0 : file.text());
   },
   load(filePath, fileContent) {
     if (!filePath.endsWith(".ts"))
@@ -2513,6 +2519,8 @@ const FormatVersionCorrection = ({
         return;
       if (needsTransformation(filePath)) {
         const file = await fileHandle.getFile();
+        if (!file)
+          return;
         try {
           return lib.parse(await file.text());
         } catch (err) {
@@ -2759,7 +2767,7 @@ class DashFile {
   }
   setDefaultFileHandle() {
     this.setFileHandle({
-      getFile: () => this.dash.fileSystem.readFile(this.filePath)
+      getFile: () => this.dash.fileSystem.readFile(this.filePath).catch(() => null)
     });
   }
   setOutputPath(outputPath) {
