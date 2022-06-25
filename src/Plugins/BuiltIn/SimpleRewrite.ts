@@ -5,6 +5,7 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 	buildName?: string
 	packName?: string
 	rewriteToComMojang?: boolean
+	groupFolder?: string
 }> = ({
 	options,
 	outputFileSystem,
@@ -28,7 +29,9 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 	// Rewrite paths so files land in the correct comMojangFolder if comMojang folder is set
 	const pathPrefix = (pack: string) =>
 		hasComMojangDirectory && options.mode === 'development'
-			? `${folders[pack]}`
+			? `${folders[pack]}${
+					options.groupFolder ? '/' + options.groupFolder : ''
+			  }`
 			: `${projectRoot}/builds/${options.buildName}`
 	const pathPrefixWithPack = (pack: string, suffix: string) =>
 		`${pathPrefix(pack)}/${options.packName} ${suffix}`
