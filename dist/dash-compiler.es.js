@@ -191,7 +191,7 @@ const SimpleRewrite = ({
     skinPack: "skin_packs",
     worldTemplate: "minecraftWorlds"
   };
-  const pathPrefix = (pack) => hasComMojangDirectory && options.mode === "development" ? `${folders[pack]}${options.groupFolder ? "/" + options.groupFolder : ""}` : `${projectRoot}/builds/${options.buildName}`;
+  const pathPrefix = (pack) => hasComMojangDirectory && options.mode === "development" ? `${folders[pack]}` : `${projectRoot}/builds/${options.buildName}`;
   const pathPrefixWithPack = (pack, suffix) => `${pathPrefix(pack)}/${options.packName} ${suffix}`;
   return {
     async buildStart() {
