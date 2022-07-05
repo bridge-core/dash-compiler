@@ -1,6 +1,6 @@
 {
 	"name": "dash-compiler",
-	"version": "0.8.22",
+	"version": "0.8.23",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
@@ -14,10 +14,6 @@
 		".": {
 			"import": "./dist/dash-compiler.es.js",
 			"require": "./dist/dash-compiler.umd.js"
-		},
-		"./bundled": {
-			"import": "./dist/dash-compiler.bundled.es.js",
-			"require": "./dist/dash-compiler.bundled.umd.js"
 		}
 	},
 	"repository": {
