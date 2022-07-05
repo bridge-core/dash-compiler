@@ -7,7 +7,7 @@
 
 ## Standalone Builds
 
-- Dash for [Deno](https://github.com/bridge-core/deno-dash-compiler)
+- [Dash for Deno](https://github.com/bridge-core/deno-dash-compiler)
 
 ## ‼️ Issues
 
