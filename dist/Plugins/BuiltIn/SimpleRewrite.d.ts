@@ -3,5 +3,4 @@ export declare const SimpleRewrite: TCompilerPluginFactory<{
     buildName?: string;
     packName?: string;
     rewriteToComMojang?: boolean;
-    groupFolder?: string;
 }>;
