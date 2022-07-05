@@ -3316,6 +3316,14 @@ class Dash {
     await this.plugins.runBuildEndHooks();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
+  async unlinkMultiple(paths) {
+    if (!this.isCompilerActivated)
+      return;
+    for (const path of paths) {
+      await this.unlink(path, false);
+    }
+    await this.saveDashFile();
+  }
   async unlink(path, updateDashFile = true) {
     if (!this.isCompilerActivated)
       return;

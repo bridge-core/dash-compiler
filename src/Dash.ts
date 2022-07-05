@@ -334,6 +334,16 @@ export class Dash<TSetupArg = void> {
 		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}
 
+	async unlinkMultiple(paths: string[]) {
+		if (!this.isCompilerActivated) return
+
+		for (const path of paths) {
+			await this.unlink(path, false)
+		}
+
+		await this.saveDashFile()
+	}
+
 	async unlink(path: string, updateDashFile = true) {
 		if (!this.isCompilerActivated) return
 
