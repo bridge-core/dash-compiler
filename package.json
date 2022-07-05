@@ -4,8 +4,8 @@
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
-		"build:only": "vite build",
-		"build": "vite build && npm run build:types"
+		"build:only": "vite build && vite --config vite.config.skypack.js build",
+		"build": "npm run build:only && npm run build:types"
 	},
 	"main": "./dist/dash-compiler.umd.js",
 	"module": "./dist/dash-compiler.es.js",
@@ -14,6 +14,10 @@
 		".": {
 			"import": "./dist/dash-compiler.es.js",
 			"require": "./dist/dash-compiler.umd.js"
+		},
+		"./bundled": {
+			"import": "./dist/dash-compiler.bundled.es.js",
+			"require": "./dist/dash-compiler.bundled.umd.js"
 		}
 	},
 	"repository": {
