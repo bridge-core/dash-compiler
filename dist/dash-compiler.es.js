@@ -3186,7 +3186,8 @@ class Dash {
     var _a, _b, _c, _d;
     try {
       await this.projectConfig.setup();
-    } catch {
+    } catch (err) {
+      this.console.error("Failed to load project config: " + err);
     }
     (_a = this.fileType) == null ? void 0 : _a.setProjectConfig(this.projectConfig);
     (_b = this.packType) == null ? void 0 : _b.setProjectConfig(this.projectConfig);
@@ -3228,7 +3229,7 @@ class Dash {
   }
   async updateFiles(filePaths, saveDashFile = true) {
     var _a;
-    if (!this.isCompilerActivated)
+    if (!this.isCompilerActivated || filePaths.length === 0)
       return;
     this.buildType = "hotUpdate";
     this.progress.setTotal(8);
@@ -3317,7 +3318,7 @@ class Dash {
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
   async unlinkMultiple(paths) {
-    if (!this.isCompilerActivated)
+    if (!this.isCompilerActivated || paths.length === 0)
       return;
     for (const path of paths) {
       await this.unlink(path, false);
