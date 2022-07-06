@@ -11,6 +11,7 @@ import type { DashFile } from './Core/DashFile'
 import { Progress } from './Core/Progress'
 import { Console } from './Common/Console'
 import { DefaultConsole } from './Common/DefaultConsole'
+
 export interface IDashOptions<TSetupArg = void> {
 	/**
 	 * mode: Either 'development' or 'production'
@@ -94,7 +95,9 @@ export class Dash<TSetupArg = void> {
 	async setup(setupArg: TSetupArg) {
 		try {
 			await this.projectConfig.setup()
-		} catch {}
+		} catch (err) {
+			this.console.error('Failed to load project config: ' + err)
+		}
 
 		this.fileType?.setProjectConfig(this.projectConfig)
 		this.packType?.setProjectConfig(this.projectConfig)
@@ -162,7 +165,7 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async updateFiles(filePaths: string[], saveDashFile = true) {
-		if (!this.isCompilerActivated) return
+		if (!this.isCompilerActivated || filePaths.length === 0) return
 		this.buildType = 'hotUpdate'
 
 		this.progress.setTotal(8)
@@ -335,7 +338,7 @@ export class Dash<TSetupArg = void> {
 	}
 
 	async unlinkMultiple(paths: string[]) {
-		if (!this.isCompilerActivated) return
+		if (!this.isCompilerActivated || paths.length === 0) return
 
 		for (const path of paths) {
 			await this.unlink(path, false)
