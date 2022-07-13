@@ -17,6 +17,7 @@ import { TypeScriptPlugin } from './BuiltIn/TypeScript'
 import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
 import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
 import { FormatVersionCorrection } from './BuiltIn/FormatVersionCorrection'
+import { GeneratorScriptsPlugin } from './BuiltIn/GeneratorScripts'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -30,6 +31,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	typeScript: TypeScriptPlugin,
 	contentsFile: ContentsFilePlugin,
 	formatVersionCorrection: FormatVersionCorrection,
+	generatorScripts: GeneratorScriptsPlugin,
 }
 
 export class AllPlugins {
