@@ -3409,7 +3409,7 @@ class Dash {
     const file = this.includedFiles.get(filePath);
     if (!file)
       return [];
-    return [...file.filesToLoadForHotUpdate()].map((file2) => file2.isVirtual ? file2.outputPath : file2.filePath).filter((filePath2) => filePath2 !== null);
+    return [...file.filesToLoadForHotUpdate()].map((file2) => file2.isVirtual ? file2.outputPath : file2.filePath).filter((currFilePath) => currFilePath !== null && currFilePath !== filePath);
   }
   async saveDashFile() {
     await this.includedFiles.save(this.dashFilePath);

@@ -389,7 +389,10 @@ export class Dash<TSetupArg = void> {
 				.map((file) =>
 					file.isVirtual ? file.outputPath : file.filePath
 				)
-				.filter((filePath) => filePath !== null)
+				.filter(
+					(currFilePath) =>
+						currFilePath !== null && currFilePath !== filePath
+				)
 		)
 	}
 
