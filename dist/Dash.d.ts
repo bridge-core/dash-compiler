@@ -50,7 +50,7 @@ export declare class Dash<TSetupArg = void> {
     unlink(path: string, updateDashFile?: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     getCompilerOutputPath(filePath: string): Promise<string | undefined>;
-    watch(): void;
+    getFileDependencies(filePath: string): Promise<string[]>;
     protected saveDashFile(): Promise<void>;
     protected compileIncludedFiles(files?: DashFile[]): Promise<void>;
     compileVirtualFiles(filePaths: string[]): Promise<void>;

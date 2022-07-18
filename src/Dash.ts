@@ -376,8 +376,21 @@ export class Dash<TSetupArg = void> {
 		return outputPath
 	}
 
-	watch() {
-		// this.fileSystem.watchDirectory()
+	async getFileDependencies(filePath: string) {
+		if (!this.isCompilerActivated) return []
+
+		await this.includedFiles.load(this.dashFilePath)
+
+		const file = this.includedFiles.get(filePath)
+		if (!file) return []
+
+		return <string[]>(
+			[...file.filesToLoadForHotUpdate()]
+				.map((file) =>
+					file.isVirtual ? file.outputPath : file.filePath
+				)
+				.filter((filePath) => filePath !== null)
+		)
 	}
 
 	// Save compiler data

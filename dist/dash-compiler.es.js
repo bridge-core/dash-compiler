@@ -2550,6 +2550,56 @@ const FormatVersionCorrection = ({
     }
   };
 };
+const GeneratorScriptsPlugin = ({
+  fileType,
+  console: console2
+}) => {
+  const getFileType = (filePath) => fileType.getId(filePath);
+  const getFileContentType = (filePath) => {
+    var _a;
+    const def = fileType.get(filePath);
+    if (!def)
+      return "raw";
+    return (_a = def.type) != null ? _a : "json";
+  };
+  const isGeneratorScript = (filePath) => getFileType(filePath) !== "gameTest" && (filePath.endsWith(".js") || filePath.endsWith(".ts"));
+  const getScriptExtension = (filePath) => {
+    var _a, _b, _c, _d;
+    const fileContentType = getFileContentType(filePath);
+    if (fileContentType === "json")
+      return ".json";
+    return (_d = (_c = (_b = (_a = fileType.get(filePath)) == null ? void 0 : _a.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
+  };
+  return {
+    transformPath(filePath) {
+      if (filePath && isGeneratorScript(filePath))
+        return filePath.replace(/\.(js|ts)$/, `.${getScriptExtension(filePath)}`);
+    },
+    read(filePath, fileHandle) {
+      if (isGeneratorScript(filePath))
+        return fileHandle == null ? void 0 : fileHandle.getFile();
+    },
+    async load(filePath, fileContent) {
+      if (isGeneratorScript(filePath)) {
+        const module = { exports: null };
+        await run({
+          env: {
+            module
+          },
+          console: console2,
+          async: true,
+          script: fileContent
+        });
+        return module.exports;
+      }
+    },
+    finalizeBuild(filePath, fileContent) {
+      if (isGeneratorScript(filePath)) {
+        return typeof fileContent === "object" ? JSON.stringify(fileContent) : fileContent;
+      }
+    }
+  };
+};
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   rewriteForPackaging: RewriteForPackaging,
@@ -2561,7 +2611,8 @@ const builtInPlugins = {
   customCommands: CustomCommandsPlugin,
   typeScript: TypeScriptPlugin,
   contentsFile: ContentsFilePlugin,
-  formatVersionCorrection: FormatVersionCorrection
+  formatVersionCorrection: FormatVersionCorrection,
+  generatorScripts: GeneratorScriptsPlugin
 };
 class AllPlugins {
   constructor(dash) {
@@ -3351,7 +3402,14 @@ class Dash {
       return;
     return outputPath;
   }
-  watch() {
+  async getFileDependencies(filePath) {
+    if (!this.isCompilerActivated)
+      return [];
+    await this.includedFiles.load(this.dashFilePath);
+    const file = this.includedFiles.get(filePath);
+    if (!file)
+      return [];
+    return [...file.filesToLoadForHotUpdate()].map((file2) => file2.isVirtual ? file2.outputPath : file2.filePath).filter((filePath2) => filePath2 !== null);
   }
   async saveDashFile() {
     await this.includedFiles.save(this.dashFilePath);
