@@ -11,6 +11,8 @@ import type { DashFile } from './Core/DashFile'
 import { Progress } from './Core/Progress'
 import { Console } from './Common/Console'
 import { DefaultConsole } from './Common/DefaultConsole'
+import { JsRuntime } from './Common/JsRuntime'
+import { MoLang, expressions } from 'molang'
 
 export interface IDashOptions<TSetupArg = void> {
 	/**
@@ -61,6 +63,7 @@ export class Dash<TSetupArg = void> {
 	public fileTransformer: FileTransformer = new FileTransformer(this)
 	public buildType = 'fullBuild'
 	public readonly console: Console
+	public jsRuntime: JsRuntime
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
@@ -73,6 +76,18 @@ export class Dash<TSetupArg = void> {
 		this.projectRoot = dirname(options.config)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
 		this.console = options.console ?? new DefaultConsole()
+		this.jsRuntime = new JsRuntime(this.fileSystem, [
+			['@molang/expressions', expressions],
+			['@molang/core', { MoLang }],
+			[
+				'molang',
+				{
+					MoLang,
+					...expressions,
+				},
+			],
+			['@bridge/compiler', { mode: options.mode }],
+		])
 
 		this.packType = options.packType
 		this.fileType = options.fileType
@@ -133,6 +148,9 @@ export class Dash<TSetupArg = void> {
 		this.console.log('Starting compilation...')
 		if (!this.isCompilerActivated) return
 
+		// Clear module cache
+		this.jsRuntime.clearCache()
+
 		this.buildType = 'fullBuild'
 		this.includedFiles.removeAll()
 
@@ -167,6 +185,9 @@ export class Dash<TSetupArg = void> {
 	async updateFiles(filePaths: string[], saveDashFile = true) {
 		if (!this.isCompilerActivated || filePaths.length === 0) return
 		this.buildType = 'hotUpdate'
+
+		// Clear module cache
+		this.jsRuntime.clearCache()
 
 		this.progress.setTotal(8)
 
@@ -276,6 +297,9 @@ export class Dash<TSetupArg = void> {
 	): Promise<[string[], any]> {
 		if (!this.isCompilerActivated) return [[], fileData]
 		this.buildType = 'fileRequest'
+
+		// Clear module cache
+		this.jsRuntime.clearCache()
 
 		this.progress.setTotal(7)
 

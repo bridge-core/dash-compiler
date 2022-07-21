@@ -1,9 +1,9 @@
-import { run } from '../../../Common/runScript'
 import { transformCommands } from './transformCommands'
 import { v1Compat } from './v1Compat'
 import { tokenizeCommand } from 'bridge-common-utils'
 import { castType } from 'bridge-common-utils'
 import { Console } from '../../../Common/Console'
+import { JsRuntime } from '../../../Common/JsRuntime'
 export type TTemplate = (commandArgs: unknown[], opts: any) => string | string[]
 
 export class Command {
@@ -22,24 +22,37 @@ export class Command {
 		return this._name ?? 'unknown'
 	}
 
-	async load(type?: 'client' | 'server') {
-		const module = { exports: {} }
-		try {
-			run({
-				script: this.commandSrc,
+	async load(
+		jsRuntime: JsRuntime,
+		filePath: string,
+		type?: 'client' | 'server'
+	) {
+		const v1CompatModule = { command: null }
+		const module = await jsRuntime
+			.run(filePath, {
 				console: this.console,
-				env: {
-					module: module,
-					console: this.console,
-					defineCommand: (x: any) => x,
-					Bridge: this.v1Compat ? v1Compat(module) : undefined,
-				},
+				defineCommand: (x: any) => x,
+				Bridge: this.v1Compat ? v1Compat(v1CompatModule) : undefined,
 			})
-		} catch (err) {
-			this.console.error(err)
+			.catch((err) => {
+				this.console.error(
+					`Failed to execute command ${this.name}: ${err}`
+				)
+				return null
+			})
+		// Command execution failed
+		if (!module) return null
+		// Ensure that command file exports function
+		if (typeof module.__default__ !== 'function') {
+			if (v1CompatModule.command) {
+				module.__default__ = v1CompatModule.command
+			} else {
+				this.console.error(
+					`Component ${filePath} is not a valid component. Expected a function as the default export.`
+				)
+				return false
+			}
 		}
-
-		if (typeof module.exports !== 'function') return
 
 		const name = (name: string) => (this._name = name)
 		let schema: Function = (schema: any) => (this.schema = schema)
@@ -59,7 +72,7 @@ export class Command {
 			}
 		}
 
-		await module.exports({
+		await module.__default__({
 			name,
 			schema,
 			template,

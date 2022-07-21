@@ -9,6 +9,7 @@ import { FileType, PackType } from 'mc-project-core';
 import type { DashFile } from './Core/DashFile';
 import { Progress } from './Core/Progress';
 import { Console } from './Common/Console';
+import { JsRuntime } from './Common/JsRuntime';
 export interface IDashOptions<TSetupArg = void> {
     mode?: 'development' | 'production';
     config: string;
@@ -35,6 +36,7 @@ export declare class Dash<TSetupArg = void> {
     fileTransformer: FileTransformer;
     buildType: string;
     readonly console: Console;
+    jsRuntime: JsRuntime;
     constructor(fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, options: IDashOptions<TSetupArg>);
     getMode(): "development" | "production";
     getCompilerConfigPath(): string | undefined;

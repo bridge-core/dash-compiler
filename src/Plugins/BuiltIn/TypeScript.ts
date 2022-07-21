@@ -1,4 +1,5 @@
-import { transpile } from 'typescript'
+import { transformSync } from '@swc/wasm'
+import { basename } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const TypeScriptPlugin: TCompilerPluginFactory<{
@@ -18,11 +19,18 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 	load(filePath, fileContent) {
 		if (!filePath.endsWith('.ts')) return
 
-		return transpile(fileContent, {
-			target: 99,
-			isolatedModules: true,
-			inlineSourceMap: options?.inlineSourceMap,
-		})
+		return transformSync(fileContent, {
+			filename: basename(filePath),
+
+			sourceMaps: options?.inlineSourceMap ? 'inline' : undefined,
+
+			jsc: {
+				parser: {
+					syntax: 'typescript',
+				},
+				target: 'es2020',
+			},
+		}).code
 	},
 	finalizeBuild(filePath, fileContent) {
 		/**

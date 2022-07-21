@@ -29,6 +29,7 @@ export function createCustomComponentPlugin({
 		compileFiles,
 		getAliases,
 		options,
+		jsRuntime,
 		targetVersion,
 		fileType: fileTypeLib,
 	}) => {
@@ -107,7 +108,10 @@ export function createCustomComponentPlugin({
 					)
 					component.setProjectConfig(projectConfig)
 
-					const loadedCorrectly = await component.load()
+					const loadedCorrectly = await component.load(
+						jsRuntime,
+						filePath
+					)
 					return loadedCorrectly ? component : fileContent
 				}
 			},

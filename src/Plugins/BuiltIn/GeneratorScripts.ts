@@ -1,9 +1,9 @@
-import { run } from '../../Common/runScript'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 	fileType,
 	console,
+	jsRuntime,
 }) => {
 	const getFileType = (filePath: string) => fileType.getId(filePath)
 	const getFileContentType = (filePath: string) => {
@@ -36,22 +36,36 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 		},
 		async load(filePath, fileContent) {
 			if (isGeneratorScript(filePath)) {
-				const module = { exports: null }
-				await run({
-					env: {
-						module,
-					},
-					console,
-					async: true,
-					script: fileContent,
-				})
+				const module = await jsRuntime
+					.run(
+						filePath,
+						{
+							console,
+						},
+						fileContent
+					)
+					.catch((err) => {
+						console.error(
+							`Failed to execute generator script "${filePath}": ${err}`
+						)
+						return null
+					})
+				if (!module) return null
+				if (!module.__default__) {
+					console.error(
+						`Expected generator script "${filePath}" to provide file content as default export!`
+					)
+					return null
+				}
 
-				return module.exports
+				return module.__default__
 			}
 		},
 
 		finalizeBuild(filePath, fileContent) {
 			if (isGeneratorScript(filePath)) {
+				if (fileContent === null) return null
+
 				return typeof fileContent === 'object'
 					? JSON.stringify(fileContent)
 					: fileContent

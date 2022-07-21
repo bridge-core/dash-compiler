@@ -2,11 +2,17 @@ import { CustomMoLang, IExpression, MoLang, expressions } from 'molang'
 import { setObjectAt } from 'bridge-common-utils'
 import json5 from 'json5'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
-import { run } from '../../Common/runScript'
 
 export const MoLangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
-}> = ({ fileType, projectConfig, requestJsonData, options, console }) => {
+}> = ({
+	fileType,
+	projectConfig,
+	requestJsonData,
+	options,
+	console,
+	jsRuntime,
+}) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
@@ -72,21 +78,19 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				// Load the custom MoLang functions
 				customMoLang.parse(fileContent)
 			} else if (isMoLangScript(filePath)) {
-				const module = { exports: {} }
-				await run({
-					script: fileContent,
-					env: { module, console },
-					async: true,
-					console,
-					modules: {
-						'@molang/expressions': expressions,
-						'@molang/core': MoLang,
-						'@bridge/compiler': { mode: options.mode },
-					},
-				})
+				const module = await jsRuntime
+					.run(filePath, { console }, fileContent)
+					.catch((err) => {
+						console.error(
+							`Failed to execute Molang AST script "${filePath}": ${err}`
+						)
+						return null
+					})
+				// AST script execution failed
+				if (!module) return null
 
-				if (typeof module.exports === 'function')
-					astTransformers.push(<any>module.exports)
+				if (typeof module.__default__ === 'function')
+					astTransformers.push(<any>module.__default__)
 			}
 		},
 		async require(filePath) {

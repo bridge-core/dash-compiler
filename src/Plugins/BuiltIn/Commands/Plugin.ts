@@ -9,6 +9,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	v1CompatMode?: boolean
 }> = ({
 	projectConfig,
+	jsRuntime,
 	console,
 	fileType: fileTypeLib,
 	requestJsonData,
@@ -72,7 +73,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 					options.v1CompatMode ?? false
 				)
 
-				await command.load()
+				await command.load(jsRuntime, filePath)
 				return command
 			}
 		},

@@ -1,5 +1,4 @@
 import { join } from 'path-browserify'
-import { run } from '../Common/runScript'
 import type { DashFile, IFileHandle } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
@@ -18,6 +17,7 @@ import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
 import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
 import { FormatVersionCorrection } from './BuiltIn/FormatVersionCorrection'
 import { GeneratorScriptsPlugin } from './BuiltIn/GeneratorScripts'
+import { JsRuntime } from '../Common/JsRuntime'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -36,11 +36,16 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 
 export class AllPlugins {
 	protected plugins: Plugin[] = []
+	protected pluginRuntime: JsRuntime
 
-	constructor(protected dash: Dash<any>) {}
+	constructor(protected dash: Dash<any>) {
+		this.pluginRuntime = new JsRuntime(this.dash.fileSystem)
+	}
 
 	async loadPlugins(scriptEnv: any = {}) {
 		this.plugins = []
+		// Clear module cache
+		this.pluginRuntime.clearCache()
 
 		// Loading all available extensions
 		const extensions = [
@@ -99,35 +104,35 @@ export class AllPlugins {
 				typeof usedPlugin === 'string' ? {} : usedPlugin[1]
 
 			if (plugins[pluginId]) {
-				const pluginSrc = await this.dash.fileSystem
-					.readFile(plugins[pluginId])
-					.then((file) => file.text())
-
-				const module: { exports?: TCompilerPluginFactory } = {}
-				await run({
-					async: true,
-					script: pluginSrc,
-					console: this.dash.console,
-					env: {
-						require: undefined,
-						module,
+				const module = await this.pluginRuntime
+					.run(plugins[pluginId], {
 						console: this.dash.console,
 						...scriptEnv,
-					},
-				})
+					})
+					.catch((err) => {
+						this.dash.console.error(
+							`Failed to execute plugin ${pluginId}: ${err}`
+						)
+						return null
+					})
+				if (!module) continue
 
-				if (typeof module.exports === 'function')
+				if (typeof module.__default__ === 'function')
 					this.plugins.push(
 						new Plugin(
 							this.dash,
 							pluginId,
-							module.exports(
+							module.__default__(
 								await this.getPluginContext(
 									pluginId,
 									pluginOpts
 								)
 							)
 						)
+					)
+				else
+					this.dash.console.error(
+						`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
 					)
 			} else if (builtInPlugins[pluginId]) {
 				this.plugins.push(
@@ -171,6 +176,7 @@ export class AllPlugins {
 				},
 				...pluginOpts,
 			},
+			jsRuntime: this.dash.jsRuntime,
 			console: this.dash.console,
 			fileSystem: this.dash.fileSystem,
 			outputFileSystem: this.dash.outputFileSystem,

@@ -1,4 +1,5 @@
 import { Console } from '../../../Common/Console';
+import { JsRuntime } from '../../../Common/JsRuntime';
 export declare type TTemplate = (commandArgs: unknown[], opts: any) => string | string[];
 export declare class Command {
     protected console: Console;
@@ -10,7 +11,7 @@ export declare class Command {
     protected template?: TTemplate;
     constructor(console: Console, commandSrc: string, mode: 'development' | 'production', v1Compat: boolean);
     get name(): string;
-    load(type?: 'client' | 'server'): Promise<void>;
+    load(jsRuntime: JsRuntime, filePath: string, type?: 'client' | 'server'): Promise<false | null | undefined>;
     process(command: string, dependencies: Record<string, Command>, nestingDepth: number): string[];
     getSchema(): any[];
     toString(): string;

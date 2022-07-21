@@ -1,24 +1,9 @@
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key2, value) => key2 in obj ? __defProp(obj, key2, { enumerable: true, configurable: true, writable: true, value }) : obj[key2] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 import { ProjectConfig } from "mc-project-core";
 import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMoLang, expressions, MoLang } from "molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
-import { transpile } from "typescript";
+import require$$2 from "fs";
+import { Runtime } from "bridge-js-runtime";
 import isGlob from "is-glob";
 class DashProjectConfig extends ProjectConfig {
   constructor(fileSystem, configPath) {
@@ -32,56 +17,6 @@ class DashProjectConfig extends ProjectConfig {
   writeConfig(configJson) {
     return this.fileSystem.writeJson(this.configPath, configJson);
   }
-}
-function run(context) {
-  if (context.async)
-    return createRunner(context)(...Object.values(context.env)).catch((err) => {
-      context.console.error(context.script);
-      throw new Error(`Error within script: ${err}`);
-    });
-  try {
-    return createRunner(context)(...Object.values(context.env));
-  } catch (err) {
-    context.console.error(context.script);
-    throw new Error(`Error within script: ${err}`);
-  }
-}
-function createRunner({
-  script,
-  env,
-  modules,
-  async = false,
-  console: console2
-}) {
-  let transformedScript = transformScript(script);
-  if (modules) {
-    if (!async)
-      throw new Error(`Cannot use script modules without making script async!`);
-    const currRequire = env.require;
-    env.require = async (moduleName) => {
-      if (modules[moduleName])
-        return modules[moduleName];
-      if (typeof currRequire === "function")
-        return await (currRequire == null ? void 0 : currRequire(moduleName));
-    };
-  }
-  try {
-    if (async)
-      return new Function(...Object.keys(env), `return (async () => {
-${transformedScript}
-})()`);
-    return new Function(...Object.keys(env), transformedScript);
-  } catch (err) {
-    console2.error(script);
-    throw new Error(`Error within script: ${err}`);
-  }
-}
-function transformScript(script) {
-  return script.replace(/export default /g, "module.exports = ").replace(/import\s+(\* as [a-z][a-z0-9]*|[a-z][a-z0-9]+|{[a-z\s][a-z0-9,\s]*})\s+from\s+["'](.+)["']/gi, (_, imports, moduleName) => {
-    if (imports.startsWith(`* as `))
-      imports = imports.replace("* as ", "");
-    return `const ${imports} = await require('${moduleName}')`;
-  });
 }
 class Plugin {
   constructor(dash, pluginId, plugin) {
@@ -1285,7 +1220,14 @@ const JSON5 = {
   stringify
 };
 var lib = JSON5;
-const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options, console: console2 }) => {
+const MoLangPlugin = ({
+  fileType,
+  projectConfig,
+  requestJsonData,
+  options,
+  console: console2,
+  jsRuntime
+}) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
@@ -1326,20 +1268,14 @@ const MoLangPlugin = ({ fileType, projectConfig, requestJsonData, options, conso
       if (isMoLangFile(filePath) && fileContent) {
         customMoLang.parse(fileContent);
       } else if (isMoLangScript(filePath)) {
-        const module = { exports: {} };
-        await run({
-          script: fileContent,
-          env: { module, console: console2 },
-          async: true,
-          console: console2,
-          modules: {
-            "@molang/expressions": expressions,
-            "@molang/core": MoLang,
-            "@bridge/compiler": { mode: options.mode }
-          }
+        const module = await jsRuntime.run(filePath, { console: console2 }, fileContent).catch((err) => {
+          console2.error(`Failed to execute Molang AST script "${filePath}": ${err}`);
+          return null;
         });
-        if (typeof module.exports === "function")
-          astTransformers.push(module.exports);
+        if (!module)
+          return null;
+        if (typeof module.__default__ === "function")
+          astTransformers.push(module.__default__);
       }
     },
     async require(filePath) {
@@ -1476,12 +1412,12 @@ const assertValidOperator = (op) => {
     throw new Error(`Invalid operator, expected one of ${allowedOperators.join("|")}`);
   }
 };
-const v1Compat$1 = (module, fileType) => ({
+const v1Compat$1 = (v1CompatModule, fileType) => ({
   register: (componentClass) => {
     var _a;
     if (((_a = componentClass.type) != null ? _a : "entity") !== fileType)
       return;
-    module.exports = ({ name, schema, template }) => {
+    v1CompatModule.component = ({ name, schema, template }) => {
       const component = new componentClass();
       name(componentClass.component_name);
       schema(transformV1AutoCompletions(Object.values(component.onPropose())[0]));
@@ -1558,24 +1494,26 @@ class Component {
   get name() {
     return this._name;
   }
-  async load(type) {
-    const module = { exports: {} };
-    try {
-      run({
-        script: this.componentSrc,
-        console: this.console,
-        env: {
-          module,
-          console: this.console,
-          defineComponent: (x) => x,
-          Bridge: this.v1Compat ? v1Compat$1(module, this.fileType) : void 0
-        }
-      });
-    } catch (err) {
-      this.console.error(err);
-    }
-    if (typeof module.exports !== "function")
+  async load(jsRuntime, filePath, type) {
+    let v1CompatModule = { component: null };
+    const module = await jsRuntime.run(filePath, {
+      defineComponent: (x) => x,
+      console: this.console,
+      Bridge: this.v1Compat ? v1Compat$1(v1CompatModule, this.fileType) : void 0
+    }).catch(() => {
+      this.console.error(`Failed to execute component ${filePath}`);
+      return null;
+    });
+    if (!module)
       return false;
+    if (typeof module.__default__ !== "function") {
+      if (v1CompatModule.component) {
+        module.__default__ = v1CompatModule.component;
+      } else {
+        this.console.error(`Component ${filePath} is not a valid component. Expected a function as the default export.`);
+        return false;
+      }
+    }
     const name = (name2) => this._name = name2;
     let schema = (schema2) => this.schema = schema2;
     let template = () => {
@@ -1594,7 +1532,7 @@ class Component {
         };
       };
     }
-    await module.exports({
+    await module.__default__({
       name,
       schema,
       template
@@ -1774,7 +1712,7 @@ class Component {
       this.clientFiles = {};
       this.console.error(`[${this.name}] Dash was unable to load the root of your resource pack and therefore cannot generate client files for this component.`);
     }
-    return __spreadValues(__spreadValues({
+    return {
       [animFileName]: {
         baseFile: filePath,
         fileContent: this.createAnimations(fileName, fileContent)
@@ -1791,20 +1729,22 @@ class Component {
             scenes: this.dialogueScenes[fileName]
           }
         }, null, "	")
-      } : void 0
-    }, Object.fromEntries(this.serverFiles.map(([currFilePath, fileDef]) => [
-      join(bpRoot, currFilePath),
-      {
-        baseFile: filePath,
-        fileContent: JSON.stringify(fileDef, null, "	")
-      }
-    ]))), Object.fromEntries(Object.entries(this.clientFiles).map(([currFilePath, jsonContent]) => [
-      join(rpRoot, currFilePath),
-      {
-        baseFile: filePath,
-        fileContent: JSON.stringify(jsonContent, null, "	")
-      }
-    ])));
+      } : void 0,
+      ...Object.fromEntries(this.serverFiles.map(([currFilePath, fileDef]) => [
+        join(bpRoot, currFilePath),
+        {
+          baseFile: filePath,
+          fileContent: JSON.stringify(fileDef, null, "	")
+        }
+      ])),
+      ...Object.fromEntries(Object.entries(this.clientFiles).map(([currFilePath, jsonContent]) => [
+        join(rpRoot, currFilePath),
+        {
+          baseFile: filePath,
+          fileContent: JSON.stringify(jsonContent, null, "	")
+        }
+      ]))
+    };
   }
   createAnimations(fileName, fileContent) {
     if (this.animations.length === 0)
@@ -1960,7 +1900,7 @@ function createCustomComponentPlugin({
   fileType,
   getComponentObjects
 }) {
-  const usedComponents = new Map();
+  const usedComponents = /* @__PURE__ */ new Map();
   let createAdditionalFiles = {};
   return ({
     console: console2,
@@ -1969,6 +1909,7 @@ function createCustomComponentPlugin({
     compileFiles,
     getAliases,
     options,
+    jsRuntime,
     targetVersion,
     fileType: fileTypeLib
   }) => {
@@ -2009,7 +1950,7 @@ function createCustomComponentPlugin({
         if (isComponent(filePath) && typeof fileContent === "string") {
           const component = new Component(console2, fileType, fileContent, options.mode, !!options.v1CompatMode, targetVersion);
           component.setProjectConfig(projectConfig);
-          const loadedCorrectly = await component.load();
+          const loadedCorrectly = await component.load(jsRuntime, filePath);
           return loadedCorrectly ? component : fileContent;
         }
       },
@@ -2042,7 +1983,7 @@ function createCustomComponentPlugin({
             createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
           }
         } else if (mayUseComponent(filePath)) {
-          const components = new Set();
+          const components = /* @__PURE__ */ new Set();
           for (const [componentName, location] of (_a = usedComponents.get(filePath)) != null ? _a : []) {
             const component = dependencies[`${fileType}Component#${componentName}`];
             if (!component)
@@ -2170,9 +2111,9 @@ function transformCommands(commands, dependencies, includeComments, nestingDepth
   }
   return processedCommands.filter((command) => includeComments || !command.startsWith("#")).map((command) => command.trim());
 }
-const v1Compat = (module) => ({
+const v1Compat = (v1CompatModule) => ({
   register: (commandClass) => {
-    module.exports = ({ name, schema, template }) => {
+    v1CompatModule.command = ({ name, schema, template }) => {
       name(commandClass.command_name);
       schema([]);
       template((commandArgs) => {
@@ -2193,24 +2134,26 @@ class Command {
     var _a;
     return (_a = this._name) != null ? _a : "unknown";
   }
-  async load(type) {
-    const module = { exports: {} };
-    try {
-      run({
-        script: this.commandSrc,
-        console: this.console,
-        env: {
-          module,
-          console: this.console,
-          defineCommand: (x) => x,
-          Bridge: this.v1Compat ? v1Compat(module) : void 0
-        }
-      });
-    } catch (err) {
-      this.console.error(err);
+  async load(jsRuntime, filePath, type) {
+    const v1CompatModule = { command: null };
+    const module = await jsRuntime.run(filePath, {
+      console: this.console,
+      defineCommand: (x) => x,
+      Bridge: this.v1Compat ? v1Compat(v1CompatModule) : void 0
+    }).catch((err) => {
+      this.console.error(`Failed to execute command ${this.name}: ${err}`);
+      return null;
+    });
+    if (!module)
+      return null;
+    if (typeof module.__default__ !== "function") {
+      if (v1CompatModule.command) {
+        module.__default__ = v1CompatModule.command;
+      } else {
+        this.console.error(`Component ${filePath} is not a valid component. Expected a function as the default export.`);
+        return false;
+      }
     }
-    if (typeof module.exports !== "function")
-      return;
     const name = (name2) => this._name = name2;
     let schema = (schema2) => this.schema = schema2;
     let template = () => {
@@ -2229,7 +2172,7 @@ class Command {
         };
       };
     }
-    await module.exports({
+    await module.__default__({
       name,
       schema,
       template
@@ -2265,9 +2208,10 @@ class Command {
     else if (Array.isArray(this.schema)) {
       if (this.schema.length === 0)
         return [{ commandName: this.name }];
-      return this.schema.map((schema) => __spreadValues({
-        commandName: this.name
-      }, schema));
+      return this.schema.map((schema) => ({
+        commandName: this.name,
+        ...schema
+      }));
     }
     if (!this.schema.commandName)
       this.schema.commandName = this.name;
@@ -2279,6 +2223,7 @@ class Command {
 }
 const CustomCommandsPlugin = ({
   projectConfig,
+  jsRuntime,
   console: console2,
   fileType: fileTypeLib,
   requestJsonData,
@@ -2327,7 +2272,7 @@ const CustomCommandsPlugin = ({
       var _a;
       if (isCommand(filePath)) {
         const command = new Command(console2, fileContent, options.mode, (_a = options.v1CompatMode) != null ? _a : false);
-        await command.load();
+        await command.load(jsRuntime, filePath);
         return command;
       }
     },
@@ -2374,6 +2319,245 @@ const CustomCommandsPlugin = ({
     }
   };
 };
+function getAugmentedNamespace(n) {
+  if (n.__esModule)
+    return n;
+  var a = Object.defineProperty({}, "__esModule", { value: true });
+  Object.keys(n).forEach(function(k) {
+    var d = Object.getOwnPropertyDescriptor(n, k);
+    Object.defineProperty(a, k, d.get ? d : {
+      enumerable: true,
+      get: function() {
+        return n[k];
+      }
+    });
+  });
+  return a;
+}
+var wasm = { exports: {} };
+var __viteBrowserExternal = {};
+var __viteBrowserExternal$1 = /* @__PURE__ */ Object.freeze({
+  __proto__: null,
+  [Symbol.toStringTag]: "Module",
+  "default": __viteBrowserExternal
+});
+var require$$1 = /* @__PURE__ */ getAugmentedNamespace(__viteBrowserExternal$1);
+(function(module) {
+  let imports = {};
+  imports["__wbindgen_placeholder__"] = module.exports;
+  let wasm2;
+  const { TextDecoder, TextEncoder } = require$$1;
+  let cachedTextDecoder = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
+  cachedTextDecoder.decode();
+  let cachegetUint8Memory0 = null;
+  function getUint8Memory0() {
+    if (cachegetUint8Memory0 === null || cachegetUint8Memory0.buffer !== wasm2.memory.buffer) {
+      cachegetUint8Memory0 = new Uint8Array(wasm2.memory.buffer);
+    }
+    return cachegetUint8Memory0;
+  }
+  function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+  }
+  const heap = new Array(32).fill(void 0);
+  heap.push(void 0, null, true, false);
+  let heap_next = heap.length;
+  function addHeapObject(obj) {
+    if (heap_next === heap.length)
+      heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+    heap[idx] = obj;
+    return idx;
+  }
+  function getObject(idx) {
+    return heap[idx];
+  }
+  let WASM_VECTOR_LEN = 0;
+  let cachedTextEncoder = new TextEncoder("utf-8");
+  const encodeString = typeof cachedTextEncoder.encodeInto === "function" ? function(arg, view) {
+    return cachedTextEncoder.encodeInto(arg, view);
+  } : function(arg, view) {
+    const buf = cachedTextEncoder.encode(arg);
+    view.set(buf);
+    return {
+      read: arg.length,
+      written: buf.length
+    };
+  };
+  function passStringToWasm0(arg, malloc, realloc) {
+    if (realloc === void 0) {
+      const buf = cachedTextEncoder.encode(arg);
+      const ptr2 = malloc(buf.length);
+      getUint8Memory0().subarray(ptr2, ptr2 + buf.length).set(buf);
+      WASM_VECTOR_LEN = buf.length;
+      return ptr2;
+    }
+    let len = arg.length;
+    let ptr = malloc(len);
+    const mem = getUint8Memory0();
+    let offset = 0;
+    for (; offset < len; offset++) {
+      const code = arg.charCodeAt(offset);
+      if (code > 127)
+        break;
+      mem[ptr + offset] = code;
+    }
+    if (offset !== len) {
+      if (offset !== 0) {
+        arg = arg.slice(offset);
+      }
+      ptr = realloc(ptr, len, len = offset + arg.length * 3);
+      const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
+      const ret = encodeString(arg, view);
+      offset += ret.written;
+    }
+    WASM_VECTOR_LEN = offset;
+    return ptr;
+  }
+  let cachegetInt32Memory0 = null;
+  function getInt32Memory0() {
+    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm2.memory.buffer) {
+      cachegetInt32Memory0 = new Int32Array(wasm2.memory.buffer);
+    }
+    return cachegetInt32Memory0;
+  }
+  function dropObject(idx) {
+    if (idx < 36)
+      return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+  }
+  function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+  }
+  module.exports.minifySync = function(s, opts) {
+    try {
+      const retptr = wasm2.__wbindgen_add_to_stack_pointer(-16);
+      var ptr0 = passStringToWasm0(s, wasm2.__wbindgen_malloc, wasm2.__wbindgen_realloc);
+      var len0 = WASM_VECTOR_LEN;
+      wasm2.minifySync(retptr, ptr0, len0, addHeapObject(opts));
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return takeObject(r0);
+    } finally {
+      wasm2.__wbindgen_add_to_stack_pointer(16);
+    }
+  };
+  module.exports.parseSync = function(s, opts) {
+    try {
+      const retptr = wasm2.__wbindgen_add_to_stack_pointer(-16);
+      var ptr0 = passStringToWasm0(s, wasm2.__wbindgen_malloc, wasm2.__wbindgen_realloc);
+      var len0 = WASM_VECTOR_LEN;
+      wasm2.parseSync(retptr, ptr0, len0, addHeapObject(opts));
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return takeObject(r0);
+    } finally {
+      wasm2.__wbindgen_add_to_stack_pointer(16);
+    }
+  };
+  module.exports.printSync = function(s, opts) {
+    try {
+      const retptr = wasm2.__wbindgen_add_to_stack_pointer(-16);
+      wasm2.printSync(retptr, addHeapObject(s), addHeapObject(opts));
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return takeObject(r0);
+    } finally {
+      wasm2.__wbindgen_add_to_stack_pointer(16);
+    }
+  };
+  module.exports.transformSync = function(s, opts, experimental_plugin_bytes_resolver) {
+    try {
+      const retptr = wasm2.__wbindgen_add_to_stack_pointer(-16);
+      var ptr0 = passStringToWasm0(s, wasm2.__wbindgen_malloc, wasm2.__wbindgen_realloc);
+      var len0 = WASM_VECTOR_LEN;
+      wasm2.transformSync(retptr, ptr0, len0, addHeapObject(opts), addHeapObject(experimental_plugin_bytes_resolver));
+      var r0 = getInt32Memory0()[retptr / 4 + 0];
+      var r1 = getInt32Memory0()[retptr / 4 + 1];
+      var r2 = getInt32Memory0()[retptr / 4 + 2];
+      if (r2) {
+        throw takeObject(r1);
+      }
+      return takeObject(r0);
+    } finally {
+      wasm2.__wbindgen_add_to_stack_pointer(16);
+    }
+  };
+  module.exports.__wbindgen_json_parse = function(arg0, arg1) {
+    var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
+    return addHeapObject(ret);
+  };
+  module.exports.__wbindgen_json_serialize = function(arg0, arg1) {
+    const obj = getObject(arg1);
+    var ret = JSON.stringify(obj === void 0 ? null : obj);
+    var ptr0 = passStringToWasm0(ret, wasm2.__wbindgen_malloc, wasm2.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len0;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+  };
+  module.exports.__wbindgen_object_drop_ref = function(arg0) {
+    takeObject(arg0);
+  };
+  module.exports.__wbindgen_string_new = function(arg0, arg1) {
+    var ret = getStringFromWasm0(arg0, arg1);
+    return addHeapObject(ret);
+  };
+  module.exports.__wbg_new0_57a6a2c2aaed3fc5 = function() {
+    var ret = new Date();
+    return addHeapObject(ret);
+  };
+  module.exports.__wbg_getTime_f8ce0ff902444efb = function(arg0) {
+    var ret = getObject(arg0).getTime();
+    return ret;
+  };
+  module.exports.__wbg_getTimezoneOffset_41211a984662508b = function(arg0) {
+    var ret = getObject(arg0).getTimezoneOffset();
+    return ret;
+  };
+  module.exports.__wbg_new_693216e109162396 = function() {
+    var ret = new Error();
+    return addHeapObject(ret);
+  };
+  module.exports.__wbg_stack_0ddaca5d1abfb52f = function(arg0, arg1) {
+    var ret = getObject(arg1).stack;
+    var ptr0 = passStringToWasm0(ret, wasm2.__wbindgen_malloc, wasm2.__wbindgen_realloc);
+    var len0 = WASM_VECTOR_LEN;
+    getInt32Memory0()[arg0 / 4 + 1] = len0;
+    getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+  };
+  module.exports.__wbg_error_09919627ac0992f5 = function(arg0, arg1) {
+    try {
+      console.error(getStringFromWasm0(arg0, arg1));
+    } finally {
+      wasm2.__wbindgen_free(arg0, arg1);
+    }
+  };
+  module.exports.__wbindgen_throw = function(arg0, arg1) {
+    throw new Error(getStringFromWasm0(arg0, arg1));
+  };
+  const path = require$$1.join(__dirname, "wasm_bg.wasm");
+  const bytes = require$$2.readFileSync(path);
+  const wasmModule = new WebAssembly.Module(bytes);
+  const wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+  wasm2 = wasmInstance.exports;
+  module.exports.__wasm = wasm2;
+})(wasm);
 const TypeScriptPlugin = ({ options }) => ({
   async transformPath(filePath) {
     if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
@@ -2389,11 +2573,16 @@ const TypeScriptPlugin = ({ options }) => ({
   load(filePath, fileContent) {
     if (!filePath.endsWith(".ts"))
       return;
-    return transpile(fileContent, {
-      target: 99,
-      isolatedModules: true,
-      inlineSourceMap: options == null ? void 0 : options.inlineSourceMap
-    });
+    return wasm.exports.transformSync(fileContent, {
+      filename: basename(filePath),
+      sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
+      jsc: {
+        parser: {
+          syntax: "typescript"
+        },
+        target: "es2020"
+      }
+    }).code;
   },
   finalizeBuild(filePath, fileContent) {
     if (filePath.endsWith(".ts") && typeof fileContent === "string")
@@ -2552,7 +2741,8 @@ const FormatVersionCorrection = ({
 };
 const GeneratorScriptsPlugin = ({
   fileType,
-  console: console2
+  console: console2,
+  jsRuntime
 }) => {
   const getFileType = (filePath) => fileType.getId(filePath);
   const getFileContentType = (filePath) => {
@@ -2581,25 +2771,39 @@ const GeneratorScriptsPlugin = ({
     },
     async load(filePath, fileContent) {
       if (isGeneratorScript(filePath)) {
-        const module = { exports: null };
-        await run({
-          env: {
-            module
-          },
-          console: console2,
-          async: true,
-          script: fileContent
+        const module = await jsRuntime.run(filePath, {
+          console: console2
+        }, fileContent).catch((err) => {
+          console2.error(`Failed to execute generator script "${filePath}": ${err}`);
+          return null;
         });
-        return module.exports;
+        if (!module)
+          return null;
+        if (!module.__default__) {
+          console2.error(`Expected generator script "${filePath}" to provide file content as default export!`);
+          return null;
+        }
+        return module.__default__;
       }
     },
     finalizeBuild(filePath, fileContent) {
       if (isGeneratorScript(filePath)) {
+        if (fileContent === null)
+          return null;
         return typeof fileContent === "object" ? JSON.stringify(fileContent) : fileContent;
       }
     }
   };
 };
+class JsRuntime extends Runtime {
+  constructor(fs, modules) {
+    super(modules);
+    this.fs = fs;
+  }
+  readFile(filePath) {
+    return this.fs.readFile(filePath).then((file) => file.text());
+  }
+}
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   rewriteForPackaging: RewriteForPackaging,
@@ -2618,10 +2822,12 @@ class AllPlugins {
   constructor(dash) {
     this.dash = dash;
     this.plugins = [];
+    this.pluginRuntime = new JsRuntime(this.dash.fileSystem);
   }
   async loadPlugins(scriptEnv = {}) {
     var _a, _b;
     this.plugins = [];
+    this.pluginRuntime.clearCache();
     const extensions = [
       ...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, ".bridge/extensions")).catch(() => [])).map((entry) => entry.kind === "directory" ? join(this.dash.projectRoot, ".bridge/extensions", entry.name) : void 0),
       ...(await this.dash.fileSystem.readdir("extensions").catch(() => [])).map((entry) => entry.kind === "directory" ? join("extensions", entry.name) : void 0)
@@ -2647,20 +2853,19 @@ class AllPlugins {
       const pluginId = typeof usedPlugin === "string" ? usedPlugin : usedPlugin[0];
       const pluginOpts = typeof usedPlugin === "string" ? {} : usedPlugin[1];
       if (plugins[pluginId]) {
-        const pluginSrc = await this.dash.fileSystem.readFile(plugins[pluginId]).then((file) => file.text());
-        const module = {};
-        await run({
-          async: true,
-          script: pluginSrc,
+        const module = await this.pluginRuntime.run(plugins[pluginId], {
           console: this.dash.console,
-          env: __spreadValues({
-            require: void 0,
-            module,
-            console: this.dash.console
-          }, scriptEnv)
+          ...scriptEnv
+        }).catch((err) => {
+          this.dash.console.error(`Failed to execute plugin ${pluginId}: ${err}`);
+          return null;
         });
-        if (typeof module.exports === "function")
-          this.plugins.push(new Plugin(this.dash, pluginId, module.exports(await this.getPluginContext(pluginId, pluginOpts))));
+        if (!module)
+          continue;
+        if (typeof module.__default__ === "function")
+          this.plugins.push(new Plugin(this.dash, pluginId, module.__default__(await this.getPluginContext(pluginId, pluginOpts))));
+        else
+          this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`);
       } else if (builtInPlugins[pluginId]) {
         this.plugins.push(new Plugin(this.dash, pluginId, builtInPlugins[pluginId](await this.getPluginContext(pluginId, pluginOpts))));
       } else {
@@ -2678,14 +2883,16 @@ class AllPlugins {
   async getPluginContext(pluginId, pluginOpts = {}) {
     const dash = this.dash;
     return {
-      options: __spreadValues({
+      options: {
         get mode() {
           return dash.getMode();
         },
         get buildType() {
           return dash.buildType;
-        }
-      }, pluginOpts),
+        },
+        ...pluginOpts
+      },
+      jsRuntime: this.dash.jsRuntime,
       console: this.dash.console,
       fileSystem: this.dash.fileSystem,
       outputFileSystem: this.dash.outputFileSystem,
@@ -2748,7 +2955,7 @@ class AllPlugins {
     return data;
   }
   async runRegisterAliasesHooks(filePath, data) {
-    const aliases = new Set();
+    const aliases = /* @__PURE__ */ new Set();
     for (const plugin of this.plugins) {
       const tmp = await plugin.runRegisterAliasesHook(filePath, data);
       if (tmp === void 0 || tmp === null)
@@ -2761,7 +2968,7 @@ class AllPlugins {
     return aliases;
   }
   async runRequireHooks(filePath, data) {
-    const requiredFiles = new Set();
+    const requiredFiles = /* @__PURE__ */ new Set();
     for (const plugin of this.plugins) {
       const tmp = await plugin.runRequireHook(filePath, data);
       if (tmp === void 0 || tmp === null)
@@ -2806,9 +3013,9 @@ class DashFile {
     this.filePath = filePath;
     this.isVirtual = isVirtual;
     this.isDone = false;
-    this.requiredFiles = new Set();
-    this.aliases = new Set();
-    this.updateFiles = new Set();
+    this.requiredFiles = /* @__PURE__ */ new Set();
+    this.aliases = /* @__PURE__ */ new Set();
+    this.updateFiles = /* @__PURE__ */ new Set();
     this.outputPath = filePath;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
@@ -2845,7 +3052,7 @@ class DashFile {
     this.updateFiles.delete(file);
   }
   getHotUpdateChain() {
-    const chain = new Set([this]);
+    const chain = /* @__PURE__ */ new Set([this]);
     for (const updateFile of this.updateFiles) {
       updateFile.getHotUpdateChain().forEach((file) => {
         chain.add(file);
@@ -2853,8 +3060,8 @@ class DashFile {
     }
     return chain;
   }
-  filesToLoadForHotUpdate(visited = new Set(), didFileChange = true) {
-    const chain = new Set();
+  filesToLoadForHotUpdate(visited = /* @__PURE__ */ new Set(), didFileChange = true) {
+    const chain = /* @__PURE__ */ new Set();
     if (visited.has(this))
       return chain;
     visited.add(this);
@@ -2904,9 +3111,9 @@ class DashFile {
 class IncludedFiles {
   constructor(dash) {
     this.dash = dash;
-    this.files = new Map();
-    this.aliases = new Map();
-    this.queryCache = new Map();
+    this.files = /* @__PURE__ */ new Map();
+    this.aliases = /* @__PURE__ */ new Map();
+    this.queryCache = /* @__PURE__ */ new Map();
   }
   all() {
     return [...this.files.values()];
@@ -2941,8 +3148,8 @@ class IncludedFiles {
     return files;
   }
   async loadAll() {
-    this.queryCache = new Map();
-    const allFiles = new Set();
+    this.queryCache = /* @__PURE__ */ new Map();
+    const allFiles = /* @__PURE__ */ new Set();
     const packPaths = this.dash.projectConfig.getAvailablePackPaths();
     for (const packPath of packPaths) {
       const files = await this.dash.fileSystem.allFiles(packPath).catch((err) => {
@@ -3016,9 +3223,9 @@ class IncludedFiles {
     }
   }
   removeAll() {
-    this.files = new Map();
-    this.aliases = new Map();
-    this.queryCache = new Map();
+    this.files = /* @__PURE__ */ new Map();
+    this.aliases = /* @__PURE__ */ new Map();
+    this.queryCache = /* @__PURE__ */ new Map();
   }
 }
 class LoadFiles {
@@ -3062,7 +3269,7 @@ class ResolveFileOrder {
     this.dash = dash;
   }
   run(files) {
-    const resolved = new Set();
+    const resolved = /* @__PURE__ */ new Set();
     for (const file of files) {
       if (file.isDone || resolved.has(file))
         continue;
@@ -3070,7 +3277,7 @@ class ResolveFileOrder {
     }
     return resolved;
   }
-  resolveSingle(file, resolved, unresolved = new Set()) {
+  resolveSingle(file, resolved, unresolved = /* @__PURE__ */ new Set()) {
     const files = this.dash.includedFiles;
     unresolved.add(file);
     for (const depFileId of file.requiredFiles) {
@@ -3135,7 +3342,7 @@ class Progress {
   constructor(total = 1) {
     this.total = total;
     this.current = 0;
-    this.onChangeCbs = new Set();
+    this.onChangeCbs = /* @__PURE__ */ new Set();
   }
   get percentage() {
     return this.current / this.total;
@@ -3166,7 +3373,7 @@ class Progress {
 }
 class Console {
   constructor() {
-    this._timers = new Map();
+    this._timers = /* @__PURE__ */ new Map();
   }
   time(timerName) {
     if (this._timers.has(timerName)) {
@@ -3217,6 +3424,18 @@ class Dash {
     this.projectRoot = dirname(options.config);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
     this.console = (_a = options.console) != null ? _a : new DefaultConsole();
+    this.jsRuntime = new JsRuntime(this.fileSystem, [
+      ["@molang/expressions", expressions],
+      ["@molang/core", { MoLang }],
+      [
+        "molang",
+        {
+          MoLang,
+          ...expressions
+        }
+      ],
+      ["@bridge/compiler", { mode: options.mode }]
+    ]);
     this.packType = options.packType;
     this.fileType = options.fileType;
   }
@@ -3261,6 +3480,7 @@ class Dash {
     this.console.log("Starting compilation...");
     if (!this.isCompilerActivated)
       return;
+    this.jsRuntime.clearCache();
     this.buildType = "fullBuild";
     this.includedFiles.removeAll();
     const startTime = Date.now();
@@ -3283,6 +3503,7 @@ class Dash {
     if (!this.isCompilerActivated || filePaths.length === 0)
       return;
     this.buildType = "hotUpdate";
+    this.jsRuntime.clearCache();
     this.progress.setTotal(8);
     this.console.log(`Dash is starting to update ${filePaths.length} files...`);
     await this.includedFiles.load(this.dashFilePath);
@@ -3298,7 +3519,7 @@ class Dash {
     this.progress.advance();
     const oldDeps = [];
     for (const file of files) {
-      oldDeps.push(new Set([...file.requiredFiles]));
+      oldDeps.push(/* @__PURE__ */ new Set([...file.requiredFiles]));
     }
     this.progress.advance();
     await this.loadFiles.run(files);
@@ -3339,6 +3560,7 @@ class Dash {
     if (!this.isCompilerActivated)
       return [[], fileData];
     this.buildType = "fileRequest";
+    this.jsRuntime.clearCache();
     this.progress.setTotal(7);
     await this.plugins.runBuildStartHooks();
     await this.includedFiles.load(this.dashFilePath);

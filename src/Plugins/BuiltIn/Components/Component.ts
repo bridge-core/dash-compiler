@@ -2,9 +2,9 @@ import { compare } from 'compare-versions'
 import { ProjectConfig } from 'mc-project-core'
 import { v1Compat } from './v1Compat'
 import { deepMerge, hashString } from 'bridge-common-utils'
-import { run } from '../../../Common/runScript'
 import { Console } from '../../../Common/Console'
 import { join } from 'path-browserify'
+import { JsRuntime } from '../../../Common/JsRuntime'
 
 export type TTemplate = (componentArgs: any, opts: any) => any
 
@@ -43,26 +43,37 @@ export class Component {
 	}
 	//#endregion
 
-	async load(type?: 'server' | 'client') {
-		const module = { exports: {} }
-		try {
-			run({
-				script: this.componentSrc,
+	async load(
+		jsRuntime: JsRuntime,
+		filePath: string,
+		type?: 'server' | 'client'
+	) {
+		let v1CompatModule = { component: null }
+		const module = await jsRuntime
+			.run(filePath, {
+				defineComponent: (x: any) => x,
 				console: this.console,
-				env: {
-					module: module,
-					console: this.console,
-					defineComponent: (x: any) => x,
-					Bridge: this.v1Compat
-						? v1Compat(module, this.fileType)
-						: undefined,
-				},
+				Bridge: this.v1Compat
+					? v1Compat(v1CompatModule, this.fileType)
+					: undefined,
 			})
-		} catch (err) {
-			this.console.error(err)
+			.catch(() => {
+				this.console.error(`Failed to execute component ${filePath}`)
+				return null
+			})
+		// Component execution failed
+		if (!module) return false
+		// Ensure that component file exports function
+		if (typeof module.__default__ !== 'function') {
+			if (v1CompatModule.component) {
+				module.__default__ = v1CompatModule.component
+			} else {
+				this.console.error(
+					`Component ${filePath} is not a valid component. Expected a function as the default export.`
+				)
+				return false
+			}
 		}
-
-		if (typeof module.exports !== 'function') return false
 
 		const name = (name: string) => (this._name = name)
 		let schema: Function = (schema: any) => (this.schema = schema)
@@ -81,7 +92,7 @@ export class Component {
 			}
 		}
 
-		await module.exports({
+		await module.__default__({
 			name,
 			schema,
 			template,

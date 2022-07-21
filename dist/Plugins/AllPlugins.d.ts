@@ -1,14 +1,17 @@
 import type { DashFile, IFileHandle } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
+import { JsRuntime } from '../Common/JsRuntime';
 export declare class AllPlugins {
     protected dash: Dash<any>;
     protected plugins: Plugin[];
+    protected pluginRuntime: JsRuntime;
     constructor(dash: Dash<any>);
     loadPlugins(scriptEnv?: any): Promise<void>;
     getCompilerOptions(): Promise<any>;
     protected getPluginContext(pluginId: string, pluginOpts?: any): Promise<{
         options: any;
+        jsRuntime: JsRuntime;
         console: import("../main").Console;
         fileSystem: import("../main").FileSystem;
         outputFileSystem: import("../main").FileSystem;

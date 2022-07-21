@@ -1,11 +1,11 @@
 /**
  * A module that emulates bridge. v1's custom component environment
  */
-export const v1Compat = (module: any, fileType: string) => ({
+export const v1Compat = (v1CompatModule: any, fileType: string) => ({
 	register: (componentClass: any) => {
 		if ((componentClass.type ?? 'entity') !== fileType) return
 
-		module.exports = ({ name, schema, template }: any) => {
+		v1CompatModule.component = ({ name, schema, template }: any) => {
 			const component = new componentClass()
 
 			name(componentClass.component_name)
