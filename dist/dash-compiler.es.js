@@ -2319,37 +2319,40 @@ const CustomCommandsPlugin = ({
     }
   };
 };
-const TypeScriptPlugin = ({ options }) => ({
-  async transformPath(filePath) {
-    if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
-      return;
-    return `${filePath.slice(0, -3)}.js`;
-  },
-  async read(filePath, fileHandle) {
-    if (!filePath.endsWith(".ts") || !fileHandle)
-      return;
-    const file = await fileHandle.getFile();
-    return await (file == null ? void 0 : file.text());
-  },
-  load(filePath, fileContent) {
-    if (!filePath.endsWith(".ts"))
-      return;
-    return transformSync(fileContent, {
-      filename: basename(filePath),
-      sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
-      jsc: {
-        parser: {
-          syntax: "typescript"
-        },
-        target: "es2020"
-      }
-    }).code;
-  },
-  finalizeBuild(filePath, fileContent) {
-    if (filePath.endsWith(".ts") && typeof fileContent === "string")
-      return fileContent;
-  }
-});
+const TypeScriptPlugin = ({ options, jsRuntime }) => {
+  return {
+    async transformPath(filePath) {
+      if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
+        return;
+      return `${filePath.slice(0, -3)}.js`;
+    },
+    async read(filePath, fileHandle) {
+      if (!filePath.endsWith(".ts") || !fileHandle)
+        return;
+      const file = await fileHandle.getFile();
+      return await (file == null ? void 0 : file.text());
+    },
+    async load(filePath, fileContent) {
+      if (!filePath.endsWith(".ts"))
+        return;
+      await jsRuntime.init;
+      return transformSync(fileContent, {
+        filename: basename(filePath),
+        sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
+        jsc: {
+          parser: {
+            syntax: "typescript"
+          },
+          target: "es2020"
+        }
+      }).code;
+    },
+    finalizeBuild(filePath, fileContent) {
+      if (filePath.endsWith(".ts") && typeof fileContent === "string")
+        return fileContent;
+    }
+  };
+};
 const RewriteForPackaging = ({
   options,
   outputFileSystem,
