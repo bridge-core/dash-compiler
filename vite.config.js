@@ -17,6 +17,7 @@ export default defineConfig({
 				'bridge-common-utils',
 				'is-glob',
 				'bridge-js-runtime',
+				'@swc/wasm-web',
 			],
 		},
 	},
