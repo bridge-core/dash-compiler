@@ -1,4 +1,4 @@
-import { transformSync } from '@swc/wasm'
+import { transformSync } from '@swc/wasm-web'
 import { basename } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
