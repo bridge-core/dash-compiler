@@ -3,7 +3,7 @@ import { v1Compat } from './v1Compat'
 import { tokenizeCommand } from 'bridge-common-utils'
 import { castType } from 'bridge-common-utils'
 import { Console } from '../../../Common/Console'
-import { JsRuntime } from '../../../Common/JsRuntime'
+import { Runtime } from 'bridge-js-runtime'
 export type TTemplate = (commandArgs: unknown[], opts: any) => string | string[]
 
 export class Command {
@@ -23,7 +23,7 @@ export class Command {
 	}
 
 	async load(
-		jsRuntime: JsRuntime,
+		jsRuntime: Runtime,
 		filePath: string,
 		type?: 'client' | 'server'
 	) {

@@ -1,6 +1,6 @@
 import { ProjectConfig } from 'mc-project-core';
 import { Console } from '../../../Common/Console';
-import { JsRuntime } from '../../../Common/JsRuntime';
+import { Runtime } from 'bridge-js-runtime';
 export declare type TTemplate = (componentArgs: any, opts: any) => any;
 export declare class Component {
     protected console: Console;
@@ -26,7 +26,7 @@ export declare class Component {
     constructor(console: Console, fileType: string, componentSrc: string, mode: 'production' | 'development', v1Compat: boolean, targetVersion?: string | undefined);
     setProjectConfig(projectConfig: ProjectConfig): void;
     get name(): string | undefined;
-    load(jsRuntime: JsRuntime, filePath: string, type?: 'server' | 'client'): Promise<boolean>;
+    load(jsRuntime: Runtime, filePath: string, type?: 'server' | 'client'): Promise<boolean>;
     reset(): void;
     getSchema(): any;
     toString(): string;

@@ -4,7 +4,7 @@ import { v1Compat } from './v1Compat'
 import { deepMerge, hashString } from 'bridge-common-utils'
 import { Console } from '../../../Common/Console'
 import { join } from 'path-browserify'
-import { JsRuntime } from '../../../Common/JsRuntime'
+import { Runtime } from 'bridge-js-runtime'
 
 export type TTemplate = (componentArgs: any, opts: any) => any
 
@@ -44,7 +44,7 @@ export class Component {
 	//#endregion
 
 	async load(
-		jsRuntime: JsRuntime,
+		jsRuntime: Runtime,
 		filePath: string,
 		type?: 'server' | 'client'
 	) {
