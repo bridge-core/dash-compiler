@@ -1,10 +1,11 @@
-import init, { transformSync } from '@swc/wasm-web'
+import { transformSync } from '@swc/wasm-web'
+import { loadedWasm } from 'bridge-js-runtime'
 import { basename } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const TypeScriptPlugin: TCompilerPluginFactory<{
 	inlineSourceMap?: boolean
-}> = ({ options, jsRuntime }) => {
+}> = ({ options }) => {
 	return {
 		async transformPath(filePath) {
 			if (!filePath?.endsWith('.ts')) return
@@ -20,7 +21,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 		async load(filePath, fileContent) {
 			if (!filePath.endsWith('.ts')) return
 
-			await jsRuntime.init
+			await loadedWasm
 
 			return transformSync(fileContent, {
 				filename: basename(filePath),

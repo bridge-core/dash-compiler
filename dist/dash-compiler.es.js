@@ -3,7 +3,8 @@ import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMoLang, expressions, MoLang } from "molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
 import { transformSync } from "@swc/wasm-web";
-import { Runtime } from "bridge-js-runtime";
+import { loadedWasm, Runtime } from "bridge-js-runtime";
+export { initRuntimes } from "bridge-js-runtime";
 import isGlob from "is-glob";
 class DashProjectConfig extends ProjectConfig {
   constructor(fileSystem, configPath) {
@@ -2319,7 +2320,7 @@ const CustomCommandsPlugin = ({
     }
   };
 };
-const TypeScriptPlugin = ({ options, jsRuntime }) => {
+const TypeScriptPlugin = ({ options }) => {
   return {
     async transformPath(filePath) {
       if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
@@ -2335,7 +2336,7 @@ const TypeScriptPlugin = ({ options, jsRuntime }) => {
     async load(filePath, fileContent) {
       if (!filePath.endsWith(".ts"))
         return;
-      await jsRuntime.init;
+      await loadedWasm;
       return transformSync(fileContent, {
         filename: basename(filePath),
         sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
