@@ -5,7 +5,7 @@ export class JsRuntime extends Runtime {
 	constructor(protected fs: FileSystem, modules?: [string, any][]) {
 		super(modules)
 	}
-	readFile(filePath: string) {
+	protected readFile(filePath: string) {
 		return this.fs.readFile(filePath).then((file) => file.text())
 	}
 }
