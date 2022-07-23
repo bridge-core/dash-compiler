@@ -1536,7 +1536,7 @@ const GeneratorScriptsPlugin = ({
     },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
-        return filePath.replace(/\.(js|ts)$/, `.${getScriptExtension(filePath)}`);
+        return filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath));
     },
     async read(filePath, fileHandle) {
       if (isGeneratorScript(filePath) && fileHandle) {

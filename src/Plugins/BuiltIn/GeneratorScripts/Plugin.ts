@@ -1,4 +1,3 @@
-import { dirname, join } from 'path-browserify'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Collection } from './Collection'
 import { createModule } from './Module'
@@ -44,7 +43,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 				// Replace .js/.ts with getFileContentType(filePath)
 				return filePath.replace(
 					/\.(js|ts)$/,
-					`.${getScriptExtension(filePath)}`
+					getScriptExtension(filePath)
 				)
 		},
 
