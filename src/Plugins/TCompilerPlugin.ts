@@ -71,4 +71,9 @@ export type TCompilerPlugin = {
 	 * Runs once after a build process ended
 	 */
 	buildEnd(): Promise<void> | void
+
+	/**
+	 * Runs before dash unlinks a file
+	 */
+	beforeFileUnlinked(filePath: string): Promise<void> | void
 }

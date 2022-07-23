@@ -343,4 +343,10 @@ export class AllPlugins {
 			await plugin.runBuildEndHook()
 		}
 	}
+
+	async runBeforeFileUnlinked(filePath: string) {
+		for (const plugin of this.plugins) {
+			await plugin.runBeforeFileUnlinked(filePath)
+		}
+	}
 }

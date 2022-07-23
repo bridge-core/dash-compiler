@@ -377,6 +377,8 @@ export class Dash<TSetupArg = void> {
 		const outputPath = await this.getCompilerOutputPath(path)
 		if (!outputPath || outputPath === path) return
 
+		await this.plugins.runBeforeFileUnlinked(path)
+
 		await this.outputFileSystem.unlink(outputPath)
 		this.includedFiles.remove(path)
 

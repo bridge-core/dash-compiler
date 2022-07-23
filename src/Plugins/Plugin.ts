@@ -120,4 +120,15 @@ export class Plugin {
 			)
 		}
 	}
+
+	async runBeforeFileUnlinked(filePath: string) {
+		try {
+			return await this.plugin.beforeFileUnlinked?.(filePath)
+		} catch (err) {
+			this.dash.console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "beforeFileUnlinked" hook for "${filePath}":`,
+				err
+			)
+		}
+	}
 }
