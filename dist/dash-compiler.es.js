@@ -2504,10 +2504,60 @@ const FormatVersionCorrection = ({
     }
   };
 };
+class Collection {
+  constructor(console2) {
+    this.console = console2;
+    this.files = /* @__PURE__ */ new Map();
+  }
+  get hasFiles() {
+    return this.files.size > 0;
+  }
+  getAll() {
+    return [...this.files.entries()];
+  }
+  get(filePath) {
+    return this.files.get(filePath);
+  }
+  clear() {
+    this.files.clear();
+  }
+  add(filePath, fileContent) {
+    if (this.files.has(filePath)) {
+      this.console.warn(`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`);
+      return;
+    }
+    this.files.set(filePath, fileContent);
+  }
+  addFrom(collection) {
+    for (const [filePath, fileContent] of collection.getAll()) {
+      this.add(filePath, fileContent);
+    }
+  }
+}
+function createModule({
+  generatorPath,
+  omitUsedTemplates,
+  fileSystem,
+  console: console2
+}) {
+  return {
+    useTemplate: (filePath, omitTemplate = true) => {
+      if (omitTemplate)
+        omitUsedTemplates.add(join(dirname(generatorPath), filePath));
+      if (filePath.endsWith(".json"))
+        return fileSystem.readJson(filePath);
+      else
+        return fileSystem.readFile(filePath).then((file) => file.text());
+    },
+    createCollection: () => new Collection(console2)
+  };
+}
 const GeneratorScriptsPlugin = ({
   fileType,
   console: console2,
-  jsRuntime
+  jsRuntime,
+  fileSystem,
+  compileFiles
 }) => {
   const getFileType = (filePath) => fileType.getId(filePath);
   const getFileContentType = (filePath) => {
@@ -2525,7 +2575,13 @@ const GeneratorScriptsPlugin = ({
       return ".json";
     return (_d = (_c = (_b = (_a = fileType.get(filePath)) == null ? void 0 : _a.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
   };
+  const omitUsedTemplates = /* @__PURE__ */ new Set();
+  const fileCollection = new Collection(console2);
   return {
+    buildStart() {
+      fileCollection.clear();
+      omitUsedTemplates.clear();
+    },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
         return filePath.replace(/\.(js|ts)$/, `.${getScriptExtension(filePath)}`);
@@ -2533,8 +2589,17 @@ const GeneratorScriptsPlugin = ({
     read(filePath, fileHandle) {
       if (isGeneratorScript(filePath))
         return fileHandle == null ? void 0 : fileHandle.getFile();
+      const fromCollection = fileCollection.get(filePath);
+      if (fromCollection)
+        return fromCollection;
     },
     async load(filePath, fileContent) {
+      jsRuntime.registerModule("@bridge/generate", createModule({
+        generatorPath: filePath,
+        fileSystem,
+        omitUsedTemplates,
+        console: console2
+      }));
       if (isGeneratorScript(filePath)) {
         const module = await jsRuntime.run(filePath, {
           console: console2
@@ -2550,13 +2615,29 @@ const GeneratorScriptsPlugin = ({
         }
         return module.__default__;
       }
+      if (fileCollection.get(filePath)) {
+        if (filePath.endsWith(".json") && typeof fileContent !== "string")
+          return JSON.stringify(fileContent, null, "	");
+        return fileContent;
+      }
     },
     finalizeBuild(filePath, fileContent) {
+      if (omitUsedTemplates.has(filePath))
+        return null;
       if (isGeneratorScript(filePath)) {
         if (fileContent === null)
           return null;
+        if (fileContent instanceof Collection) {
+          fileCollection.addFrom(fileContent);
+          return null;
+        }
         return typeof fileContent === "object" ? JSON.stringify(fileContent) : fileContent;
       }
+    },
+    async buildEnd() {
+      jsRuntime.deleteModule("@bridge/generate");
+      if (fileCollection.hasFiles)
+        await compileFiles(fileCollection.getAll().map(([filePath]) => filePath));
     }
   };
 };
@@ -2567,6 +2648,9 @@ class JsRuntime extends Runtime {
   }
   readFile(filePath) {
     return this.fs.readFile(filePath).then((file) => file.text());
+  }
+  deleteModule(moduleName) {
+    this.baseModules.delete(moduleName);
   }
 }
 const builtInPlugins = {

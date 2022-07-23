@@ -8,4 +8,8 @@ export class JsRuntime extends Runtime {
 	protected readFile(filePath: string) {
 		return this.fs.readFile(filePath).then((file) => file.text())
 	}
+
+	deleteModule(moduleName: string) {
+		this.baseModules.delete(moduleName)
+	}
 }

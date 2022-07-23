@@ -4,4 +4,5 @@ export declare class JsRuntime extends Runtime {
     protected fs: FileSystem;
     constructor(fs: FileSystem, modules?: [string, any][]);
     protected readFile(filePath: string): Promise<string>;
+    deleteModule(moduleName: string): void;
 }
