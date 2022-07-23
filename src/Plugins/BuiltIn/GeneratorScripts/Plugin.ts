@@ -10,6 +10,11 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 	fileSystem,
 	compileFiles,
 }) => {
+	const ignoredFileTypes = new Set([
+		'gameTest',
+		'customCommand',
+		'customComponent',
+	])
 	const getFileType = (filePath: string) => fileType.getId(filePath)
 	const getFileContentType = (filePath: string) => {
 		const def = fileType.get(filePath)
@@ -17,7 +22,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 		return def.type ?? 'json'
 	}
 	const isGeneratorScript = (filePath: string) =>
-		getFileType(filePath) !== 'gameTest' &&
+		!ignoredFileTypes.has(getFileType(filePath)) &&
 		(filePath.endsWith('.js') || filePath.endsWith('.ts'))
 	const getScriptExtension = (filePath: string) => {
 		const fileContentType = getFileContentType(filePath)

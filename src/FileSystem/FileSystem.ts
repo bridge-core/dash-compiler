@@ -1,4 +1,5 @@
 import { join } from 'path-browserify'
+import json5 from 'json5'
 
 export interface IDirEntry {
 	name: string
@@ -42,7 +43,7 @@ export abstract class FileSystem {
 	async readJson(path: string): Promise<any> {
 		const file = await this.readFile(path)
 		try {
-			return await JSON.parse(await file.text())
+			return await json5.parse(await file.text())
 		} catch {
 			throw new Error(`Invalid JSON: ${path}`)
 		}

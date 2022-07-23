@@ -10,6 +10,7 @@ export default defineConfig({
 		},
 		rollupOptions: {
 			external: [
+				'json5',
 				'path-browserify',
 				'mc-project-core',
 				'molang',
@@ -18,6 +19,7 @@ export default defineConfig({
 				'is-glob',
 				'bridge-js-runtime',
 				'@swc/wasm-web',
+				'micromatch',
 			],
 		},
 	},
