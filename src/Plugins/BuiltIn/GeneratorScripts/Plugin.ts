@@ -174,5 +174,16 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 				...new Set([...generatedFiles, ...filesToUpdate]),
 			])
 		},
+
+		async beforeFileUnlinked(filePath) {
+			if (isGeneratorScript(filePath)) {
+				const fileMetadata = getFileMetadata(filePath)
+				const unlinkedFiles = fileMetadata.get('unlinkedFiles') ?? []
+				const generatedFiles = fileMetadata.get('generatedFiles') ?? []
+
+				await unlinkOutputFiles(generatedFiles)
+				await compileFiles(unlinkedFiles)
+			}
+		},
 	}
 }
