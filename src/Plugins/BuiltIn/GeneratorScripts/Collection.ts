@@ -1,8 +1,9 @@
+import { join } from 'path-browserify'
 import { Console } from '../../../Common/Console'
 
 export class Collection {
 	protected files = new Map<string, any>()
-	constructor(protected console: Console) {}
+	constructor(protected console: Console, protected baseDir?: string) {}
 
 	get hasFiles() {
 		return this.files.size > 0
@@ -20,13 +21,16 @@ export class Collection {
 		this.files.clear()
 	}
 	add(filePath: string, fileContent: any) {
-		if (this.files.has(filePath)) {
+		const resolvedPath = this.baseDir
+			? join(this.baseDir, filePath)
+			: filePath
+		if (this.files.has(resolvedPath)) {
 			this.console.warn(
-				`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`
+				`Omitting file "${resolvedPath}" from collection because it would overwrite a previously generated file!`
 			)
 			return
 		}
-		this.files.set(filePath, fileContent)
+		this.files.set(resolvedPath, fileContent)
 	}
 	addFrom(collection: Collection) {
 		for (const [filePath, fileContent] of collection.getAll()) {

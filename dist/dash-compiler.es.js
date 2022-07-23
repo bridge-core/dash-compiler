@@ -1451,8 +1451,9 @@ const FormatVersionCorrection = ({
   };
 };
 class Collection {
-  constructor(console2) {
+  constructor(console2, baseDir) {
     this.console = console2;
+    this.baseDir = baseDir;
     this.files = /* @__PURE__ */ new Map();
   }
   get hasFiles() {
@@ -1468,11 +1469,12 @@ class Collection {
     this.files.clear();
   }
   add(filePath, fileContent) {
-    if (this.files.has(filePath)) {
-      this.console.warn(`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`);
+    const resolvedPath = this.baseDir ? join(this.baseDir, filePath) : filePath;
+    if (this.files.has(resolvedPath)) {
+      this.console.warn(`Omitting file "${resolvedPath}" from collection because it would overwrite a previously generated file!`);
       return;
     }
-    this.files.set(filePath, fileContent);
+    this.files.set(resolvedPath, fileContent);
   }
   addFrom(collection) {
     for (const [filePath, fileContent] of collection.getAll()) {
@@ -1496,7 +1498,7 @@ function createModule({
       else
         return fileSystem.readFile(templatePath).then((file) => file.text());
     },
-    createCollection: () => new Collection(console2)
+    createCollection: () => new Collection(console2, dirname(generatorPath))
   };
 }
 const GeneratorScriptsPlugin = ({
