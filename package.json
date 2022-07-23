@@ -1,6 +1,6 @@
 {
 	"name": "dash-compiler",
-	"version": "0.9.14",
+	"version": "0.9.15",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",

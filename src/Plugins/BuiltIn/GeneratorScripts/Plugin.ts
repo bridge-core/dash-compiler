@@ -96,7 +96,10 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 
 				return module.__default__
 			}
+		},
 
+		finalizeBuild(filePath, fileContent) {
+			// 1. Handle generated virtual files
 			if (fileCollection.get(filePath)) {
 				if (
 					filePath.endsWith('.json') &&
@@ -105,11 +108,11 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 					return JSON.stringify(fileContent, null, '\t')
 				return fileContent
 			}
-		},
 
-		finalizeBuild(filePath, fileContent) {
+			// 2. Omit unused template
 			if (omitUsedTemplates.has(filePath)) return null
 
+			// 3. Handle transformed generator script
 			if (isGeneratorScript(filePath)) {
 				if (fileContent === null) return null
 

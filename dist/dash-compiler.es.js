@@ -1489,7 +1489,7 @@ function createModule({
   console: console2
 }) {
   return {
-    useTemplate: (filePath, omitTemplate = true) => {
+    useTemplate: (filePath, { omitTemplate = true } = {}) => {
       const templatePath = join(dirname(generatorPath), filePath);
       if (omitTemplate)
         omitUsedTemplates.add(templatePath);
@@ -1575,13 +1575,13 @@ const GeneratorScriptsPlugin = ({
         }
         return module.__default__;
       }
+    },
+    finalizeBuild(filePath, fileContent) {
       if (fileCollection.get(filePath)) {
         if (filePath.endsWith(".json") && typeof fileContent !== "string")
           return JSON.stringify(fileContent, null, "	");
         return fileContent;
       }
-    },
-    finalizeBuild(filePath, fileContent) {
       if (omitUsedTemplates.has(filePath))
         return null;
       if (isGeneratorScript(filePath)) {

@@ -7,7 +7,11 @@ export interface IModuleOpts {
     fileSystem: FileSystem;
     console: Console;
 }
+interface IUseTemplateOptions {
+    omitTemplate?: boolean;
+}
 export declare function createModule({ generatorPath, omitUsedTemplates, fileSystem, console, }: IModuleOpts): {
-    useTemplate: (filePath: string, omitTemplate?: boolean) => Promise<any>;
+    useTemplate: (filePath: string, { omitTemplate }?: IUseTemplateOptions) => Promise<any>;
     createCollection: () => Collection;
 };
+export {};

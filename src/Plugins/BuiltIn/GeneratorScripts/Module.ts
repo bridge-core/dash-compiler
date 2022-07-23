@@ -10,6 +10,10 @@ export interface IModuleOpts {
 	console: Console
 }
 
+interface IUseTemplateOptions {
+	omitTemplate?: boolean
+}
+
 export function createModule({
 	generatorPath,
 	omitUsedTemplates,
@@ -17,7 +21,10 @@ export function createModule({
 	console,
 }: IModuleOpts) {
 	return {
-		useTemplate: (filePath: string, omitTemplate = true) => {
+		useTemplate: (
+			filePath: string,
+			{ omitTemplate = true }: IUseTemplateOptions = {}
+		) => {
 			const templatePath = join(dirname(generatorPath), filePath)
 			if (omitTemplate) omitUsedTemplates.add(templatePath)
 
