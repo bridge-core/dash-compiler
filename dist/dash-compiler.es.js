@@ -1488,12 +1488,13 @@ function createModule({
 }) {
   return {
     useTemplate: (filePath, omitTemplate = true) => {
+      const templatePath = join(dirname(generatorPath), filePath);
       if (omitTemplate)
-        omitUsedTemplates.add(join(dirname(generatorPath), filePath));
+        omitUsedTemplates.add(templatePath);
       if (filePath.endsWith(".json"))
-        return fileSystem.readJson(filePath);
+        return fileSystem.readJson(templatePath);
       else
-        return fileSystem.readFile(filePath).then((file) => file.text());
+        return fileSystem.readFile(templatePath).then((file) => file.text());
     },
     createCollection: () => new Collection(console2)
   };
@@ -1537,9 +1538,13 @@ const GeneratorScriptsPlugin = ({
       if (filePath && isGeneratorScript(filePath))
         return filePath.replace(/\.(js|ts)$/, `.${getScriptExtension(filePath)}`);
     },
-    read(filePath, fileHandle) {
-      if (isGeneratorScript(filePath))
-        return fileHandle == null ? void 0 : fileHandle.getFile();
+    async read(filePath, fileHandle) {
+      if (isGeneratorScript(filePath) && fileHandle) {
+        const file = await fileHandle.getFile();
+        if (!file)
+          return;
+        return file.text();
+      }
       const fromCollection = fileCollection.get(filePath);
       if (fromCollection)
         return fromCollection;
@@ -1552,6 +1557,8 @@ const GeneratorScriptsPlugin = ({
         console: console2
       }));
       if (isGeneratorScript(filePath)) {
+        if (!fileContent)
+          return null;
         const module = await jsRuntime.run(filePath, {
           console: console2
         }, fileContent).catch((err) => {

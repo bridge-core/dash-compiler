@@ -18,13 +18,16 @@ export function createModule({
 }: IModuleOpts) {
 	return {
 		useTemplate: (filePath: string, omitTemplate = true) => {
-			if (omitTemplate)
-				omitUsedTemplates.add(join(dirname(generatorPath), filePath))
+			const templatePath = join(dirname(generatorPath), filePath)
+			if (omitTemplate) omitUsedTemplates.add(templatePath)
 
 			// TODO(@solvedDev): Pipe file through compileFile API
-			if (filePath.endsWith('.json')) return fileSystem.readJson(filePath)
+			if (filePath.endsWith('.json'))
+				return fileSystem.readJson(templatePath)
 			else
-				return fileSystem.readFile(filePath).then((file) => file.text())
+				return fileSystem
+					.readFile(templatePath)
+					.then((file) => file.text())
 		},
 		createCollection: () => new Collection(console),
 	}

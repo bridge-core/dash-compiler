@@ -48,8 +48,13 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 				)
 		},
 
-		read(filePath, fileHandle) {
-			if (isGeneratorScript(filePath)) return fileHandle?.getFile()
+		async read(filePath, fileHandle) {
+			if (isGeneratorScript(filePath) && fileHandle) {
+				const file = await fileHandle.getFile()
+				if (!file) return
+
+				return file.text()
+			}
 
 			const fromCollection = fileCollection.get(filePath)
 			if (fromCollection) return fromCollection
@@ -66,6 +71,8 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 			)
 
 			if (isGeneratorScript(filePath)) {
+				if (!fileContent) return null
+
 				const module = await jsRuntime
 					.run(
 						filePath,
