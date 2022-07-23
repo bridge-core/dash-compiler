@@ -13,6 +13,7 @@ export class DashFile {
 	public aliases = new Set<string>()
 	// public lastModified: number = 0
 	protected updateFiles = new Set<DashFile>()
+	protected metadata = new Map<string, any>()
 
 	constructor(
 		protected dash: Dash<any>,
@@ -63,6 +64,19 @@ export class DashFile {
 	}
 	removeUpdateFile(file: DashFile) {
 		this.updateFiles.delete(file)
+	}
+
+	setMetadata(from: IMetadata) {
+		this.metadata = new Map(Object.entries(from))
+	}
+	addMetadata(key: string, value: any) {
+		this.metadata.set(key, value)
+	}
+	deleteMetadata(key: string) {
+		this.metadata.delete(key)
+	}
+	getMetadata(key: string) {
+		return this.metadata.get(key)
 	}
 
 	getHotUpdateChain() {
@@ -141,6 +155,7 @@ export class DashFile {
 			aliases: [...this.aliases],
 			requiredFiles: [...this.requiredFiles],
 			updateFiles: [...this.updateFiles].map((file) => file.filePath),
+			metadata: Object.fromEntries(this.metadata.entries()),
 		}
 	}
 	reset() {
@@ -157,4 +172,10 @@ export interface ISerializedDashFile {
 	aliases: string[]
 	requiredFiles: string[]
 	updateFiles: string[]
+	metadata: IMetadata
+}
+
+export interface IMetadata {
+	generatedFiles?: string[]
+	[key: string]: any
 }

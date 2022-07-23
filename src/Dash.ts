@@ -361,20 +361,20 @@ export class Dash<TSetupArg = void> {
 		return [[...filesToLoad].map((file) => file.filePath), transformedData]
 	}
 
-	async unlinkMultiple(paths: string[]) {
+	async unlinkMultiple(paths: string[], saveDashFile = true) {
 		if (!this.isCompilerActivated || paths.length === 0) return
 
 		for (const path of paths) {
 			await this.unlink(path, false)
 		}
 
-		await this.saveDashFile()
+		if (saveDashFile) await this.saveDashFile()
 	}
 
 	async unlink(path: string, updateDashFile = true) {
 		if (!this.isCompilerActivated) return
 
-		const outputPath = await this.plugins.runTransformPathHooks(path)
+		const outputPath = await this.getCompilerOutputPath(path)
 		if (!outputPath || outputPath === path) return
 
 		await this.outputFileSystem.unlink(outputPath)
@@ -393,6 +393,9 @@ export class Dash<TSetupArg = void> {
 	}
 	async getCompilerOutputPath(filePath: string) {
 		if (!this.isCompilerActivated) return
+
+		const includedFile = this.includedFiles.get(filePath)
+		if (includedFile) return includedFile.outputPath ?? undefined
 
 		const outputPath = await this.plugins.runTransformPathHooks(filePath)
 		if (!outputPath) return

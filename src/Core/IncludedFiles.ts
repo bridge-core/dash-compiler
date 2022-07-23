@@ -121,6 +121,7 @@ export class IncludedFiles {
 
 			file.setAliases(new Set(sFile.aliases))
 			file.setRequiredFiles(new Set(sFile.requiredFiles))
+			file.setMetadata(sFile.metadata)
 			files.push(file)
 
 			for (const alias of sFile.aliases) {

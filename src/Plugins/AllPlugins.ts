@@ -189,6 +189,32 @@ export class AllPlugins {
 			getAliases: (filePath: string) => [
 				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
 			],
+			getFileMetadata: (filePath: string) => {
+				const file = this.dash.includedFiles.get(filePath)
+				if (!file)
+					throw new Error(
+						`File ${filePath} to add metadata to not found`
+					)
+
+				return {
+					get(key: string) {
+						return file.getMetadata(key)
+					},
+					set(key: string, value: any) {
+						file.addMetadata(key, value)
+					},
+					delete(key: string) {
+						file.deleteMetadata(key)
+					},
+				}
+			},
+			getOutputPath: (filePath: string) => {
+				return this.dash.getCompilerOutputPath(filePath)
+			},
+			unlinkOutputFiles: (filePaths: string[]) => {
+				return this.dash.unlinkMultiple(filePaths, false)
+			},
+
 			/**
 			 * TODO: Deprecate in favor of a broader API that is not specific to Minecraft Bedrock
 			 */
