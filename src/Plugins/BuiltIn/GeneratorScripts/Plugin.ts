@@ -8,6 +8,8 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 	jsRuntime,
 	fileSystem,
 	compileFiles,
+	getFileMetadata,
+	unlinkOutputFiles,
 }) => {
 	const ignoredFileTypes = new Set([
 		'gameTest',
@@ -29,9 +31,12 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 
 		return fileType.get(filePath)?.detect?.fileExtensions?.[0] ?? '.txt'
 	}
+	const transformPath = (filePath: string) =>
+		filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath))
 
 	const omitUsedTemplates = new Set<string>()
 	const fileCollection = new Collection(console)
+	const filesToUpdate = new Set<string>()
 
 	return {
 		buildStart() {
@@ -41,10 +46,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 		transformPath(filePath) {
 			if (filePath && isGeneratorScript(filePath))
 				// Replace .js/.ts with getFileContentType(filePath)
-				return filePath.replace(
-					/\.(js|ts)$/,
-					getScriptExtension(filePath)
-				)
+				return transformPath(filePath)
 		},
 
 		async read(filePath, fileHandle) {
@@ -59,12 +61,13 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 			if (fromCollection) return fromCollection
 		},
 		async load(filePath, fileContent) {
+			const currentTemplates = new Set<string>()
 			jsRuntime.registerModule(
 				'@bridge/generate',
 				createModule({
 					generatorPath: filePath,
 					fileSystem,
-					omitUsedTemplates,
+					omitUsedTemplates: currentTemplates,
 					console,
 				})
 			)
@@ -94,6 +97,27 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 					return null
 				}
 
+				const fileMetadata = getFileMetadata(filePath)
+
+				// These files were unlinked previously but are no longer being used as templates...
+				const previouslyUnlinkedFiles = (
+					fileMetadata.get('unlinkedFiles') ?? []
+				).filter((filePath: string) => !currentTemplates.has(filePath))
+				// ...so we should compile them again
+				previouslyUnlinkedFiles.forEach((file: string) =>
+					filesToUpdate.add(file)
+				)
+
+				// Save template files we unlink
+				fileMetadata.set('unlinkedFiles', [...currentTemplates])
+				// Collect all previously generated files
+				const generatedFiles = fileMetadata.get('generatedFiles') ?? []
+				// Unlink templates and previously generated files
+				await unlinkOutputFiles([
+					...generatedFiles,
+					...currentTemplates,
+				])
+
 				return module.__default__
 			}
 		},
@@ -116,10 +140,21 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 			if (isGeneratorScript(filePath)) {
 				if (fileContent === null) return null
 
+				const fileMetadata = getFileMetadata(filePath)
+
 				if (fileContent instanceof Collection) {
 					fileCollection.addFrom(fileContent)
+					// Cache the files this generator script generated
+					fileMetadata.set(
+						'generatedFiles',
+						fileContent.getAll().map(([filePath]) => filePath)
+					)
+
 					return null
 				}
+
+				// This file only transformed itself so we save the transformed path as a generated file
+				fileMetadata.set('generatedFiles', [transformPath(filePath)])
 
 				return typeof fileContent === 'object'
 					? JSON.stringify(fileContent)
@@ -129,10 +164,15 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 		async buildEnd() {
 			jsRuntime.deleteModule('@bridge/generate')
 
-			if (fileCollection.hasFiles)
-				await compileFiles(
-					fileCollection.getAll().map(([filePath]) => filePath)
-				)
+			if (!fileCollection.hasFiles) return
+
+			const generatedFiles = fileCollection
+				.getAll()
+				.map(([filePath]) => filePath)
+
+			await compileFiles([
+				...new Set([...generatedFiles, ...filesToUpdate]),
+			])
 		},
 	}
 }
