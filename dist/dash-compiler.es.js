@@ -1929,7 +1929,8 @@ class DashFile {
     this.updateFiles.delete(file);
   }
   setMetadata(from) {
-    this.metadata = new Map(Object.entries(from));
+    if (typeof from === "object")
+      this.metadata = new Map(Object.entries(from));
   }
   addMetadata(key, value) {
     this.metadata.set(key, value);
@@ -1988,7 +1989,7 @@ class DashFile {
       aliases: [...this.aliases],
       requiredFiles: [...this.requiredFiles],
       updateFiles: [...this.updateFiles].map((file) => file.filePath),
-      metadata: Object.fromEntries(this.metadata.entries())
+      metadata: this.metadata.size > 0 ? Object.fromEntries(this.metadata.entries()) : void 0
     };
   }
   reset() {

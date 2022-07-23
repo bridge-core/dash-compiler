@@ -66,8 +66,9 @@ export class DashFile {
 		this.updateFiles.delete(file)
 	}
 
-	setMetadata(from: IMetadata) {
-		this.metadata = new Map(Object.entries(from))
+	setMetadata(from?: IMetadata) {
+		if (typeof from === 'object')
+			this.metadata = new Map(Object.entries(from))
 	}
 	addMetadata(key: string, value: any) {
 		this.metadata.set(key, value)
@@ -155,7 +156,10 @@ export class DashFile {
 			aliases: [...this.aliases],
 			requiredFiles: [...this.requiredFiles],
 			updateFiles: [...this.updateFiles].map((file) => file.filePath),
-			metadata: Object.fromEntries(this.metadata.entries()),
+			metadata:
+				this.metadata.size > 0
+					? Object.fromEntries(this.metadata.entries())
+					: undefined,
 		}
 	}
 	reset() {
@@ -172,7 +176,7 @@ export interface ISerializedDashFile {
 	aliases: string[]
 	requiredFiles: string[]
 	updateFiles: string[]
-	metadata: IMetadata
+	metadata?: IMetadata
 }
 
 export interface IMetadata {

@@ -24,7 +24,7 @@ export declare class DashFile {
     setUpdateFiles(files: string[]): void;
     addUpdateFile(file: DashFile): void;
     removeUpdateFile(file: DashFile): void;
-    setMetadata(from: IMetadata): void;
+    setMetadata(from?: IMetadata): void;
     addMetadata(key: string, value: any): void;
     deleteMetadata(key: string): void;
     getMetadata(key: string): any;
@@ -39,7 +39,7 @@ export declare class DashFile {
         updateFiles: string[];
         metadata: {
             [k: string]: any;
-        };
+        } | undefined;
     };
     reset(): void;
 }
@@ -49,7 +49,7 @@ export interface ISerializedDashFile {
     aliases: string[];
     requiredFiles: string[];
     updateFiles: string[];
-    metadata: IMetadata;
+    metadata?: IMetadata;
 }
 export interface IMetadata {
     generatedFiles?: string[];
