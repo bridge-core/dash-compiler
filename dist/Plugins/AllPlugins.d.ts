@@ -22,6 +22,13 @@ export declare class AllPlugins {
         targetVersion: string | undefined;
         requestJsonData: <T = any>(dataPath: string) => Promise<T>;
         getAliases: (filePath: string) => string[];
+        getFileMetadata: (filePath: string) => {
+            get(key: string): any;
+            set(key: string, value: any): void;
+            delete(key: string): void;
+        };
+        getOutputPath: (filePath: string) => Promise<string | undefined>;
+        unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
         hasComMojangDirectory: boolean;
         compileFiles: (filePaths: string[]) => Promise<void>;
     }>;
@@ -37,4 +44,5 @@ export declare class AllPlugins {
     runTransformHooks(file: DashFile): Promise<any>;
     runFinalizeBuildHooks(file: DashFile): Promise<string | ArrayBuffer | Blob | null | undefined>;
     runBuildEndHooks(): Promise<void>;
+    runBeforeFileUnlinked(filePath: string): Promise<void>;
 }

@@ -13,6 +13,7 @@ export declare class DashFile {
     requiredFiles: Set<string>;
     aliases: Set<string>;
     protected updateFiles: Set<DashFile>;
+    protected metadata: Map<string, any>;
     constructor(dash: Dash<any>, filePath: string, isVirtual?: boolean);
     setFileHandle(fileHandle: IFileHandle): void;
     setDefaultFileHandle(): void;
@@ -23,6 +24,10 @@ export declare class DashFile {
     setUpdateFiles(files: string[]): void;
     addUpdateFile(file: DashFile): void;
     removeUpdateFile(file: DashFile): void;
+    setMetadata(from: IMetadata): void;
+    addMetadata(key: string, value: any): void;
+    deleteMetadata(key: string): void;
+    getMetadata(key: string): any;
     getHotUpdateChain(): Set<DashFile>;
     filesToLoadForHotUpdate(visited?: Set<DashFile>, didFileChange?: boolean): Set<DashFile>;
     processAfterLoad(writeFiles: boolean): Promise<void>;
@@ -32,6 +37,9 @@ export declare class DashFile {
         aliases: string[];
         requiredFiles: string[];
         updateFiles: string[];
+        metadata: {
+            [k: string]: any;
+        };
     };
     reset(): void;
 }
@@ -41,4 +49,9 @@ export interface ISerializedDashFile {
     aliases: string[];
     requiredFiles: string[];
     updateFiles: string[];
+    metadata: IMetadata;
+}
+export interface IMetadata {
+    generatedFiles?: string[];
+    [key: string]: any;
 }

@@ -13,4 +13,5 @@ export declare type TCompilerPlugin = {
     transform(filePath: string, fileContent: any, dependencies?: Record<string, any>): Promise<any> | any;
     finalizeBuild(filePath: string, fileContent: any): Maybe<string | Uint8Array | ArrayBuffer | Blob>;
     buildEnd(): Promise<void> | void;
+    beforeFileUnlinked(filePath: string): Promise<void> | void;
 };

@@ -22,4 +22,13 @@ export declare type TCompilerPluginFactory<T = void> = (context: {
     getAliases: (filePath: string) => string[];
     targetVersion?: string;
     requestJsonData: <T = any>(dataPath: string) => Promise<T>;
+    getFileMetadata: (filePath: string) => IFileMetadata;
+    getOutputPath: (filePath: string) => Promise<string | undefined>;
+    unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
 }) => Partial<TCompilerPlugin>;
+interface IFileMetadata {
+    get: (key: string) => any;
+    set: (key: string, value: any) => void;
+    delete: (key: string) => void;
+}
+export {};

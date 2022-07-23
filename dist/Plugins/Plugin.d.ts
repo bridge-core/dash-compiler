@@ -18,4 +18,5 @@ export declare class Plugin {
     runTransformHook(filePath: string, fileContent: any, dependencies?: Record<string, any>): Promise<any>;
     runFinalizeBuildHook(filePath: string, fileContent: any): Promise<string | ArrayBuffer | Blob | null | undefined>;
     runBuildEndHook(): Promise<void>;
+    runBeforeFileUnlinked(filePath: string): Promise<void>;
 }

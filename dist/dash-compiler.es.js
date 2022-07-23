@@ -106,6 +106,14 @@ class Plugin {
       this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`, err);
     }
   }
+  async runBeforeFileUnlinked(filePath) {
+    var _a, _b;
+    try {
+      return await ((_b = (_a = this.plugin).beforeFileUnlinked) == null ? void 0 : _b.call(_a, filePath));
+    } catch (err) {
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "beforeFileUnlinked" hook for "${filePath}":`, err);
+    }
+  }
 }
 const SimpleRewrite = ({
   options,
@@ -1506,7 +1514,9 @@ const GeneratorScriptsPlugin = ({
   console: console2,
   jsRuntime,
   fileSystem,
-  compileFiles
+  compileFiles,
+  getFileMetadata,
+  unlinkOutputFiles
 }) => {
   const ignoredFileTypes = /* @__PURE__ */ new Set([
     "gameTest",
@@ -1529,8 +1539,10 @@ const GeneratorScriptsPlugin = ({
       return ".json";
     return (_d = (_c = (_b = (_a = fileType.get(filePath)) == null ? void 0 : _a.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
   };
+  const transformPath = (filePath) => filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath));
   const omitUsedTemplates = /* @__PURE__ */ new Set();
   const fileCollection = new Collection(console2);
+  const filesToUpdate = /* @__PURE__ */ new Set();
   return {
     buildStart() {
       fileCollection.clear();
@@ -1538,7 +1550,7 @@ const GeneratorScriptsPlugin = ({
     },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
-        return filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath));
+        return transformPath(filePath);
     },
     async read(filePath, fileHandle) {
       if (isGeneratorScript(filePath) && fileHandle) {
@@ -1552,10 +1564,12 @@ const GeneratorScriptsPlugin = ({
         return fromCollection;
     },
     async load(filePath, fileContent) {
+      var _a, _b;
+      const currentTemplates = /* @__PURE__ */ new Set();
       jsRuntime.registerModule("@bridge/generate", createModule({
         generatorPath: filePath,
         fileSystem,
-        omitUsedTemplates,
+        omitUsedTemplates: currentTemplates,
         console: console2
       }));
       if (isGeneratorScript(filePath)) {
@@ -1573,6 +1587,15 @@ const GeneratorScriptsPlugin = ({
           console2.error(`Expected generator script "${filePath}" to provide file content as default export!`);
           return null;
         }
+        const fileMetadata = getFileMetadata(filePath);
+        const previouslyUnlinkedFiles = ((_a = fileMetadata.get("unlinkedFiles")) != null ? _a : []).filter((filePath2) => !currentTemplates.has(filePath2));
+        previouslyUnlinkedFiles.forEach((file) => filesToUpdate.add(file));
+        fileMetadata.set("unlinkedFiles", [...currentTemplates]);
+        const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
+        await unlinkOutputFiles([
+          ...generatedFiles,
+          ...currentTemplates
+        ]);
         return module.__default__;
       }
     },
@@ -1587,17 +1610,34 @@ const GeneratorScriptsPlugin = ({
       if (isGeneratorScript(filePath)) {
         if (fileContent === null)
           return null;
+        const fileMetadata = getFileMetadata(filePath);
         if (fileContent instanceof Collection) {
           fileCollection.addFrom(fileContent);
+          fileMetadata.set("generatedFiles", fileContent.getAll().map(([filePath2]) => filePath2));
           return null;
         }
+        fileMetadata.set("generatedFiles", [transformPath(filePath)]);
         return typeof fileContent === "object" ? JSON.stringify(fileContent) : fileContent;
       }
     },
     async buildEnd() {
       jsRuntime.deleteModule("@bridge/generate");
-      if (fileCollection.hasFiles)
-        await compileFiles(fileCollection.getAll().map(([filePath]) => filePath));
+      if (!fileCollection.hasFiles)
+        return;
+      const generatedFiles = fileCollection.getAll().map(([filePath]) => filePath);
+      await compileFiles([
+        .../* @__PURE__ */ new Set([...generatedFiles, ...filesToUpdate])
+      ]);
+    },
+    async beforeFileUnlinked(filePath) {
+      var _a, _b;
+      if (isGeneratorScript(filePath)) {
+        const fileMetadata = getFileMetadata(filePath);
+        const unlinkedFiles = (_a = fileMetadata.get("unlinkedFiles")) != null ? _a : [];
+        const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
+        await unlinkOutputFiles(generatedFiles);
+        await compileFiles(unlinkedFiles);
+      }
     }
   };
 };
@@ -1717,6 +1757,28 @@ class AllPlugins {
           ...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []
         ];
       },
+      getFileMetadata: (filePath) => {
+        const file = this.dash.includedFiles.get(filePath);
+        if (!file)
+          throw new Error(`File ${filePath} to add metadata to not found`);
+        return {
+          get(key) {
+            return file.getMetadata(key);
+          },
+          set(key, value) {
+            file.addMetadata(key, value);
+          },
+          delete(key) {
+            file.deleteMetadata(key);
+          }
+        };
+      },
+      getOutputPath: (filePath) => {
+        return this.dash.getCompilerOutputPath(filePath);
+      },
+      unlinkOutputFiles: (filePaths) => {
+        return this.dash.unlinkMultiple(filePaths, false);
+      },
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
       compileFiles: (filePaths) => this.dash.compileVirtualFiles(filePaths)
     };
@@ -1815,6 +1877,11 @@ class AllPlugins {
       await plugin.runBuildEndHook();
     }
   }
+  async runBeforeFileUnlinked(filePath) {
+    for (const plugin of this.plugins) {
+      await plugin.runBeforeFileUnlinked(filePath);
+    }
+  }
 }
 class DashFile {
   constructor(dash, filePath, isVirtual = false) {
@@ -1825,6 +1892,7 @@ class DashFile {
     this.requiredFiles = /* @__PURE__ */ new Set();
     this.aliases = /* @__PURE__ */ new Set();
     this.updateFiles = /* @__PURE__ */ new Set();
+    this.metadata = /* @__PURE__ */ new Map();
     this.outputPath = filePath;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
@@ -1859,6 +1927,18 @@ class DashFile {
   }
   removeUpdateFile(file) {
     this.updateFiles.delete(file);
+  }
+  setMetadata(from) {
+    this.metadata = new Map(Object.entries(from));
+  }
+  addMetadata(key, value) {
+    this.metadata.set(key, value);
+  }
+  deleteMetadata(key) {
+    this.metadata.delete(key);
+  }
+  getMetadata(key) {
+    return this.metadata.get(key);
   }
   getHotUpdateChain() {
     const chain = /* @__PURE__ */ new Set([this]);
@@ -1907,7 +1987,8 @@ class DashFile {
       filePath: this.filePath,
       aliases: [...this.aliases],
       requiredFiles: [...this.requiredFiles],
-      updateFiles: [...this.updateFiles].map((file) => file.filePath)
+      updateFiles: [...this.updateFiles].map((file) => file.filePath),
+      metadata: Object.fromEntries(this.metadata.entries())
     };
   }
   reset() {
@@ -2015,6 +2096,7 @@ class IncludedFiles {
       const file = new DashFile(this.dash, sFile.filePath, sFile.isVirtual);
       file.setAliases(new Set(sFile.aliases));
       file.setRequiredFiles(new Set(sFile.requiredFiles));
+      file.setMetadata(sFile.metadata);
       files.push(file);
       for (const alias of sFile.aliases) {
         this.aliases.set(alias, file);
@@ -2399,20 +2481,22 @@ class Dash {
     await this.plugins.runBuildEndHooks();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
-  async unlinkMultiple(paths) {
+  async unlinkMultiple(paths, saveDashFile = true) {
     if (!this.isCompilerActivated || paths.length === 0)
       return;
     for (const path of paths) {
       await this.unlink(path, false);
     }
-    await this.saveDashFile();
+    if (saveDashFile)
+      await this.saveDashFile();
   }
   async unlink(path, updateDashFile = true) {
     if (!this.isCompilerActivated)
       return;
-    const outputPath = await this.plugins.runTransformPathHooks(path);
+    const outputPath = await this.getCompilerOutputPath(path);
     if (!outputPath || outputPath === path)
       return;
+    await this.plugins.runBeforeFileUnlinked(path);
     await this.outputFileSystem.unlink(outputPath);
     this.includedFiles.remove(path);
     if (updateDashFile)
@@ -2426,8 +2510,12 @@ class Dash {
     await this.saveDashFile();
   }
   async getCompilerOutputPath(filePath) {
+    var _a;
     if (!this.isCompilerActivated)
       return;
+    const includedFile = this.includedFiles.get(filePath);
+    if (includedFile)
+      return (_a = includedFile.outputPath) != null ? _a : void 0;
     const outputPath = await this.plugins.runTransformPathHooks(filePath);
     if (!outputPath)
       return;
