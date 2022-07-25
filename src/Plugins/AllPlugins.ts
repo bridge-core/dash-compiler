@@ -220,8 +220,8 @@ export class AllPlugins {
 			 */
 			hasComMojangDirectory:
 				this.dash.fileSystem !== this.dash.outputFileSystem,
-			compileFiles: (filePaths: string[]) =>
-				this.dash.compileVirtualFiles(filePaths),
+			compileFiles: (filePaths: string[], virtual = true) =>
+				this.dash.compileAdditionalFiles(filePaths, virtual),
 		}
 	}
 

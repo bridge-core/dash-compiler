@@ -30,7 +30,7 @@ export declare class AllPlugins {
         getOutputPath: (filePath: string) => Promise<string | undefined>;
         unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
         hasComMojangDirectory: boolean;
-        compileFiles: (filePaths: string[]) => Promise<void>;
+        compileFiles: (filePaths: string[], virtual?: boolean) => Promise<void>;
     }>;
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<(string | [string, {

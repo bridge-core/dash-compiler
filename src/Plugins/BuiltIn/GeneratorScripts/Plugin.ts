@@ -169,15 +169,17 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 		async buildEnd() {
 			jsRuntime.deleteModule('@bridge/generate')
 
-			if (!fileCollection.hasFiles) return
-
-			const generatedFiles = fileCollection
-				.getAll()
-				.map(([filePath]) => filePath)
-
-			await compileFiles([
-				...new Set([...generatedFiles, ...filesToUpdate]),
-			])
+			if (filesToUpdate.size > 0)
+				await compileFiles(
+					[...filesToUpdate].filter(
+						(filePath) => !fileCollection.has(filePath)
+					),
+					false
+				)
+			if (fileCollection.hasFiles)
+				await compileFiles(
+					fileCollection.getAll().map(([filePath]) => filePath)
+				)
 		},
 
 		async beforeFileUnlinked(filePath) {

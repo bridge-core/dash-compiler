@@ -1484,6 +1484,9 @@ class Collection {
     }
     this.files.set(resolvedPath, fileContent);
   }
+  has(filePath) {
+    return this.files.has(filePath);
+  }
   addFrom(collection) {
     for (const [filePath, fileContent] of collection.getAll()) {
       this.add(filePath, fileContent);
@@ -1626,12 +1629,10 @@ const GeneratorScriptsPlugin = ({
     },
     async buildEnd() {
       jsRuntime.deleteModule("@bridge/generate");
-      if (!fileCollection.hasFiles)
-        return;
-      const generatedFiles = fileCollection.getAll().map(([filePath]) => filePath);
-      await compileFiles([
-        .../* @__PURE__ */ new Set([...generatedFiles, ...filesToUpdate])
-      ]);
+      if (filesToUpdate.size > 0)
+        await compileFiles([...filesToUpdate].filter((filePath) => !fileCollection.has(filePath)), false);
+      if (fileCollection.hasFiles)
+        await compileFiles(fileCollection.getAll().map(([filePath]) => filePath));
     },
     async beforeFileUnlinked(filePath) {
       var _a2, _b;
@@ -1784,7 +1785,7 @@ class AllPlugins {
         return this.dash.unlinkMultiple(filePaths, false);
       },
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
-      compileFiles: (filePaths) => this.dash.compileVirtualFiles(filePaths)
+      compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual)
     };
   }
   async runBuildStartHooks() {
@@ -2557,10 +2558,10 @@ class Dash {
     await this.fileTransformer.run(resolvedFileOrder);
     this.progress.advance();
   }
-  async compileVirtualFiles(filePaths) {
-    const virtualFiles = this.includedFiles.add(filePaths, true);
+  async compileAdditionalFiles(filePaths, virtual = true) {
+    const virtualFiles = this.includedFiles.add(filePaths, virtual);
     this.progress.addToTotal(3);
-    virtualFiles.forEach((virtual) => virtual.reset());
+    virtualFiles.forEach((virtual2) => virtual2.reset());
     await this.compileIncludedFiles(virtualFiles);
   }
 }

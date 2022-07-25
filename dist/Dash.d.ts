@@ -58,5 +58,5 @@ export declare class Dash<TSetupArg = void> {
     getFileDependencies(filePath: string): Promise<string[]>;
     protected saveDashFile(): Promise<void>;
     protected compileIncludedFiles(files?: DashFile[]): Promise<void>;
-    compileVirtualFiles(filePaths: string[]): Promise<void>;
+    compileAdditionalFiles(filePaths: string[], virtual?: boolean): Promise<void>;
 }

@@ -19,7 +19,7 @@ export type TCompilerPluginFactory<T = void> = (context: {
 	fileType: FileType<any>
 	projectRoot: string
 	hasComMojangDirectory: boolean
-	compileFiles: (files: string[]) => Promise<void>
+	compileFiles: (files: string[], virtual?: boolean) => Promise<void>
 	getAliases: (filePath: string) => string[]
 	targetVersion?: string
 	requestJsonData: <T = any>(dataPath: string) => Promise<T>

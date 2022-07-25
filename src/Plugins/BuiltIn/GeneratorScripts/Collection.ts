@@ -32,6 +32,9 @@ export class Collection {
 		}
 		this.files.set(resolvedPath, fileContent)
 	}
+	has(filePath: string) {
+		return this.files.has(filePath)
+	}
 	addFrom(collection: Collection) {
 		for (const [filePath, fileContent] of collection.getAll()) {
 			this.add(filePath, fileContent)

@@ -9,5 +9,6 @@ export declare class Collection {
     get(filePath: string): any;
     clear(): void;
     add(filePath: string, fileContent: any): void;
+    has(filePath: string): boolean;
     addFrom(collection: Collection): void;
 }

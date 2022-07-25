@@ -458,8 +458,8 @@ export class Dash<TSetupArg = void> {
 	 * Updating them is much simpler than update normal files so we have this dedicated method for them.
 	 * @param filePaths
 	 */
-	async compileVirtualFiles(filePaths: string[]) {
-		const virtualFiles = this.includedFiles.add(filePaths, true)
+	async compileAdditionalFiles(filePaths: string[], virtual = true) {
+		const virtualFiles = this.includedFiles.add(filePaths, virtual)
 		this.progress.addToTotal(3)
 
 		virtualFiles.forEach((virtual) => virtual.reset())
