@@ -79,6 +79,9 @@ export class DashFile {
 	getMetadata(key: string) {
 		return this.metadata.get(key)
 	}
+	getAllMetadata() {
+		return Object.fromEntries(this.metadata.entries())
+	}
 
 	getHotUpdateChain() {
 		const chain = new Set<DashFile>([this])

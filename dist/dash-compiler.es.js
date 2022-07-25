@@ -2515,7 +2515,7 @@ class Dash {
     if (!this.isCompilerActivated)
       return;
     const includedFile = this.includedFiles.get(filePath);
-    if (includedFile)
+    if (includedFile && includedFile.outputPath !== filePath)
       return (_a = includedFile.outputPath) != null ? _a : void 0;
     const outputPath = await this.plugins.runTransformPathHooks(filePath);
     if (!outputPath)

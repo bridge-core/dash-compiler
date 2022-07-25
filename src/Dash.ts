@@ -397,12 +397,21 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return
 
 		const includedFile = this.includedFiles.get(filePath)
-		if (includedFile) return includedFile.outputPath ?? undefined
+		if (includedFile && includedFile.outputPath !== filePath)
+			return includedFile.outputPath ?? undefined
 
 		const outputPath = await this.plugins.runTransformPathHooks(filePath)
 		if (!outputPath) return
 
 		return outputPath
+	}
+	async getFileMetadata(filePath: string) {
+		if (!this.isCompilerActivated) return
+
+		const includedFile = this.includedFiles.get(filePath)
+		if (includedFile) return includedFile.getAllMetadata()
+
+		return null
 	}
 
 	async getFileDependencies(filePath: string) {
