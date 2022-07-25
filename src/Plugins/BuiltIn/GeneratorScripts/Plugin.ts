@@ -2,7 +2,10 @@ import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Collection } from './Collection'
 import { createModule } from './Module'
 
-export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
+export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
+	ignoredFileTypes?: string[]
+}> = ({
+	options,
 	fileType,
 	console,
 	jsRuntime,
@@ -15,6 +18,8 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{}> = ({
 		'gameTest',
 		'customCommand',
 		'customComponent',
+		'molangAstScript',
+		...(options.ignoredFileTypes ?? []),
 	])
 	const getFileType = (filePath: string) => fileType.getId(filePath)
 	const getFileContentType = (filePath: string) => {
