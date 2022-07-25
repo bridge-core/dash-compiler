@@ -28,6 +28,9 @@ export declare class DashFile {
     addMetadata(key: string, value: any): void;
     deleteMetadata(key: string): void;
     getMetadata(key: string): any;
+    getAllMetadata(): {
+        [k: string]: any;
+    };
     getHotUpdateChain(): Set<DashFile>;
     filesToLoadForHotUpdate(visited?: Set<DashFile>, didFileChange?: boolean): Set<DashFile>;
     processAfterLoad(writeFiles: boolean): Promise<void>;

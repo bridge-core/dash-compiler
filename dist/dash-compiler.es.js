@@ -1941,6 +1941,9 @@ class DashFile {
   getMetadata(key) {
     return this.metadata.get(key);
   }
+  getAllMetadata() {
+    return Object.fromEntries(this.metadata.entries());
+  }
   getHotUpdateChain() {
     const chain = /* @__PURE__ */ new Set([this]);
     for (const updateFile of this.updateFiles) {
@@ -2521,6 +2524,14 @@ class Dash {
     if (!outputPath)
       return;
     return outputPath;
+  }
+  async getFileMetadata(filePath) {
+    if (!this.isCompilerActivated)
+      return;
+    const includedFile = this.includedFiles.get(filePath);
+    if (includedFile)
+      return includedFile.getAllMetadata();
+    return null;
   }
   async getFileDependencies(filePath) {
     if (!this.isCompilerActivated)
