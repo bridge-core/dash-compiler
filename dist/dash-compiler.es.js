@@ -1554,6 +1554,7 @@ const GeneratorScriptsPlugin = ({
     buildStart() {
       fileCollection.clear();
       omitUsedTemplates.clear();
+      filesToUpdate.clear();
     },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
