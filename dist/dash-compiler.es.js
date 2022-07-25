@@ -1510,6 +1510,7 @@ function createModule({
   };
 }
 const GeneratorScriptsPlugin = ({
+  options,
   fileType,
   console: console2,
   jsRuntime,
@@ -1518,26 +1519,29 @@ const GeneratorScriptsPlugin = ({
   getFileMetadata,
   unlinkOutputFiles
 }) => {
+  var _a;
   const ignoredFileTypes = /* @__PURE__ */ new Set([
     "gameTest",
     "customCommand",
-    "customComponent"
+    "customComponent",
+    "molangAstScript",
+    ...(_a = options.ignoredFileTypes) != null ? _a : []
   ]);
   const getFileType = (filePath) => fileType.getId(filePath);
   const getFileContentType = (filePath) => {
-    var _a;
+    var _a2;
     const def = fileType.get(filePath);
     if (!def)
       return "raw";
-    return (_a = def.type) != null ? _a : "json";
+    return (_a2 = def.type) != null ? _a2 : "json";
   };
   const isGeneratorScript = (filePath) => !ignoredFileTypes.has(getFileType(filePath)) && (filePath.endsWith(".js") || filePath.endsWith(".ts"));
   const getScriptExtension = (filePath) => {
-    var _a, _b, _c, _d;
+    var _a2, _b, _c, _d;
     const fileContentType = getFileContentType(filePath);
     if (fileContentType === "json")
       return ".json";
-    return (_d = (_c = (_b = (_a = fileType.get(filePath)) == null ? void 0 : _a.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
+    return (_d = (_c = (_b = (_a2 = fileType.get(filePath)) == null ? void 0 : _a2.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
   };
   const transformPath = (filePath) => filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath));
   const omitUsedTemplates = /* @__PURE__ */ new Set();
@@ -1564,7 +1568,7 @@ const GeneratorScriptsPlugin = ({
         return fromCollection;
     },
     async load(filePath, fileContent) {
-      var _a, _b;
+      var _a2, _b;
       const currentTemplates = /* @__PURE__ */ new Set();
       jsRuntime.registerModule("@bridge/generate", createModule({
         generatorPath: filePath,
@@ -1588,7 +1592,7 @@ const GeneratorScriptsPlugin = ({
           return null;
         }
         const fileMetadata = getFileMetadata(filePath);
-        const previouslyUnlinkedFiles = ((_a = fileMetadata.get("unlinkedFiles")) != null ? _a : []).filter((filePath2) => !currentTemplates.has(filePath2));
+        const previouslyUnlinkedFiles = ((_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : []).filter((filePath2) => !currentTemplates.has(filePath2));
         previouslyUnlinkedFiles.forEach((file) => filesToUpdate.add(file));
         fileMetadata.set("unlinkedFiles", [...currentTemplates]);
         const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
@@ -1630,10 +1634,10 @@ const GeneratorScriptsPlugin = ({
       ]);
     },
     async beforeFileUnlinked(filePath) {
-      var _a, _b;
+      var _a2, _b;
       if (isGeneratorScript(filePath)) {
         const fileMetadata = getFileMetadata(filePath);
-        const unlinkedFiles = (_a = fileMetadata.get("unlinkedFiles")) != null ? _a : [];
+        const unlinkedFiles = (_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : [];
         const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
         await unlinkOutputFiles(generatedFiles);
         await compileFiles(unlinkedFiles);
