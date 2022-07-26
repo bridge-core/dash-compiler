@@ -5,6 +5,7 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 	buildName?: string
 	packName?: string
 	rewriteToComMojang?: boolean
+	packNameSuffix?: Record<string, string>
 }> = ({
 	options,
 	outputFileSystem,
@@ -84,7 +85,11 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 			)
 				return join(
 					// @ts-ignore
-					pathPrefixWithPack(pack.id, pack.defaultPackPath),
+					pathPrefixWithPack(
+						pack.id,
+						options.packNameSuffix?.[pack.id] ??
+							pack.defaultPackPath
+					),
 					relPath
 				)
 		},
