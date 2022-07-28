@@ -23,7 +23,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 	])
 	const getFileType = (filePath: string) => fileType.getId(filePath)
 	const getFileContentType = (filePath: string) => {
-		const def = fileType.get(filePath)
+		const def = fileType.get(filePath, undefined, false)
 		if (!def) return 'raw'
 		return def.type ?? 'json'
 	}
