@@ -50,6 +50,9 @@ export class DashFile {
 	setRequiredFiles(requiredFiles: Set<string>) {
 		this.requiredFiles = requiredFiles
 	}
+	addRequiredFile(filePath: string) {
+		this.requiredFiles.add(filePath)
+	}
 	setUpdateFiles(files: string[]) {
 		this.updateFiles = new Set<DashFile>(
 			<DashFile[]>(

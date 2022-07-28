@@ -208,6 +208,21 @@ export class AllPlugins {
 					},
 				}
 			},
+			addFileDependencies: (
+				filePath: string,
+				filePaths: string[],
+				clearPrevious = false
+			) => {
+				const file = this.dash.includedFiles.get(filePath)
+
+				if (!file)
+					throw new Error(
+						`File ${filePath} to add dependency to not found`
+					)
+				if (clearPrevious) file.setRequiredFiles(new Set())
+
+				filePaths.forEach((filePath) => file.addRequiredFile(filePath))
+			},
 			getOutputPath: (filePath: string) => {
 				return this.dash.getCompilerOutputPath(filePath)
 			},

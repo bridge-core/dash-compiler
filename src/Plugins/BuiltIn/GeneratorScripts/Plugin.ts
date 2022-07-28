@@ -13,6 +13,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 	compileFiles,
 	getFileMetadata,
 	unlinkOutputFiles,
+	addFileDependencies,
 }) => {
 	const ignoredFileTypes = new Set([
 		'gameTest',
@@ -123,6 +124,8 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 					...generatedFiles,
 					...currentTemplates,
 				])
+
+				addFileDependencies(filePath, [...currentTemplates], true)
 
 				return module.__default__
 			}
