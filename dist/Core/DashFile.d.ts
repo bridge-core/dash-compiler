@@ -21,6 +21,7 @@ export declare class DashFile {
     setReadData(data: any): void;
     setAliases(aliases: Set<string>): void;
     setRequiredFiles(requiredFiles: Set<string>): void;
+    addRequiredFile(filePath: string): void;
     setUpdateFiles(files: string[]): void;
     addUpdateFile(file: DashFile): void;
     removeUpdateFile(file: DashFile): void;

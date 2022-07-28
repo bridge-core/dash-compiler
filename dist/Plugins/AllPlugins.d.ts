@@ -27,6 +27,7 @@ export declare class AllPlugins {
             set(key: string, value: any): void;
             delete(key: string): void;
         };
+        addFileDependencies: (filePath: string, filePaths: string[], clearPrevious?: boolean) => void;
         getOutputPath: (filePath: string) => Promise<string | undefined>;
         unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
         hasComMojangDirectory: boolean;

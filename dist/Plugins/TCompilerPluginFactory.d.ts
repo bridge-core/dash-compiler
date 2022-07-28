@@ -25,6 +25,7 @@ export declare type TCompilerPluginFactory<T = void> = (context: {
     getFileMetadata: (filePath: string) => IFileMetadata;
     getOutputPath: (filePath: string) => Promise<string | undefined>;
     unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
+    addFileDependencies: (filePath: string, filePaths: string[], clearPrevious?: boolean) => void;
 }) => Partial<TCompilerPlugin>;
 interface IFileMetadata {
     get: (key: string) => any;

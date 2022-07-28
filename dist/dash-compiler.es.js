@@ -156,6 +156,7 @@ const SimpleRewrite = ({
       }
     },
     transformPath(filePath) {
+      var _a2, _b;
       if (!filePath)
         return;
       if (filePath.includes("BP/scripts/gametests/") && options.mode === "production")
@@ -171,7 +172,7 @@ const SimpleRewrite = ({
         "skinPack",
         "worldTemplate"
       ].includes(pack.id))
-        return join(pathPrefixWithPack(pack.id, pack.defaultPackPath), relPath);
+        return join(pathPrefixWithPack(pack.id, (_b = (_a2 = options.packNameSuffix) == null ? void 0 : _a2[pack.id]) != null ? _b : pack.defaultPackPath), relPath);
     }
   };
 };
@@ -1520,7 +1521,8 @@ const GeneratorScriptsPlugin = ({
   fileSystem,
   compileFiles,
   getFileMetadata,
-  unlinkOutputFiles
+  unlinkOutputFiles,
+  addFileDependencies
 }) => {
   var _a;
   const ignoredFileTypes = /* @__PURE__ */ new Set([
@@ -1533,7 +1535,7 @@ const GeneratorScriptsPlugin = ({
   const getFileType = (filePath) => fileType.getId(filePath);
   const getFileContentType = (filePath) => {
     var _a2;
-    const def = fileType.get(filePath);
+    const def = fileType.get(filePath, void 0, false);
     if (!def)
       return "raw";
     return (_a2 = def.type) != null ? _a2 : "json";
@@ -1604,6 +1606,7 @@ const GeneratorScriptsPlugin = ({
           ...generatedFiles,
           ...currentTemplates
         ]);
+        addFileDependencies(filePath, [...currentTemplates], true);
         return module.__default__;
       }
     },
@@ -1779,6 +1782,14 @@ class AllPlugins {
           }
         };
       },
+      addFileDependencies: (filePath, filePaths, clearPrevious = false) => {
+        const file = this.dash.includedFiles.get(filePath);
+        if (!file)
+          throw new Error(`File ${filePath} to add dependency to not found`);
+        if (clearPrevious)
+          file.setRequiredFiles(/* @__PURE__ */ new Set());
+        filePaths.forEach((filePath2) => file.addRequiredFile(filePath2));
+      },
       getOutputPath: (filePath) => {
         return this.dash.getCompilerOutputPath(filePath);
       },
@@ -1924,6 +1935,9 @@ class DashFile {
   }
   setRequiredFiles(requiredFiles) {
     this.requiredFiles = requiredFiles;
+  }
+  addRequiredFile(filePath) {
+    this.requiredFiles.add(filePath);
   }
   setUpdateFiles(files) {
     this.updateFiles = new Set(files.map((filePath) => this.dash.includedFiles.get(filePath)).filter((file) => file !== void 0));
