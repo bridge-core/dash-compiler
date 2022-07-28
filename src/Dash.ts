@@ -369,7 +369,7 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated || paths.length === 0) return
 
 		for (const path of paths) {
-			await this.unlink(path, false)
+			await this.unlink(path, false, onlyChangeOutput)
 		}
 
 		if (saveDashFile) await this.saveDashFile()

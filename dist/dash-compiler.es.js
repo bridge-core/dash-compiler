@@ -1552,11 +1552,13 @@ const GeneratorScriptsPlugin = ({
   const omitUsedTemplates = /* @__PURE__ */ new Set();
   const fileCollection = new Collection(console2);
   const filesToUpdate = /* @__PURE__ */ new Set();
+  const usedTemplateMap = /* @__PURE__ */ new Map();
   return {
     buildStart() {
       fileCollection.clear();
       omitUsedTemplates.clear();
       filesToUpdate.clear();
+      usedTemplateMap.clear();
     },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
@@ -1606,9 +1608,14 @@ const GeneratorScriptsPlugin = ({
           ...generatedFiles,
           ...currentTemplates
         ]);
-        addFileDependencies(filePath, [...currentTemplates], true);
+        usedTemplateMap.set(filePath, currentTemplates);
         return module.__default__;
       }
+    },
+    require(filePath) {
+      const usedTemplates = usedTemplateMap.get(filePath);
+      if (usedTemplates)
+        return [...usedTemplates];
     },
     finalizeBuild(filePath, fileContent) {
       if (fileCollection.get(filePath)) {
@@ -1787,8 +1794,9 @@ class AllPlugins {
         if (!file)
           throw new Error(`File ${filePath} to add dependency to not found`);
         if (clearPrevious)
-          file.setRequiredFiles(/* @__PURE__ */ new Set());
-        filePaths.forEach((filePath2) => file.addRequiredFile(filePath2));
+          file.setRequiredFiles(new Set(filePaths));
+        else
+          filePaths.forEach((filePath2) => file.addRequiredFile(filePath2));
       },
       getOutputPath: (filePath) => {
         return this.dash.getCompilerOutputPath(filePath);
@@ -2509,7 +2517,7 @@ class Dash {
     if (!this.isCompilerActivated || paths.length === 0)
       return;
     for (const path of paths) {
-      await this.unlink(path, false);
+      await this.unlink(path, false, onlyChangeOutput);
     }
     if (saveDashFile)
       await this.saveDashFile();

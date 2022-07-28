@@ -219,9 +219,12 @@ export class AllPlugins {
 					throw new Error(
 						`File ${filePath} to add dependency to not found`
 					)
-				if (clearPrevious) file.setRequiredFiles(new Set())
 
-				filePaths.forEach((filePath) => file.addRequiredFile(filePath))
+				if (clearPrevious) file.setRequiredFiles(new Set(filePaths))
+				else
+					filePaths.forEach((filePath) =>
+						file.addRequiredFile(filePath)
+					)
 			},
 			getOutputPath: (filePath: string) => {
 				return this.dash.getCompilerOutputPath(filePath)

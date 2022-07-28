@@ -43,12 +43,14 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 	const omitUsedTemplates = new Set<string>()
 	const fileCollection = new Collection(console)
 	const filesToUpdate = new Set<string>()
+	const usedTemplateMap = new Map<string, Set<string>>()
 
 	return {
 		buildStart() {
 			fileCollection.clear()
 			omitUsedTemplates.clear()
 			filesToUpdate.clear()
+			usedTemplateMap.clear()
 		},
 		transformPath(filePath) {
 			if (filePath && isGeneratorScript(filePath))
@@ -125,10 +127,14 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 					...currentTemplates,
 				])
 
-				addFileDependencies(filePath, [...currentTemplates], true)
+				usedTemplateMap.set(filePath, currentTemplates)
 
 				return module.__default__
 			}
+		},
+		require(filePath) {
+			const usedTemplates = usedTemplateMap.get(filePath)
+			if (usedTemplates) return [...usedTemplates]
 		},
 
 		finalizeBuild(filePath, fileContent) {
