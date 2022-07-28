@@ -227,7 +227,7 @@ export class AllPlugins {
 				return this.dash.getCompilerOutputPath(filePath)
 			},
 			unlinkOutputFiles: (filePaths: string[]) => {
-				return this.dash.unlinkMultiple(filePaths, false)
+				return this.dash.unlinkMultiple(filePaths, false, true)
 			},
 
 			/**

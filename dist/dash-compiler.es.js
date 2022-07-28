@@ -1794,7 +1794,7 @@ class AllPlugins {
         return this.dash.getCompilerOutputPath(filePath);
       },
       unlinkOutputFiles: (filePaths) => {
-        return this.dash.unlinkMultiple(filePaths, false);
+        return this.dash.unlinkMultiple(filePaths, false, true);
       },
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
       compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual)
@@ -2505,7 +2505,7 @@ class Dash {
     await this.plugins.runBuildEndHooks();
     return [[...filesToLoad].map((file2) => file2.filePath), transformedData];
   }
-  async unlinkMultiple(paths, saveDashFile = true) {
+  async unlinkMultiple(paths, saveDashFile = true, onlyChangeOutput = false) {
     if (!this.isCompilerActivated || paths.length === 0)
       return;
     for (const path of paths) {
@@ -2514,15 +2514,17 @@ class Dash {
     if (saveDashFile)
       await this.saveDashFile();
   }
-  async unlink(path, updateDashFile = true) {
+  async unlink(path, updateDashFile = true, onlyChangeOutput = false) {
     if (!this.isCompilerActivated)
       return;
     const outputPath = await this.getCompilerOutputPath(path);
     if (!outputPath || outputPath === path)
       return;
-    await this.plugins.runBeforeFileUnlinked(path);
+    if (!onlyChangeOutput) {
+      await this.plugins.runBeforeFileUnlinked(path);
+      this.includedFiles.remove(path);
+    }
     await this.outputFileSystem.unlink(outputPath);
-    this.includedFiles.remove(path);
     if (updateDashFile)
       await this.saveDashFile();
   }

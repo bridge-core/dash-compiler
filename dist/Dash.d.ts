@@ -48,8 +48,8 @@ export declare class Dash<TSetupArg = void> {
     build(): Promise<void>;
     updateFiles(filePaths: string[], saveDashFile?: boolean): Promise<void>;
     compileFile(filePath: string, fileData: Uint8Array): Promise<[string[], any]>;
-    unlinkMultiple(paths: string[], saveDashFile?: boolean): Promise<void>;
-    unlink(path: string, updateDashFile?: boolean): Promise<void>;
+    unlinkMultiple(paths: string[], saveDashFile?: boolean, onlyChangeOutput?: boolean): Promise<void>;
+    unlink(path: string, updateDashFile?: boolean, onlyChangeOutput?: boolean): Promise<void>;
     rename(oldPath: string, newPath: string): Promise<void>;
     getCompilerOutputPath(filePath: string): Promise<string | undefined>;
     getFileMetadata(filePath: string): Promise<{
