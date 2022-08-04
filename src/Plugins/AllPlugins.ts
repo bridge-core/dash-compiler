@@ -23,6 +23,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
 	rewriteForPackaging: RewriteForPackaging,
 	moLang: MoLangPlugin,
+	molang: MoLangPlugin,
 	entityIdentifierAlias: EntityIdentifierAlias,
 	customEntityComponents: CustomEntityComponentPlugin,
 	customItemComponents: CustomItemComponentPlugin,
