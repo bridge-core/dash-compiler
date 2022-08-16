@@ -31,6 +31,8 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 				jsc: {
 					parser: {
 						syntax: 'typescript',
+						preserveAllComments: false,
+						topLevelAwait: true,
 					},
 					target: 'es2020',
 				},
