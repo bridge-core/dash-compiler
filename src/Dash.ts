@@ -368,8 +368,16 @@ export class Dash<TSetupArg = void> {
 	) {
 		if (!this.isCompilerActivated || paths.length === 0) return
 
+		const errors: Error[] = []
+
 		for (const path of paths) {
-			await this.unlink(path, false, onlyChangeOutput)
+			await this.unlink(path, false, onlyChangeOutput).catch((err) =>
+				errors.push(err)
+			)
+		}
+
+		if (errors.length > 0) {
+			throw errors[0]
 		}
 
 		if (saveDashFile) await this.saveDashFile()

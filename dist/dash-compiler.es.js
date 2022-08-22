@@ -1297,7 +1297,9 @@ const TypeScriptPlugin = ({ options }) => {
         sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
         jsc: {
           parser: {
-            syntax: "typescript"
+            syntax: "typescript",
+            preserveAllComments: false,
+            topLevelAwait: true
           },
           target: "es2020"
         }
@@ -1607,7 +1609,8 @@ const GeneratorScriptsPlugin = ({
         await unlinkOutputFiles([
           ...generatedFiles,
           ...currentTemplates
-        ]);
+        ]).catch(() => {
+        });
         usedTemplateMap.set(filePath, currentTemplates);
         return module.__default__;
       }
@@ -1673,6 +1676,7 @@ const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   rewriteForPackaging: RewriteForPackaging,
   moLang: MoLangPlugin,
+  molang: MoLangPlugin,
   entityIdentifierAlias: EntityIdentifierAlias,
   customEntityComponents: CustomEntityComponentPlugin,
   customItemComponents: CustomItemComponentPlugin,
@@ -2516,8 +2520,12 @@ class Dash {
   async unlinkMultiple(paths, saveDashFile = true, onlyChangeOutput = false) {
     if (!this.isCompilerActivated || paths.length === 0)
       return;
+    const errors = [];
     for (const path of paths) {
-      await this.unlink(path, false, onlyChangeOutput);
+      await this.unlink(path, false, onlyChangeOutput).catch((err) => errors.push(err));
+    }
+    if (errors.length > 0) {
+      throw errors[0];
     }
     if (saveDashFile)
       await this.saveDashFile();

@@ -125,7 +125,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 				await unlinkOutputFiles([
 					...generatedFiles,
 					...currentTemplates,
-				])
+				]).catch(() => {})
 
 				usedTemplateMap.set(filePath, currentTemplates)
 
