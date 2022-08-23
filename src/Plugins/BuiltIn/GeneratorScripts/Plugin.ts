@@ -35,7 +35,10 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 		const fileContentType = getFileContentType(filePath)
 		if (fileContentType === 'json') return '.json'
 
-		return fileType.get(filePath)?.detect?.fileExtensions?.[0] ?? '.txt'
+		return (
+			fileType.get(filePath, undefined, false)?.detect
+				?.fileExtensions?.[0] ?? '.txt'
+		)
 	}
 	const transformPath = (filePath: string) =>
 		filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath))
