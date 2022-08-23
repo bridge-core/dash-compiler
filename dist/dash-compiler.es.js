@@ -1548,7 +1548,7 @@ const GeneratorScriptsPlugin = ({
     const fileContentType = getFileContentType(filePath);
     if (fileContentType === "json")
       return ".json";
-    return (_d = (_c = (_b = (_a2 = fileType.get(filePath)) == null ? void 0 : _a2.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
+    return (_d = (_c = (_b = (_a2 = fileType.get(filePath, void 0, false)) == null ? void 0 : _a2.detect) == null ? void 0 : _b.fileExtensions) == null ? void 0 : _c[0]) != null ? _d : ".txt";
   };
   const transformPath = (filePath) => filePath.replace(/\.(js|ts)$/, getScriptExtension(filePath));
   const omitUsedTemplates = /* @__PURE__ */ new Set();
