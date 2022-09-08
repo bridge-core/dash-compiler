@@ -108,9 +108,13 @@ export class IncludedFiles {
 	async load(filePath: string) {
 		this.removeAll()
 
-		const sFiles: ISerializedDashFile[] =
-			await this.dash.fileSystem.readJson(filePath)
+		const sFiles: ISerializedDashFile[] | null = await this.dash.fileSystem
+			.readJson(filePath)
+			.catch(() => null)
 		const files: DashFile[] = []
+
+		// We failed to load the dash cache file
+		if (!sFiles) return
 
 		for (const sFile of sFiles) {
 			const file = new DashFile(
