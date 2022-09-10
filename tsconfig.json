@@ -16,11 +16,12 @@
 		"strict": true,
 		"strictFunctionTypes": true,
 		"noImplicitAny": true,
+		"forceConsistentCasingInFileNames": true,
 
 		/* Additional Checks */
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
-		"types": ["vite/client", "@types/node"]
+		"types": ["vite/client", "@types/node", "vitest/importMeta"]
 	},
 	"include": ["./src/**/*.ts"]
 }

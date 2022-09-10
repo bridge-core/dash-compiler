@@ -2126,8 +2126,10 @@ class IncludedFiles {
   }
   async load(filePath) {
     this.removeAll();
-    const sFiles = await this.dash.fileSystem.readJson(filePath);
+    const sFiles = await this.dash.fileSystem.readJson(filePath).catch(() => null);
     const files = [];
+    if (!sFiles)
+      return;
     for (const sFile of sFiles) {
       const file = new DashFile(this.dash, sFile.filePath, sFile.isVirtual);
       file.setAliases(new Set(sFile.aliases));
