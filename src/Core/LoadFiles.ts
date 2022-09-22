@@ -5,19 +5,22 @@ export class LoadFiles {
 	constructor(protected dash: Dash<any>) {}
 
 	async run(files: DashFile[], writeFiles = true) {
+		let promises = []
+
 		for (const file of files) {
 			// Only iterate over files that need further processing
 			// (Ignore files which only needed to be copied over)
 			if (file.isDone) continue
 
-			await this.loadFile(file, writeFiles)
+			promises.push(
+				this.loadFile(file, writeFiles).then(() => {
+					if (file.isDone) return
+					return this.loadRequiredFiles(file)
+				})
+			)
 		}
 
-		for (const file of files) {
-			if (file.isDone) continue
-
-			await this.loadRequiredFiles(file)
-		}
+		await Promise.allSettled(promises)
 	}
 
 	async loadFile(file: DashFile, writeFiles = true) {
