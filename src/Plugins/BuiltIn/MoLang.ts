@@ -24,10 +24,15 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		filePath?.startsWith(
 			projectConfig.resolvePackPath('behaviorPack', 'scripts/molang/')
 		)
-	const loadMoLangFrom = (filePath: string) =>
-		Object.entries(options.include).find(
-			([currentId]) => fileType?.getId(filePath) === currentId
-		)?.[1]
+
+	const cachedPaths = new Map<string, string[] | undefined>()
+	const loadMoLangFrom = (filePath: string) => {
+		if (cachedPaths.has(filePath)) return cachedPaths.get(filePath)
+
+		const molangLocs = options.include[fileType.getId(filePath)]
+		cachedPaths.set(filePath, molangLocs)
+		return molangLocs
+	}
 
 	let astTransformers: ((expr: IExpression) => IExpression | undefined)[] = []
 
