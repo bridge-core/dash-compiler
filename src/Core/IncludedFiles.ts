@@ -28,6 +28,8 @@ export class IncludedFiles {
 		const file = this.files.get(query)
 		if (file) return [file]
 
+		if (isGlob(query)) return this.queryGlob(query)
+
 		return []
 	}
 	addAlias(alias: string, DashFile: DashFile) {
