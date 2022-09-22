@@ -6,6 +6,8 @@ export class FileTransformer {
 	constructor(protected dash: Dash<any>) {}
 
 	async run(resolvedFileOrder: Set<DashFile>, skipTransform = false) {
+		const promises = []
+
 		for (const file of resolvedFileOrder) {
 			if (file.isDone) continue
 
@@ -16,12 +18,16 @@ export class FileTransformer {
 				writeData !== null &&
 				file.outputPath
 			) {
-				await this.dash.outputFileSystem.writeFile(
-					file.outputPath,
-					writeData
+				promises.push(
+					this.dash.outputFileSystem.writeFile(
+						file.outputPath,
+						writeData
+					)
 				)
 			}
 		}
+
+		await Promise.allSettled(promises)
 	}
 
 	async transformFile(
