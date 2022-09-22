@@ -30,6 +30,10 @@ export abstract class FileSystem {
 		return files
 	}
 
+	async copyFile(from: string, to: string) {
+		const file = await this.readFile(from)
+		await this.writeFile(to, new Uint8Array(await file.arrayBuffer()))
+	}
 	async writeJson(
 		path: string,
 		content: any,

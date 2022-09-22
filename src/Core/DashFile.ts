@@ -145,10 +145,9 @@ export class DashFile {
 				!this.isVirtual &&
 				writeFiles
 			) {
-				const file = await this.dash.fileSystem.readFile(this.filePath)
-				await this.dash.outputFileSystem.writeFile(
-					this.outputPath,
-					new Uint8Array(await file.arrayBuffer())
+				await this.dash.fileSystem.copyFile(
+					this.filePath,
+					this.outputPath
 				)
 			}
 		}
