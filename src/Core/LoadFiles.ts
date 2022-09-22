@@ -14,7 +14,9 @@ export class LoadFiles {
 
 			promises.push(
 				this.loadFile(file, writeFiles).then(() => {
+					// Skip files that don't need to be processed further
 					if (file.isDone) return
+
 					return this.loadRequiredFiles(file)
 				})
 			)

@@ -49,6 +49,7 @@ export function createCustomComponentPlugin({
 			return isPlayerFile
 		}
 
+		// Caching whether a file is a component file has a huge performance impact
 		const cachedIsComponent = new Map<string, boolean>()
 		const isComponent = (filePath: string | null) => {
 			if (!filePath) return false
@@ -64,6 +65,7 @@ export function createCustomComponentPlugin({
 			return isComponent
 		}
 
+		// Caching whether a file may use a component file has a huge performance impact
 		const cachedMayUseComponents = new Map<string, boolean>()
 		const mayUseComponent = (filePath: string | null) => {
 			if (!filePath) return false

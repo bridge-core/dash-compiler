@@ -25,6 +25,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			projectConfig.resolvePackPath('behaviorPack', 'scripts/molang/')
 		)
 
+	// Caching the result of the function has a huge performance impact because the fileType.getId function is expensive
 	const cachedPaths = new Map<string, string[] | undefined>()
 	const loadMoLangFrom = (filePath: string) => {
 		if (cachedPaths.has(filePath)) return cachedPaths.get(filePath)
@@ -45,6 +46,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				),
 				options.include
 			)
+			cachedPaths.clear()
 		},
 		transformPath(filePath) {
 			// MoLang files & MoLang scripts should get omitted from output

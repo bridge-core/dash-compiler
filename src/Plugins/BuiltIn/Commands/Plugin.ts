@@ -23,6 +23,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	const isMcfunction = (filePath: string | null) =>
 		filePath && fileTypeLib.getId(filePath) === 'function'
 
+	// Caching the result of the function has a huge performance impact because the fileTypeLib.getId function is expensive
 	const cachedPaths = new Map<string, string[] | undefined>()
 	const loadCommandsFor = (filePath: string) => {
 		if (cachedPaths.has(filePath)) return cachedPaths.get(filePath)
