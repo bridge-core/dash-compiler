@@ -33,27 +33,54 @@ export function createCustomComponentPlugin({
 		targetVersion,
 		fileType: fileTypeLib,
 	}) => {
+		let playerFile: string | null = null
 		const isPlayerFile = (
 			filePath: string | null,
 			getAliases: (file: string) => string[]
-		) =>
-			filePath &&
-			fileType === 'item' &&
-			fileTypeLib?.getId(filePath) === 'entity' &&
-			getAliases(filePath).includes('minecraft:player')
+		) => {
+			if (!filePath) return false
+			if (playerFile && filePath === playerFile) return true
 
-		const isComponent = (filePath: string | null) =>
-			options.v1CompatMode
-				? filePath?.includes(`/components/`)
-				: filePath &&
-				  fileTypeLib?.getId(filePath) === `customComponent` &&
+			const isPlayerFile =
+				fileType === 'item' &&
+				fileTypeLib?.getId(filePath) === 'entity' &&
+				getAliases(filePath).includes('minecraft:player')
+			if (isPlayerFile) playerFile = filePath
+			return isPlayerFile
+		}
+
+		const cachedIsComponent = new Map<string, boolean>()
+		const isComponent = (filePath: string | null) => {
+			if (!filePath) return false
+
+			if (cachedIsComponent.has(filePath))
+				return cachedIsComponent.get(filePath)!
+
+			const isComponent = options.v1CompatMode
+				? filePath.includes(`/components/`)
+				: fileTypeLib?.getId(filePath) === `customComponent` &&
 				  filePath.includes(`/${fileType}/`)
-		const mayUseComponent = (filePath: string | null) =>
-			filePath && fileTypeLib?.getId(filePath) === fileType
+			cachedIsComponent.set(filePath, isComponent)
+			return isComponent
+		}
+
+		const cachedMayUseComponents = new Map<string, boolean>()
+		const mayUseComponent = (filePath: string | null) => {
+			if (!filePath) return false
+
+			if (cachedMayUseComponents.has(filePath))
+				return cachedMayUseComponents.get(filePath)
+			const result = fileTypeLib?.getId(filePath) === fileType
+			cachedMayUseComponents.set(filePath, result)
+			return result
+		}
 
 		return {
 			buildStart() {
 				usedComponents.clear()
+				cachedIsComponent.clear()
+				cachedMayUseComponents.clear()
+				playerFile = null
 				createAdditionalFiles = {}
 			},
 			transformPath(filePath) {
