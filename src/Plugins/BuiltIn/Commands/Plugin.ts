@@ -23,10 +23,15 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	const isMcfunction = (filePath: string | null) =>
 		filePath && fileTypeLib.getId(filePath) === 'function'
 
-	const loadCommandsFor = (filePath: string) =>
-		Object.entries(options.include).find(
-			([fileType]) => fileTypeLib.getId(filePath) === fileType
-		)?.[1]
+	const cachedPaths = new Map<string, string[] | undefined>()
+	const loadCommandsFor = (filePath: string) => {
+		if (cachedPaths.has(filePath)) return cachedPaths.get(filePath)
+
+		const commandLocs = options.include[fileTypeLib.getId(filePath)]
+		cachedPaths.set(filePath, commandLocs)
+		return commandLocs
+	}
+
 	const withSlashPrefix = (filePath: string) =>
 		fileTypeLib.get(filePath)?.meta?.commandsUseSlash ?? false
 
@@ -39,6 +44,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 				),
 				options.include
 			)
+			cachedPaths.clear()
 		},
 		transformPath(filePath) {
 			if (isCommand(filePath) && options.buildType !== 'fileRequest')
