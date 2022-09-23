@@ -20,8 +20,6 @@ export class IncludedFiles {
 		return this.aliases.get(fileId) ?? this.files.get(fileId)
 	}
 	query(query: string) {
-		if (isGlob(query)) return this.queryGlob(query)
-
 		const aliasedFile = this.aliases.get(query)
 		if (aliasedFile) return [aliasedFile]
 
@@ -46,6 +44,7 @@ export class IncludedFiles {
 	}
 
 	async loadAll() {
+		this.dash.console.time('Load all files')
 		this.queryCache = new Map()
 		const allFiles = new Set<string>()
 
@@ -69,6 +68,7 @@ export class IncludedFiles {
 		}
 
 		this.add([...allFiles])
+		this.dash.console.timeEnd('Load all files')
 	}
 	addOne(filePath: string, isVirtual = false) {
 		const file = new DashFile(this.dash, filePath, isVirtual)

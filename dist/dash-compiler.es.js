@@ -188,14 +188,19 @@ const MoLangPlugin = ({
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
   const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(projectConfig.resolvePackPath("behaviorPack", "scripts/molang/"));
+  const cachedPaths = /* @__PURE__ */ new Map();
   const loadMoLangFrom = (filePath) => {
-    var _a;
-    return (_a = Object.entries(options.include).find(([currentId]) => (fileType == null ? void 0 : fileType.getId(filePath)) === currentId)) == null ? void 0 : _a[1];
+    if (cachedPaths.has(filePath))
+      return cachedPaths.get(filePath);
+    const molangLocs = options.include[fileType.getId(filePath)];
+    cachedPaths.set(filePath, molangLocs);
+    return molangLocs;
   };
   let astTransformers = [];
   return {
     async buildStart() {
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
+      cachedPaths.clear();
     },
     transformPath(filePath) {
       if (isMoLangFile(filePath) || isMoLangScript(filePath))
@@ -869,12 +874,43 @@ function createCustomComponentPlugin({
     targetVersion,
     fileType: fileTypeLib
   }) => {
-    const isPlayerFile = (filePath, getAliases2) => filePath && fileType === "item" && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === "entity" && getAliases2(filePath).includes("minecraft:player");
-    const isComponent = (filePath) => options.v1CompatMode ? filePath == null ? void 0 : filePath.includes(`/components/`) : filePath && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === `customComponent` && filePath.includes(`/${fileType}/`);
-    const mayUseComponent = (filePath) => filePath && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === fileType;
+    let playerFile = null;
+    const isPlayerFile = (filePath, getAliases2) => {
+      if (!filePath)
+        return false;
+      if (playerFile && filePath === playerFile)
+        return true;
+      const isPlayerFile2 = fileType === "item" && (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === "entity" && getAliases2(filePath).includes("minecraft:player");
+      if (isPlayerFile2)
+        playerFile = filePath;
+      return isPlayerFile2;
+    };
+    const cachedIsComponent = /* @__PURE__ */ new Map();
+    const isComponent = (filePath) => {
+      if (!filePath)
+        return false;
+      if (cachedIsComponent.has(filePath))
+        return cachedIsComponent.get(filePath);
+      const isComponent2 = options.v1CompatMode ? filePath.includes(`/components/`) : (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === `customComponent` && filePath.includes(`/${fileType}/`);
+      cachedIsComponent.set(filePath, isComponent2);
+      return isComponent2;
+    };
+    const cachedMayUseComponents = /* @__PURE__ */ new Map();
+    const mayUseComponent = (filePath) => {
+      if (!filePath)
+        return false;
+      if (cachedMayUseComponents.has(filePath))
+        return cachedMayUseComponents.get(filePath);
+      const result = (fileTypeLib == null ? void 0 : fileTypeLib.getId(filePath)) === fileType;
+      cachedMayUseComponents.set(filePath, result);
+      return result;
+    };
     return {
       buildStart() {
         usedComponents.clear();
+        cachedIsComponent.clear();
+        cachedMayUseComponents.clear();
+        playerFile = null;
         createAdditionalFiles = {};
       },
       transformPath(filePath) {
@@ -1188,9 +1224,13 @@ const CustomCommandsPlugin = ({
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const isCommand = (filePath) => filePath && fileTypeLib.getId(filePath) === "customCommand";
   const isMcfunction = (filePath) => filePath && fileTypeLib.getId(filePath) === "function";
+  const cachedPaths = /* @__PURE__ */ new Map();
   const loadCommandsFor = (filePath) => {
-    var _a;
-    return (_a = Object.entries(options.include).find(([fileType]) => fileTypeLib.getId(filePath) === fileType)) == null ? void 0 : _a[1];
+    if (cachedPaths.has(filePath))
+      return cachedPaths.get(filePath);
+    const commandLocs = options.include[fileTypeLib.getId(filePath)];
+    cachedPaths.set(filePath, commandLocs);
+    return commandLocs;
   };
   const withSlashPrefix = (filePath) => {
     var _a, _b, _c;
@@ -1199,6 +1239,7 @@ const CustomCommandsPlugin = ({
   return {
     async buildStart() {
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), options.include);
+      cachedPaths.clear();
     },
     transformPath(filePath) {
       if (isCommand(filePath) && options.buildType !== "fileRequest")
@@ -2012,8 +2053,7 @@ class DashFile {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
       if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual && writeFiles) {
-        const file = await this.dash.fileSystem.readFile(this.filePath);
-        await this.dash.outputFileSystem.writeFile(this.outputPath, new Uint8Array(await file.arrayBuffer()));
+        await this.dash.fileSystem.copyFile(this.filePath, this.outputPath);
       }
     }
   }
@@ -2052,14 +2092,14 @@ class IncludedFiles {
     return (_a = this.aliases.get(fileId)) != null ? _a : this.files.get(fileId);
   }
   query(query) {
-    if (isGlob(query))
-      return this.queryGlob(query);
     const aliasedFile = this.aliases.get(query);
     if (aliasedFile)
       return [aliasedFile];
     const file = this.files.get(query);
     if (file)
       return [file];
+    if (isGlob(query))
+      return this.queryGlob(query);
     return [];
   }
   addAlias(alias, DashFile2) {
@@ -2074,6 +2114,7 @@ class IncludedFiles {
     return files;
   }
   async loadAll() {
+    this.dash.console.time("Load all files");
     this.queryCache = /* @__PURE__ */ new Map();
     const allFiles = /* @__PURE__ */ new Set();
     const packPaths = this.dash.projectConfig.getAvailablePackPaths();
@@ -2093,6 +2134,7 @@ class IncludedFiles {
         this.addOne(includedFile[0], includedFile[1].isVirtual);
     }
     this.add([...allFiles]);
+    this.dash.console.timeEnd("Load all files");
   }
   addOne(filePath, isVirtual = false) {
     const file = new DashFile(this.dash, filePath, isVirtual);
@@ -2162,16 +2204,17 @@ class LoadFiles {
     this.dash = dash;
   }
   async run(files, writeFiles = true) {
+    let promises = [];
     for (const file of files) {
       if (file.isDone)
         continue;
-      await this.loadFile(file, writeFiles);
+      promises.push(this.loadFile(file, writeFiles).then(() => {
+        if (file.isDone)
+          return;
+        return this.loadRequiredFiles(file);
+      }));
     }
-    for (const file of files) {
-      if (file.isDone)
-        continue;
-      await this.loadRequiredFiles(file);
-    }
+    await Promise.allSettled(promises);
   }
   async loadFile(file, writeFiles = true) {
     var _a;
@@ -2238,14 +2281,16 @@ class FileTransformer {
     this.dash = dash;
   }
   async run(resolvedFileOrder, skipTransform = false) {
+    const promises = [];
     for (const file of resolvedFileOrder) {
       if (file.isDone)
         continue;
       let writeData = await this.transformFile(file, true, skipTransform);
       if (writeData !== void 0 && writeData !== null && file.outputPath) {
-        await this.dash.outputFileSystem.writeFile(file.outputPath, writeData);
+        promises.push(this.dash.outputFileSystem.writeFile(file.outputPath, writeData));
       }
     }
+    await Promise.allSettled(promises);
   }
   async transformFile(file, runFinalizeHook = false, skipTransform = false) {
     var _a;
@@ -2301,10 +2346,13 @@ class Progress {
   }
 }
 class Console {
-  constructor() {
+  constructor(verboseLogs = false) {
+    this.verboseLogs = verboseLogs;
     this._timers = /* @__PURE__ */ new Map();
   }
   time(timerName) {
+    if (!this.verboseLogs)
+      return;
     if (this._timers.has(timerName)) {
       this.warn(`Timer "${timerName}" already exists.`);
       return;
@@ -2313,6 +2361,8 @@ class Console {
     }
   }
   timeEnd(timerName) {
+    if (!this.verboseLogs)
+      return;
     const time = this._timers.get(timerName);
     if (!time) {
       this.warn(`Timer "${timerName}" does not exist.`);
@@ -2324,6 +2374,9 @@ class Console {
   }
 }
 class DefaultConsole extends Console {
+  constructor(verboseLogs) {
+    super(verboseLogs);
+  }
   log(...args) {
     console.log(...args);
   }
@@ -2352,7 +2405,7 @@ class Dash {
     this.outputFileSystem = outputFileSystem != null ? outputFileSystem : fileSystem;
     this.projectRoot = dirname(options.config);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
-    this.console = (_a = options.console) != null ? _a : new DefaultConsole();
+    this.console = (_a = options.console) != null ? _a : new DefaultConsole(options.verbose);
     this.jsRuntime = new JsRuntime(this.fileSystem, [
       ["@molang/expressions", expressions],
       ["@molang/core", { MoLang }],
@@ -2414,12 +2467,16 @@ class Dash {
     this.includedFiles.removeAll();
     const startTime = Date.now();
     this.progress.setTotal(7);
+    this.console.time("[HOOK] Build start");
     await this.plugins.runBuildStartHooks();
+    this.console.timeEnd("[HOOK] Build start");
     this.progress.advance();
     await this.includedFiles.loadAll();
     this.progress.advance();
     await this.compileIncludedFiles();
+    this.console.time("[HOOK] Build end");
     await this.plugins.runBuildEndHooks();
+    this.console.timeEnd("[HOOK] Build end");
     this.progress.advance();
     if (this.getMode() === "development")
       await this.saveDashFile();
@@ -2586,11 +2643,17 @@ class Dash {
     await this.includedFiles.save(this.dashFilePath);
   }
   async compileIncludedFiles(files = this.includedFiles.all()) {
+    this.console.time("Loading files...");
     await this.loadFiles.run(files);
+    this.console.timeEnd("Loading files...");
     this.progress.advance();
+    this.console.time("Resolving file order...");
     const resolvedFileOrder = this.fileOrderResolver.run(files);
+    this.console.timeEnd("Resolving file order...");
     this.progress.advance();
+    this.console.time("Transforming files...");
     await this.fileTransformer.run(resolvedFileOrder);
+    this.console.timeEnd("Transforming files...");
     this.progress.advance();
   }
   async compileAdditionalFiles(filePaths, virtual = true) {
@@ -2612,6 +2675,10 @@ class FileSystem {
       }
     }
     return files;
+  }
+  async copyFile(from, to) {
+    const file = await this.readFile(from);
+    await this.writeFile(to, new Uint8Array(await file.arrayBuffer()));
   }
   async writeJson(path, content, beautify = true) {
     await this.writeFile(path, JSON.stringify(content, null, beautify ? "	" : 0));

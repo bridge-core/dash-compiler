@@ -42,6 +42,11 @@ export interface IDashOptions<TSetupArg = void> {
 	 */
 	pluginEnvironment?: any
 
+	/**
+	 * Whether to enable verbose logging
+	 */
+	verbose?: boolean
+
 	packType: PackType<TSetupArg>
 	fileType: FileType<TSetupArg>
 
@@ -75,7 +80,7 @@ export class Dash<TSetupArg = void> {
 		this.outputFileSystem = outputFileSystem ?? fileSystem
 		this.projectRoot = dirname(options.config)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
-		this.console = options.console ?? new DefaultConsole()
+		this.console = options.console ?? new DefaultConsole(options.verbose)
 		this.jsRuntime = new JsRuntime(this.fileSystem, [
 			['@molang/expressions', expressions],
 			['@molang/core', { MoLang }],
@@ -157,7 +162,9 @@ export class Dash<TSetupArg = void> {
 		const startTime = Date.now()
 		this.progress.setTotal(7)
 
+		this.console.time('[HOOK] Build start')
 		await this.plugins.runBuildStartHooks()
+		this.console.timeEnd('[HOOK] Build start')
 		this.progress.advance()
 
 		await this.includedFiles.loadAll()
@@ -165,7 +172,9 @@ export class Dash<TSetupArg = void> {
 
 		await this.compileIncludedFiles()
 
+		this.console.time('[HOOK] Build end')
 		await this.plugins.runBuildEndHooks()
+		this.console.timeEnd('[HOOK] Build end')
 		this.progress.advance()
 
 		if (this.getMode() === 'development') await this.saveDashFile()
@@ -460,14 +469,20 @@ export class Dash<TSetupArg = void> {
 	protected async compileIncludedFiles(
 		files: DashFile[] = this.includedFiles.all()
 	) {
+		this.console.time('Loading files...')
 		await this.loadFiles.run(files)
+		this.console.timeEnd('Loading files...')
 		this.progress.advance()
 
+		this.console.time('Resolving file order...')
 		const resolvedFileOrder = this.fileOrderResolver.run(files)
+		this.console.timeEnd('Resolving file order...')
 		this.progress.advance()
 
 		// this.console.log(resolvedFileOrder)
+		this.console.time('Transforming files...')
 		await this.fileTransformer.run(resolvedFileOrder)
+		this.console.timeEnd('Transforming files...')
 		this.progress.advance()
 	}
 

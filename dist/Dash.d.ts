@@ -16,6 +16,7 @@ export interface IDashOptions<TSetupArg = void> {
     compilerConfig?: string;
     console?: Console;
     pluginEnvironment?: any;
+    verbose?: boolean;
     packType: PackType<TSetupArg>;
     fileType: FileType<TSetupArg>;
     requestJsonData: <T = any>(dataPath: string) => Promise<T>;

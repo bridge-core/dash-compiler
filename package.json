@@ -1,10 +1,11 @@
 {
 	"name": "dash-compiler",
-	"version": "0.9.30",
+	"version": "0.10.0",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
-		"build:only": "vite build && vite --config vite.config.bundled.js build",
+		"build:bundled": "vite --config vite.config.bundled.js build",
+		"build:only": "vite build && npm run build:bundled",
 		"build": "npm run build:only && npm run build:types",
 		"test": "vitest"
 	},
