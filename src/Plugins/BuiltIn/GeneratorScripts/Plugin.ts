@@ -197,7 +197,12 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 
 		async beforeFileUnlinked(filePath) {
 			if (isGeneratorScript(filePath)) {
-				const fileMetadata = getFileMetadata(filePath)
+				let fileMetadata = null
+				try {
+					fileMetadata = getFileMetadata(filePath)
+				} catch {}
+				if (!fileMetadata) return
+
 				const unlinkedFiles = fileMetadata.get('unlinkedFiles') ?? []
 				const generatedFiles = fileMetadata.get('generatedFiles') ?? []
 
