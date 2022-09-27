@@ -9,7 +9,7 @@ export declare abstract class FileSystem {
     abstract readdir(path: string): Promise<IDirEntry[]>;
     abstract mkdir(path: string): Promise<void>;
     allFiles(path: string): Promise<string[]>;
-    copyFile(from: string, to: string): Promise<void>;
+    copyFile(from: string, to: string, outputFs?: this): Promise<void>;
     writeJson(path: string, content: any, beautify?: boolean): Promise<void>;
     readJson(path: string): Promise<any>;
     abstract lastModified(filePath: string): Promise<number>;

@@ -1620,16 +1620,16 @@ const GeneratorScriptsPlugin = ({
     },
     async load(filePath, fileContent) {
       var _a2, _b;
-      const currentTemplates = /* @__PURE__ */ new Set();
-      jsRuntime.registerModule("@bridge/generate", createModule({
-        generatorPath: filePath,
-        fileSystem,
-        omitUsedTemplates: currentTemplates,
-        console: console2
-      }));
       if (isGeneratorScript(filePath)) {
         if (!fileContent)
           return null;
+        const currentTemplates = /* @__PURE__ */ new Set();
+        jsRuntime.registerModule("@bridge/generate", createModule({
+          generatorPath: filePath,
+          fileSystem,
+          omitUsedTemplates: currentTemplates,
+          console: console2
+        }));
         const module = await jsRuntime.run(filePath, {
           console: console2
         }, fileContent).catch((err) => {
@@ -1692,7 +1692,13 @@ const GeneratorScriptsPlugin = ({
     async beforeFileUnlinked(filePath) {
       var _a2, _b;
       if (isGeneratorScript(filePath)) {
-        const fileMetadata = getFileMetadata(filePath);
+        let fileMetadata = null;
+        try {
+          fileMetadata = getFileMetadata(filePath);
+        } catch {
+        }
+        if (!fileMetadata)
+          return;
         const unlinkedFiles = (_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : [];
         const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
         await unlinkOutputFiles(generatedFiles);
@@ -1821,7 +1827,7 @@ class AllPlugins {
       getFileMetadata: (filePath) => {
         const file = this.dash.includedFiles.get(filePath);
         if (!file)
-          throw new Error(`File ${filePath} to add metadata to not found`);
+          throw new Error(`File ${filePath} to get metadata from not found`);
         return {
           get(key) {
             return file.getMetadata(key);
@@ -2053,7 +2059,7 @@ class DashFile {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
       if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual && writeFiles) {
-        await this.dash.fileSystem.copyFile(this.filePath, this.outputPath);
+        await this.dash.fileSystem.copyFile(this.filePath, this.outputPath, this.dash.outputFileSystem);
       }
     }
   }
@@ -2676,9 +2682,9 @@ class FileSystem {
     }
     return files;
   }
-  async copyFile(from, to) {
+  async copyFile(from, to, outputFs = this) {
     const file = await this.readFile(from);
-    await this.writeFile(to, new Uint8Array(await file.arrayBuffer()));
+    await outputFs.writeFile(to, new Uint8Array(await file.arrayBuffer()));
   }
   async writeJson(path, content, beautify = true) {
     await this.writeFile(path, JSON.stringify(content, null, beautify ? "	" : 0));
