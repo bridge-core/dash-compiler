@@ -147,7 +147,8 @@ export class DashFile {
 			) {
 				await this.dash.fileSystem.copyFile(
 					this.filePath,
-					this.outputPath
+					this.outputPath,
+					this.dash.outputFileSystem
 				)
 			}
 		}
