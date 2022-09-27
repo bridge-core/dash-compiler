@@ -194,7 +194,7 @@ export class AllPlugins {
 				const file = this.dash.includedFiles.get(filePath)
 				if (!file)
 					throw new Error(
-						`File ${filePath} to add metadata to not found`
+						`File ${filePath} to get metadata from not found`
 					)
 
 				return {
