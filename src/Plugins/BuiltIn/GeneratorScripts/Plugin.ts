@@ -73,19 +73,19 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 			if (fromCollection) return fromCollection
 		},
 		async load(filePath, fileContent) {
-			const currentTemplates = new Set<string>()
-			jsRuntime.registerModule(
-				'@bridge/generate',
-				createModule({
-					generatorPath: filePath,
-					fileSystem,
-					omitUsedTemplates: currentTemplates,
-					console,
-				})
-			)
-
 			if (isGeneratorScript(filePath)) {
 				if (!fileContent) return null
+
+				const currentTemplates = new Set<string>()
+				jsRuntime.registerModule(
+					'@bridge/generate',
+					createModule({
+						generatorPath: filePath,
+						fileSystem,
+						omitUsedTemplates: currentTemplates,
+						console,
+					})
+				)
 
 				const module = await jsRuntime
 					.run(
