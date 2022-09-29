@@ -35,16 +35,38 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	generatorScripts: GeneratorScriptsPlugin,
 }
 
+const availableHooks = [
+	'buildStart',
+	'buildEnd',
+	'include',
+
+	'transformPath',
+	'read',
+	'load',
+	'registerAliases',
+	'require',
+	'transform',
+	'finalizeBuild',
+
+	'beforeFileUnlinked',
+] as const
+export type THookType = typeof availableHooks[number]
+
 export class AllPlugins {
-	protected plugins: Plugin[] = []
 	protected pluginRuntime: JsRuntime
+	protected implementedHooks = new Map<THookType, Plugin[]>()
 
 	constructor(protected dash: Dash<any>) {
 		this.pluginRuntime = new JsRuntime(this.dash.fileSystem)
 	}
 
+	pluginsFor(hook: THookType) {
+		return this.implementedHooks.get(hook) ?? []
+	}
+
 	async loadPlugins(scriptEnv: any = {}) {
-		this.plugins = []
+		this.implementedHooks.clear()
+
 		// Clear module cache
 		this.pluginRuntime.clearCache()
 
@@ -119,34 +141,47 @@ export class AllPlugins {
 				if (!module) continue
 
 				if (typeof module.__default__ === 'function')
-					this.plugins.push(
-						new Plugin(
-							this.dash,
-							pluginId,
-							module.__default__(
-								await this.getPluginContext(
-									pluginId,
-									pluginOpts
-								)
-							)
-						)
+					await this.addPlugin(
+						pluginId,
+						module.__default__,
+						pluginOpts
 					)
 				else
 					this.dash.console.error(
 						`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
 					)
 			} else if (builtInPlugins[pluginId]) {
-				this.plugins.push(
-					new Plugin(
-						this.dash,
-						pluginId,
-						builtInPlugins[pluginId](
-							await this.getPluginContext(pluginId, pluginOpts)
-						)
-					)
+				await this.addPlugin(
+					pluginId,
+					builtInPlugins[pluginId],
+					pluginOpts
 				)
 			} else {
 				this.dash.console.error(`Unknown compiler plugin: ${pluginId}`)
+			}
+		}
+	}
+
+	async addPlugin(
+		pluginId: string,
+		pluginImpl: TCompilerPluginFactory<any>,
+		pluginOpts: any
+	) {
+		const plugin = new Plugin(
+			this.dash,
+			pluginId,
+			pluginImpl(await this.getPluginContext(pluginId, pluginOpts))
+		)
+
+		for (const hook of availableHooks) {
+			if (plugin.implementsHook(hook)) {
+				let hooks = this.implementedHooks.get(hook)
+				if (!hooks) {
+					hooks = []
+					this.implementedHooks.set(hook, hooks)
+				}
+
+				hooks.push(plugin)
 			}
 		}
 	}
@@ -245,14 +280,14 @@ export class AllPlugins {
 	}
 
 	async runBuildStartHooks() {
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('buildStart')) {
 			await plugin.runBuildStartHook()
 		}
 	}
 	async runIncludeHooks() {
 		let includeFiles = []
 
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('include')) {
 			const filesToInclude = await plugin.runIncludeHook()
 
 			if (Array.isArray(filesToInclude))
@@ -263,7 +298,7 @@ export class AllPlugins {
 	}
 	async runTransformPathHooks(filePath: string) {
 		let currentFilePath: string | null = filePath
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('transformPath')) {
 			const newPath: string | undefined | null =
 				await plugin.runTransformPathHook(currentFilePath)
 
@@ -274,7 +309,7 @@ export class AllPlugins {
 		return currentFilePath
 	}
 	async runReadHooks(filePath: string, fileHandle?: IFileHandle) {
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('read')) {
 			const data = await plugin.runReadHook(filePath, fileHandle)
 
 			if (data !== null && data !== undefined) return data
@@ -282,7 +317,7 @@ export class AllPlugins {
 	}
 	async runLoadHooks(filePath: string, readData: any) {
 		let data: any = readData
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('load')) {
 			const tmp = await plugin.runLoadHook(filePath, data)
 			if (tmp === undefined) continue
 
@@ -293,7 +328,7 @@ export class AllPlugins {
 	async runRegisterAliasesHooks(filePath: string, data: any) {
 		const aliases = new Set<string>()
 
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('registerAliases')) {
 			const tmp = await plugin.runRegisterAliasesHook(filePath, data)
 
 			if (tmp === undefined || tmp === null) continue
@@ -307,7 +342,7 @@ export class AllPlugins {
 	async runRequireHooks(filePath: string, data: any) {
 		const requiredFiles = new Set<string>()
 
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('require')) {
 			const tmp = await plugin.runRequireHook(filePath, data)
 
 			if (tmp === undefined || tmp === null) continue
@@ -333,7 +368,7 @@ export class AllPlugins {
 
 		let transformedData = file.data
 
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('transform')) {
 			const tmpData = await plugin.runTransformHook(
 				file.filePath,
 				transformedData,
@@ -347,7 +382,7 @@ export class AllPlugins {
 		return transformedData
 	}
 	async runFinalizeBuildHooks(file: DashFile) {
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('finalizeBuild')) {
 			const finalizedData = await plugin.runFinalizeBuildHook(
 				file.filePath,
 				file.data
@@ -358,13 +393,13 @@ export class AllPlugins {
 	}
 
 	async runBuildEndHooks() {
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('buildEnd')) {
 			await plugin.runBuildEndHook()
 		}
 	}
 
 	async runBeforeFileUnlinked(filePath: string) {
-		for (const plugin of this.plugins) {
+		for (const plugin of this.pluginsFor('beforeFileUnlinked')) {
 			await plugin.runBeforeFileUnlinked(filePath)
 		}
 	}

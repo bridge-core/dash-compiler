@@ -1,6 +1,7 @@
 import { IFileHandle } from '../Core/DashFile'
 import { Dash } from '../Dash'
 import { TCompilerPlugin } from './TCompilerPlugin'
+import type { THookType } from './AllPlugins'
 
 export class Plugin {
 	constructor(
@@ -8,6 +9,10 @@ export class Plugin {
 		public readonly pluginId: string,
 		protected plugin: Partial<TCompilerPlugin>
 	) {}
+
+	implementsHook(hookName: THookType) {
+		return typeof this.plugin[hookName] === 'function'
+	}
 
 	/**
 	 * Methods for running the various plugin hooks
