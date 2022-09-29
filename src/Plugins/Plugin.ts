@@ -37,6 +37,16 @@ export class Plugin {
 			)
 		}
 	}
+	async runIgnoreHook(filePath: string) {
+		try {
+			return await this.plugin.ignore?.(filePath)
+		} catch (err) {
+			this.dash.console.error(
+				`The plugin "${this.pluginId}" threw an error while running the "ignore" hook for "${filePath}":`,
+				err
+			)
+		}
+	}
 	async runTransformPathHook(filePath: string | null) {
 		try {
 			return await this.plugin.transformPath?.(filePath)

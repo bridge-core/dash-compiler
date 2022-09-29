@@ -7,7 +7,7 @@ import { LoadFiles } from './Core/LoadFiles'
 import { ResolveFileOrder } from './Core/ResolveFileOrder'
 import { FileTransformer } from './Core/TransformFiles'
 import { FileType, PackType } from 'mc-project-core'
-import type { DashFile } from './Core/DashFile'
+import { DashFile } from './Core/DashFile'
 import { Progress } from './Core/Progress'
 import { Console } from './Common/Console'
 import { DefaultConsole } from './Common/DefaultConsole'
@@ -212,7 +212,7 @@ export class Dash<TSetupArg = void> {
 		for (const filePath of filePaths) {
 			let file = this.includedFiles.get(filePath)
 			if (!file) {
-				;[file] = this.includedFiles.add([filePath])
+				;[file] = await this.includedFiles.add([filePath])
 			}
 
 			files.push(file)
@@ -226,7 +226,7 @@ export class Dash<TSetupArg = void> {
 
 		this.progress.advance() // 2
 
-		// Load files and files that are required by this file
+		// Load files and files that are required by these files
 		await this.loadFiles.run(files)
 
 		this.progress.advance() // 3
@@ -288,6 +288,9 @@ export class Dash<TSetupArg = void> {
 		// We need to run the whole transformation pipeline
 		await this.fileTransformer.run(filesToTransform, true)
 
+		// Await that all files have been copied over
+		await this.loadFiles.awaitAllFilesCopied()
+
 		this.progress.advance() // 7
 
 		await this.plugins.runBuildEndHooks()
@@ -317,7 +320,7 @@ export class Dash<TSetupArg = void> {
 
 		let file = this.includedFiles.get(filePath)
 		if (!file) {
-			;[file] = this.includedFiles.add([filePath])
+			;[file] = await this.includedFiles.add([filePath])
 		}
 
 		// Update file handle to use provided fileData
@@ -423,11 +426,14 @@ export class Dash<TSetupArg = void> {
 	async getCompilerOutputPath(filePath: string) {
 		if (!this.isCompilerActivated) return
 
-		const includedFile = this.includedFiles.get(filePath)
+		const includedFile: DashFile =
+			this.includedFiles.get(filePath) ?? new DashFile(this, filePath)
 		if (includedFile && includedFile.outputPath !== filePath)
 			return includedFile.outputPath ?? undefined
 
-		const outputPath = await this.plugins.runTransformPathHooks(filePath)
+		const outputPath = await this.plugins.runTransformPathHooks(
+			includedFile
+		)
 		if (!outputPath) return
 
 		return outputPath
@@ -484,6 +490,8 @@ export class Dash<TSetupArg = void> {
 		await this.fileTransformer.run(resolvedFileOrder)
 		this.console.timeEnd('Transforming files...')
 		this.progress.advance()
+
+		await this.loadFiles.awaitAllFilesCopied()
 	}
 
 	/**
@@ -492,7 +500,7 @@ export class Dash<TSetupArg = void> {
 	 * @param filePaths
 	 */
 	async compileAdditionalFiles(filePaths: string[], virtual = true) {
-		const virtualFiles = this.includedFiles.add(filePaths, virtual)
+		const virtualFiles = await this.includedFiles.add(filePaths, virtual)
 		this.progress.addToTotal(3)
 
 		virtualFiles.forEach((virtual) => virtual.reset())

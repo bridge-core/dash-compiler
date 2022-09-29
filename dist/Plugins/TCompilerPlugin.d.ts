@@ -3,6 +3,7 @@ export declare type TCompilerPlugin = {
     include(): Maybe<(string | [string, {
         isVirtual?: boolean;
     }])[]>;
+    ignore(filePath: string): Maybe<boolean>;
     transformPath(filePath: string | null): Maybe<string>;
     read(filePath: string, fileHandle?: {
         getFile(): Promise<File | null> | File | null;

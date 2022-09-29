@@ -11,6 +11,11 @@ export type TCompilerPlugin = {
 	include(): Maybe<(string | [string, { isVirtual?: boolean }])[]>
 
 	/**
+	 * Ignore specific files from being treated further by this plugin
+	 */
+	ignore(filePath: string): Maybe<boolean>
+
+	/**
 	 * Transform file path
 	 * - E.g. adjust file path to point to build folder
 	 * - Return null to omit file from build output

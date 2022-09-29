@@ -19,6 +19,9 @@ export class IncludedFiles {
 	get(fileId: string) {
 		return this.aliases.get(fileId) ?? this.files.get(fileId)
 	}
+	getFromFilePath(filePath: string) {
+		return this.files.get(filePath)
+	}
 	query(query: string) {
 		const aliasedFile = this.aliases.get(query)
 		if (aliasedFile) return [aliasedFile]
@@ -49,16 +52,23 @@ export class IncludedFiles {
 		const allFiles = new Set<string>()
 
 		const packPaths = this.dash.projectConfig.getAvailablePackPaths()
-		for (const packPath of packPaths) {
-			const files = await this.dash.fileSystem
-				.allFiles(packPath)
-				.catch((err) => {
-					this.dash.console.warn(err)
-					return []
-				})
+		const promises = []
 
-			for (const file of files) allFiles.add(file)
+		for (const packPath of packPaths) {
+			promises.push(
+				this.dash.fileSystem
+					.allFiles(packPath)
+					.catch((err) => {
+						this.dash.console.warn(err)
+						return []
+					})
+					.then((files) => {
+						for (const file of files) allFiles.add(file)
+					})
+			)
 		}
+
+		await Promise.all(promises)
 
 		const includeFiles = await this.dash.plugins.runIncludeHooks()
 

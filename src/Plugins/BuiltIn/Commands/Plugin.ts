@@ -47,6 +47,13 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			)
 			cachedPaths.clear()
 		},
+		ignore(filePath) {
+			return (
+				!isCommand(filePath) &&
+				!isMcfunction(filePath) &&
+				!loadCommandsFor(filePath)
+			)
+		},
 		transformPath(filePath) {
 			if (isCommand(filePath) && options.buildType !== 'fileRequest')
 				return null

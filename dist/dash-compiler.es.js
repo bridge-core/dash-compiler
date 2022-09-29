@@ -45,6 +45,14 @@ class Plugin {
       this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "include" hook:`, err);
     }
   }
+  async runIgnoreHook(filePath) {
+    var _a, _b;
+    try {
+      return await ((_b = (_a = this.plugin).ignore) == null ? void 0 : _b.call(_a, filePath));
+    } catch (err) {
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "ignore" hook for "${filePath}":`, err);
+    }
+  }
   async runTransformPathHook(filePath) {
     var _a, _b;
     try {
@@ -190,7 +198,8 @@ const MoLangPlugin = ({
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
   const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
-  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(projectConfig.resolvePackPath("behaviorPack", "scripts/molang/"));
+  const molangScriptPath = projectConfig.resolvePackPath("behaviorPack", "scripts/molang/");
+  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(molangScriptPath);
   const cachedPaths = /* @__PURE__ */ new Map();
   const loadMoLangFrom = (filePath) => {
     if (cachedPaths.has(filePath))
@@ -204,6 +213,9 @@ const MoLangPlugin = ({
     async buildStart() {
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
       cachedPaths.clear();
+    },
+    ignore(filePath) {
+      return !isMoLangFile(filePath) && !isMoLangScript(filePath) && !loadMoLangFrom(filePath);
     },
     transformPath(filePath) {
       if (isMoLangFile(filePath) || isMoLangScript(filePath))
@@ -295,6 +307,9 @@ const MoLangPlugin = ({
 };
 const EntityIdentifierAlias = ({ fileType }) => {
   return {
+    ignore(filePath) {
+      return (fileType == null ? void 0 : fileType.getId(filePath)) !== "entity";
+    },
     registerAliases(filePath, fileContent) {
       var _a, _b, _c, _d;
       if ((fileType == null ? void 0 : fileType.getId(filePath)) === "entity" && ((_b = (_a = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _a.description) == null ? void 0 : _b.identifier))
@@ -916,6 +931,9 @@ function createCustomComponentPlugin({
         playerFile = null;
         createAdditionalFiles = {};
       },
+      ignore(filePath) {
+        return !createAdditionalFiles[filePath] && !isComponent(filePath) && !mayUseComponent(filePath) && !isPlayerFile(filePath, getAliases);
+      },
       transformPath(filePath) {
         if (isComponent(filePath) && options.buildType !== "fileRequest")
           return null;
@@ -1244,6 +1262,9 @@ const CustomCommandsPlugin = ({
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), options.include);
       cachedPaths.clear();
     },
+    ignore(filePath) {
+      return !isCommand(filePath) && !isMcfunction(filePath) && !loadCommandsFor(filePath);
+    },
     transformPath(filePath) {
       if (isCommand(filePath) && options.buildType !== "fileRequest")
         return null;
@@ -1321,6 +1342,9 @@ const CustomCommandsPlugin = ({
 };
 const TypeScriptPlugin = ({ options }) => {
   return {
+    ignore(filePath) {
+      return !filePath.endsWith(".ts");
+    },
     async transformPath(filePath) {
       if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
         return;
@@ -1469,6 +1493,9 @@ const FormatVersionCorrection = ({
   }
   const needsTransformation = (filePath) => filePath && toTransform.includes(fileType.getId(filePath));
   return {
+    ignore(filePath) {
+      return !needsTransformation(filePath);
+    },
     async read(filePath, fileHandle) {
       if (!fileHandle)
         return;
@@ -1741,6 +1768,7 @@ const availableHooks = [
   "buildStart",
   "buildEnd",
   "include",
+  "ignore",
   "transformPath",
   "read",
   "load",
@@ -1906,9 +1934,18 @@ class AllPlugins {
     }
     return includeFiles;
   }
-  async runTransformPathHooks(filePath) {
-    let currentFilePath = filePath;
+  async runIgnoreHooks(file) {
+    for (const plugin of this.pluginsFor("ignore")) {
+      const ignore = await plugin.runIgnoreHook(file.filePath);
+      if (ignore)
+        file.addIgnoredPlugin(plugin.pluginId);
+    }
+  }
+  async runTransformPathHooks(file) {
+    let currentFilePath = file.filePath;
     for (const plugin of this.pluginsFor("transformPath")) {
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
       const newPath = await plugin.runTransformPathHook(currentFilePath);
       if (newPath === null)
         return null;
@@ -1917,27 +1954,33 @@ class AllPlugins {
     }
     return currentFilePath;
   }
-  async runReadHooks(filePath, fileHandle) {
+  async runReadHooks(file, fileHandle) {
     for (const plugin of this.pluginsFor("read")) {
-      const data = await plugin.runReadHook(filePath, fileHandle);
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
+      const data = await plugin.runReadHook(file.filePath, fileHandle);
       if (data !== null && data !== void 0)
         return data;
     }
   }
-  async runLoadHooks(filePath, readData) {
-    let data = readData;
+  async runLoadHooks(file) {
+    let data = file.data;
     for (const plugin of this.pluginsFor("load")) {
-      const tmp = await plugin.runLoadHook(filePath, data);
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
+      const tmp = await plugin.runLoadHook(file.filePath, data);
       if (tmp === void 0)
         continue;
       data = tmp;
     }
     return data;
   }
-  async runRegisterAliasesHooks(filePath, data) {
+  async runRegisterAliasesHooks(file) {
     const aliases = /* @__PURE__ */ new Set();
     for (const plugin of this.pluginsFor("registerAliases")) {
-      const tmp = await plugin.runRegisterAliasesHook(filePath, data);
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
+      const tmp = await plugin.runRegisterAliasesHook(file.filePath, file.data);
       if (tmp === void 0 || tmp === null)
         continue;
       if (Array.isArray(tmp))
@@ -1947,14 +1990,16 @@ class AllPlugins {
     }
     return aliases;
   }
-  async runRequireHooks(filePath, data) {
+  async runRequireHooks(file) {
     const requiredFiles = /* @__PURE__ */ new Set();
     for (const plugin of this.pluginsFor("require")) {
-      const tmp = await plugin.runRequireHook(filePath, data);
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
+      const tmp = await plugin.runRequireHook(file.filePath, file.data);
       if (tmp === void 0 || tmp === null)
         continue;
       if (Array.isArray(tmp))
-        tmp.forEach((file) => requiredFiles.add(file));
+        tmp.forEach((file2) => requiredFiles.add(file2));
       else
         requiredFiles.add(tmp);
     }
@@ -1967,6 +2012,8 @@ class AllPlugins {
     ]).flat());
     let transformedData = file.data;
     for (const plugin of this.pluginsFor("transform")) {
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
       const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
       if (tmpData === void 0)
         continue;
@@ -1976,6 +2023,8 @@ class AllPlugins {
   }
   async runFinalizeBuildHooks(file) {
     for (const plugin of this.pluginsFor("finalizeBuild")) {
+      if (file.isIgnoredBy(plugin.pluginId))
+        continue;
       const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data);
       if (finalizedData !== void 0)
         return finalizedData;
@@ -2002,9 +2051,16 @@ class DashFile {
     this.aliases = /* @__PURE__ */ new Set();
     this.updateFiles = /* @__PURE__ */ new Set();
     this.metadata = /* @__PURE__ */ new Map();
+    this.ignoredByPlugins = /* @__PURE__ */ new Set();
     this.outputPath = filePath;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
+  }
+  isIgnoredBy(pluginId) {
+    return this.ignoredByPlugins.has(pluginId);
+  }
+  addIgnoredPlugin(pluginId) {
+    this.ignoredByPlugins.add(pluginId);
   }
   setFileHandle(fileHandle) {
     this.fileHandle = fileHandle;
@@ -2088,11 +2144,11 @@ class DashFile {
     }
     return chain;
   }
-  async processAfterLoad(writeFiles) {
+  processAfterLoad(writeFiles, copyFilePromises) {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
       if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual && writeFiles) {
-        await this.dash.fileSystem.copyFile(this.filePath, this.outputPath, this.dash.outputFileSystem);
+        copyFilePromises.push(this.dash.fileSystem.copyFile(this.filePath, this.outputPath, this.dash.outputFileSystem));
       }
     }
   }
@@ -2130,6 +2186,9 @@ class IncludedFiles {
     var _a;
     return (_a = this.aliases.get(fileId)) != null ? _a : this.files.get(fileId);
   }
+  getFromFilePath(filePath) {
+    return this.files.get(filePath);
+  }
   query(query) {
     const aliasedFile = this.aliases.get(query);
     if (aliasedFile)
@@ -2157,14 +2216,17 @@ class IncludedFiles {
     this.queryCache = /* @__PURE__ */ new Map();
     const allFiles = /* @__PURE__ */ new Set();
     const packPaths = this.dash.projectConfig.getAvailablePackPaths();
+    const promises = [];
     for (const packPath of packPaths) {
-      const files = await this.dash.fileSystem.allFiles(packPath).catch((err) => {
+      promises.push(this.dash.fileSystem.allFiles(packPath).catch((err) => {
         this.dash.console.warn(err);
         return [];
-      });
-      for (const file of files)
-        allFiles.add(file);
+      }).then((files) => {
+        for (const file of files)
+          allFiles.add(file);
+      }));
     }
+    await Promise.all(promises);
     const includeFiles = await this.dash.plugins.runIncludeHooks();
     for (const includedFile of includeFiles) {
       if (typeof includedFile === "string")
@@ -2241,8 +2303,10 @@ class IncludedFiles {
 class LoadFiles {
   constructor(dash) {
     this.dash = dash;
+    this.copyFilePromises = [];
   }
   async run(files, writeFiles = true) {
+    this.copyFilePromises = [];
     let promises = [];
     for (const file of files) {
       if (file.isDone)
@@ -2257,22 +2321,29 @@ class LoadFiles {
   }
   async loadFile(file, writeFiles = true) {
     var _a;
-    const [outputPath, readData] = await Promise.all([
-      this.dash.plugins.runTransformPathHooks(file.filePath),
-      this.dash.plugins.runReadHooks(file.filePath, file.fileHandle)
+    const [_, outputPath] = await Promise.all([
+      this.dash.plugins.runIgnoreHooks(file),
+      this.dash.plugins.runTransformPathHooks(file)
     ]);
+    const readData = await this.dash.plugins.runReadHooks(file, file.fileHandle);
     file.setOutputPath(outputPath);
     file.setReadData(readData);
-    await file.processAfterLoad(writeFiles);
+    file.processAfterLoad(writeFiles, this.copyFilePromises);
     if (file.isDone)
       return;
-    file.setReadData((_a = await this.dash.plugins.runLoadHooks(file.filePath, file.data)) != null ? _a : file.data);
-    const aliases = await this.dash.plugins.runRegisterAliasesHooks(file.filePath, file.data);
+    file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
+    const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);
     file.setAliases(aliases);
   }
   async loadRequiredFiles(file) {
-    const requiredFiles = await this.dash.plugins.runRequireHooks(file.filePath, file.data);
+    const requiredFiles = await this.dash.plugins.runRequireHooks(file);
     file.setRequiredFiles(requiredFiles);
+  }
+  async awaitAllFilesCopied() {
+    if (this.copyFilePromises.length === 0)
+      return;
+    await Promise.allSettled(this.copyFilePromises);
+    this.copyFilePromises = [];
   }
 }
 class ResolveFileOrder {
@@ -2537,7 +2608,7 @@ class Dash {
     for (const filePath of filePaths) {
       let file = this.includedFiles.get(filePath);
       if (!file) {
-        [file] = this.includedFiles.add([filePath]);
+        [file] = await this.includedFiles.add([filePath]);
       }
       files.push(file);
     }
@@ -2572,6 +2643,7 @@ class Dash {
     this.progress.advance();
     this.console.log(`Dash is compiling ${filesToTransform.size} files...`);
     await this.fileTransformer.run(filesToTransform, true);
+    await this.loadFiles.awaitAllFilesCopied();
     this.progress.advance();
     await this.plugins.runBuildEndHooks();
     if (saveDashFile)
@@ -2591,7 +2663,7 @@ class Dash {
     await this.includedFiles.load(this.dashFilePath);
     let file = this.includedFiles.get(filePath);
     if (!file) {
-      [file] = this.includedFiles.add([filePath]);
+      [file] = await this.includedFiles.add([filePath]);
     }
     file.setFileHandle({
       getFile: async () => new File([fileData], basename(filePath))
@@ -2650,13 +2722,13 @@ class Dash {
     await this.saveDashFile();
   }
   async getCompilerOutputPath(filePath) {
-    var _a;
+    var _a, _b;
     if (!this.isCompilerActivated)
       return;
-    const includedFile = this.includedFiles.get(filePath);
+    const includedFile = (_a = this.includedFiles.get(filePath)) != null ? _a : new DashFile(this, filePath);
     if (includedFile && includedFile.outputPath !== filePath)
-      return (_a = includedFile.outputPath) != null ? _a : void 0;
-    const outputPath = await this.plugins.runTransformPathHooks(filePath);
+      return (_b = includedFile.outputPath) != null ? _b : void 0;
+    const outputPath = await this.plugins.runTransformPathHooks(includedFile);
     if (!outputPath)
       return;
     return outputPath;
@@ -2694,9 +2766,10 @@ class Dash {
     await this.fileTransformer.run(resolvedFileOrder);
     this.console.timeEnd("Transforming files...");
     this.progress.advance();
+    await this.loadFiles.awaitAllFilesCopied();
   }
   async compileAdditionalFiles(filePaths, virtual = true) {
-    const virtualFiles = this.includedFiles.add(filePaths, virtual);
+    const virtualFiles = await this.includedFiles.add(filePaths, virtual);
     this.progress.addToTotal(3);
     virtualFiles.forEach((virtual2) => virtual2.reset());
     await this.compileIncludedFiles(virtualFiles);

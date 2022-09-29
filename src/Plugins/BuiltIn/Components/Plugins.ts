@@ -85,6 +85,14 @@ export function createCustomComponentPlugin({
 				playerFile = null
 				createAdditionalFiles = {}
 			},
+			ignore(filePath) {
+				return (
+					!createAdditionalFiles[filePath] &&
+					!isComponent(filePath) &&
+					!mayUseComponent(filePath) &&
+					!isPlayerFile(filePath, getAliases)
+				)
+			},
 			transformPath(filePath) {
 				if (
 					isComponent(filePath) &&

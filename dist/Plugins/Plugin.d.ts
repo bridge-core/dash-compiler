@@ -12,6 +12,7 @@ export declare class Plugin {
     runIncludeHook(): Promise<(string | [string, {
         isVirtual?: boolean | undefined;
     }])[] | null | undefined>;
+    runIgnoreHook(filePath: string): Promise<boolean | null | undefined>;
     runTransformPathHook(filePath: string | null): Promise<string | null | undefined>;
     runReadHook(filePath: string, fileHandle?: IFileHandle): Promise<any>;
     runLoadHook(filePath: string, fileContent: any): Promise<any>;

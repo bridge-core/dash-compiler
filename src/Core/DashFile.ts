@@ -14,6 +14,7 @@ export class DashFile {
 	// public lastModified: number = 0
 	protected updateFiles = new Set<DashFile>()
 	protected metadata = new Map<string, any>()
+	protected ignoredByPlugins = new Set<string>()
 
 	constructor(
 		protected dash: Dash<any>,
@@ -23,6 +24,13 @@ export class DashFile {
 		this.outputPath = filePath
 
 		if (!this.isVirtual) this.setDefaultFileHandle()
+	}
+
+	isIgnoredBy(pluginId: string) {
+		return this.ignoredByPlugins.has(pluginId)
+	}
+	addIgnoredPlugin(pluginId: string) {
+		this.ignoredByPlugins.add(pluginId)
 	}
 
 	setFileHandle(fileHandle: IFileHandle) {
@@ -133,7 +141,7 @@ export class DashFile {
 		return chain
 	}
 
-	async processAfterLoad(writeFiles: boolean) {
+	processAfterLoad(writeFiles: boolean, copyFilePromises: Promise<void>[]) {
 		// Nothing to load -> Nothing more to do in the next compile steps
 		if (this.data === null || this.data === undefined) {
 			this.isDone = true
@@ -145,10 +153,12 @@ export class DashFile {
 				!this.isVirtual &&
 				writeFiles
 			) {
-				await this.dash.fileSystem.copyFile(
-					this.filePath,
-					this.outputPath,
-					this.dash.outputFileSystem
+				copyFilePromises.push(
+					this.dash.fileSystem.copyFile(
+						this.filePath,
+						this.outputPath,
+						this.dash.outputFileSystem
+					)
 				)
 			}
 		}

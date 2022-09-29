@@ -13,6 +13,9 @@ export const FormatVersionCorrection: TCompilerPluginFactory = ({
 		filePath && toTransform.includes(fileType.getId(filePath))
 
 	return {
+		ignore(filePath) {
+			return !needsTransformation(filePath)
+		},
 		async read(filePath, fileHandle) {
 			if (!fileHandle) return
 

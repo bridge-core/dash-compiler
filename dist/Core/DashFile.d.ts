@@ -14,7 +14,10 @@ export declare class DashFile {
     aliases: Set<string>;
     protected updateFiles: Set<DashFile>;
     protected metadata: Map<string, any>;
+    protected ignoredByPlugins: Set<string>;
     constructor(dash: Dash<any>, filePath: string, isVirtual?: boolean);
+    isIgnoredBy(pluginId: string): boolean;
+    addIgnoredPlugin(pluginId: string): void;
     setFileHandle(fileHandle: IFileHandle): void;
     setDefaultFileHandle(): void;
     setOutputPath(outputPath: string | null): void;
@@ -34,7 +37,7 @@ export declare class DashFile {
     };
     getHotUpdateChain(): Set<DashFile>;
     filesToLoadForHotUpdate(visited?: Set<DashFile>, didFileChange?: boolean): Set<DashFile>;
-    processAfterLoad(writeFiles: boolean): Promise<void>;
+    processAfterLoad(writeFiles: boolean, copyFilePromises: Promise<void>[]): void;
     serialize(): {
         isVirtual: boolean;
         filePath: string;

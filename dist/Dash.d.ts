@@ -6,7 +6,7 @@ import { LoadFiles } from './Core/LoadFiles';
 import { ResolveFileOrder } from './Core/ResolveFileOrder';
 import { FileTransformer } from './Core/TransformFiles';
 import { FileType, PackType } from 'mc-project-core';
-import type { DashFile } from './Core/DashFile';
+import { DashFile } from './Core/DashFile';
 import { Progress } from './Core/Progress';
 import { Console } from './Common/Console';
 import { JsRuntime } from './Common/JsRuntime';

@@ -3,12 +3,12 @@ import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
 import { TCompilerPluginFactory } from './TCompilerPluginFactory';
 import { JsRuntime } from '../Common/JsRuntime';
-declare const availableHooks: readonly ["buildStart", "buildEnd", "include", "transformPath", "read", "load", "registerAliases", "require", "transform", "finalizeBuild", "beforeFileUnlinked"];
+declare const availableHooks: readonly ["buildStart", "buildEnd", "include", "ignore", "transformPath", "read", "load", "registerAliases", "require", "transform", "finalizeBuild", "beforeFileUnlinked"];
 export declare type THookType = typeof availableHooks[number];
 export declare class AllPlugins {
     protected dash: Dash<any>;
     protected pluginRuntime: JsRuntime;
-    protected implementedHooks: Map<"require" | "include" | "transform" | "load" | "buildStart" | "buildEnd" | "transformPath" | "read" | "registerAliases" | "finalizeBuild" | "beforeFileUnlinked", Plugin[]>;
+    protected implementedHooks: Map<"require" | "include" | "transform" | "load" | "buildStart" | "buildEnd" | "ignore" | "transformPath" | "read" | "registerAliases" | "finalizeBuild" | "beforeFileUnlinked", Plugin[]>;
     constructor(dash: Dash<any>);
     pluginsFor(hook: THookType): Plugin[];
     loadPlugins(scriptEnv?: any): Promise<void>;
@@ -42,11 +42,12 @@ export declare class AllPlugins {
     runIncludeHooks(): Promise<(string | [string, {
         isVirtual?: boolean | undefined;
     }])[]>;
-    runTransformPathHooks(filePath: string): Promise<string | null>;
-    runReadHooks(filePath: string, fileHandle?: IFileHandle): Promise<any>;
-    runLoadHooks(filePath: string, readData: any): Promise<any>;
-    runRegisterAliasesHooks(filePath: string, data: any): Promise<Set<string>>;
-    runRequireHooks(filePath: string, data: any): Promise<Set<string>>;
+    runIgnoreHooks(file: DashFile): Promise<void>;
+    runTransformPathHooks(file: DashFile): Promise<string | null>;
+    runReadHooks(file: DashFile, fileHandle?: IFileHandle): Promise<any>;
+    runLoadHooks(file: DashFile): Promise<any>;
+    runRegisterAliasesHooks(file: DashFile): Promise<Set<string>>;
+    runRequireHooks(file: DashFile): Promise<Set<string>>;
     runTransformHooks(file: DashFile): Promise<any>;
     runFinalizeBuildHooks(file: DashFile): Promise<string | ArrayBuffer | Blob | null | undefined>;
     runBuildEndHooks(): Promise<void>;

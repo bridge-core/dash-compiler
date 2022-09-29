@@ -2,9 +2,12 @@ import type { Dash } from '../Dash'
 import { DashFile } from './DashFile'
 
 export class LoadFiles {
+	public copyFilePromises: Promise<void>[] = []
 	constructor(protected dash: Dash<any>) {}
 
 	async run(files: DashFile[], writeFiles = true) {
+		this.copyFilePromises = []
+
 		let promises = []
 
 		for (const file of files) {
@@ -26,39 +29,44 @@ export class LoadFiles {
 	}
 
 	async loadFile(file: DashFile, writeFiles = true) {
-		const [outputPath, readData] = await Promise.all([
-			this.dash.plugins.runTransformPathHooks(file.filePath),
-			this.dash.plugins.runReadHooks(file.filePath, file.fileHandle),
+		const [_, outputPath] = await Promise.all([
+			this.dash.plugins.runIgnoreHooks(file),
+			this.dash.plugins.runTransformPathHooks(file),
 		])
+
+		const readData = await this.dash.plugins.runReadHooks(
+			file,
+			file.fileHandle
+		)
 
 		file.setOutputPath(outputPath)
 		file.setReadData(readData)
 
-		await file.processAfterLoad(writeFiles)
+		file.processAfterLoad(writeFiles, this.copyFilePromises)
 
 		// If file is already done processing (no file read hook defined),
 		// we can skip the rest of the compiler pipeline for this file
 		if (file.isDone) return
 
 		file.setReadData(
-			(await this.dash.plugins.runLoadHooks(file.filePath, file.data)) ??
-				file.data
+			(await this.dash.plugins.runLoadHooks(file)) ?? file.data
 		)
 
-		const aliases = await this.dash.plugins.runRegisterAliasesHooks(
-			file.filePath,
-			file.data
-		)
+		const aliases = await this.dash.plugins.runRegisterAliasesHooks(file)
 
 		file.setAliases(aliases)
 	}
 
 	async loadRequiredFiles(file: DashFile) {
-		const requiredFiles = await this.dash.plugins.runRequireHooks(
-			file.filePath,
-			file.data
-		)
+		const requiredFiles = await this.dash.plugins.runRequireHooks(file)
 
 		file.setRequiredFiles(requiredFiles)
+	}
+
+	async awaitAllFilesCopied() {
+		if (this.copyFilePromises.length === 0) return
+
+		await Promise.allSettled(this.copyFilePromises)
+		this.copyFilePromises = []
 	}
 }

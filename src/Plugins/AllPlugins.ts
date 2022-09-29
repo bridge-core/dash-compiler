@@ -40,6 +40,8 @@ const availableHooks = [
 	'buildEnd',
 	'include',
 
+	'ignore',
+
 	'transformPath',
 	'read',
 	'load',
@@ -296,9 +298,18 @@ export class AllPlugins {
 
 		return includeFiles
 	}
-	async runTransformPathHooks(filePath: string) {
-		let currentFilePath: string | null = filePath
+	async runIgnoreHooks(file: DashFile) {
+		for (const plugin of this.pluginsFor('ignore')) {
+			const ignore = await plugin.runIgnoreHook(file.filePath)
+
+			if (ignore) file.addIgnoredPlugin(plugin.pluginId)
+		}
+	}
+	async runTransformPathHooks(file: DashFile) {
+		let currentFilePath: string | null = file.filePath
 		for (const plugin of this.pluginsFor('transformPath')) {
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
 			const newPath: string | undefined | null =
 				await plugin.runTransformPathHook(currentFilePath)
 
@@ -308,28 +319,37 @@ export class AllPlugins {
 
 		return currentFilePath
 	}
-	async runReadHooks(filePath: string, fileHandle?: IFileHandle) {
+	async runReadHooks(file: DashFile, fileHandle?: IFileHandle) {
 		for (const plugin of this.pluginsFor('read')) {
-			const data = await plugin.runReadHook(filePath, fileHandle)
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
+			const data = await plugin.runReadHook(file.filePath, fileHandle)
 
 			if (data !== null && data !== undefined) return data
 		}
 	}
-	async runLoadHooks(filePath: string, readData: any) {
-		let data: any = readData
+	async runLoadHooks(file: DashFile) {
+		let data: any = file.data
 		for (const plugin of this.pluginsFor('load')) {
-			const tmp = await plugin.runLoadHook(filePath, data)
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
+			const tmp = await plugin.runLoadHook(file.filePath, data)
 			if (tmp === undefined) continue
 
 			data = tmp
 		}
 		return data
 	}
-	async runRegisterAliasesHooks(filePath: string, data: any) {
+	async runRegisterAliasesHooks(file: DashFile) {
 		const aliases = new Set<string>()
 
 		for (const plugin of this.pluginsFor('registerAliases')) {
-			const tmp = await plugin.runRegisterAliasesHook(filePath, data)
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
+			const tmp = await plugin.runRegisterAliasesHook(
+				file.filePath,
+				file.data
+			)
 
 			if (tmp === undefined || tmp === null) continue
 
@@ -339,11 +359,13 @@ export class AllPlugins {
 
 		return aliases
 	}
-	async runRequireHooks(filePath: string, data: any) {
+	async runRequireHooks(file: DashFile) {
 		const requiredFiles = new Set<string>()
 
 		for (const plugin of this.pluginsFor('require')) {
-			const tmp = await plugin.runRequireHook(filePath, data)
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
+			const tmp = await plugin.runRequireHook(file.filePath, file.data)
 
 			if (tmp === undefined || tmp === null) continue
 
@@ -369,6 +391,8 @@ export class AllPlugins {
 		let transformedData = file.data
 
 		for (const plugin of this.pluginsFor('transform')) {
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
 			const tmpData = await plugin.runTransformHook(
 				file.filePath,
 				transformedData,
@@ -383,6 +407,8 @@ export class AllPlugins {
 	}
 	async runFinalizeBuildHooks(file: DashFile) {
 		for (const plugin of this.pluginsFor('finalizeBuild')) {
+			if (file.isIgnoredBy(plugin.pluginId)) continue
+
 			const finalizedData = await plugin.runFinalizeBuildHook(
 				file.filePath,
 				file.data

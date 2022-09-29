@@ -7,6 +7,10 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 	inlineSourceMap?: boolean
 }> = ({ options }) => {
 	return {
+		ignore(filePath) {
+			return !filePath.endsWith('.ts')
+		},
+
 		async transformPath(filePath) {
 			if (!filePath?.endsWith('.ts')) return
 
