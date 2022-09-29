@@ -1,13 +1,18 @@
 import type { DashFile, IFileHandle } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
+import { TCompilerPluginFactory } from './TCompilerPluginFactory';
 import { JsRuntime } from '../Common/JsRuntime';
+declare const availableHooks: readonly ["buildStart", "buildEnd", "include", "transformPath", "read", "load", "registerAliases", "require", "transform", "finalizeBuild", "beforeFileUnlinked"];
+export declare type THookType = typeof availableHooks[number];
 export declare class AllPlugins {
     protected dash: Dash<any>;
-    protected plugins: Plugin[];
     protected pluginRuntime: JsRuntime;
+    protected implementedHooks: Map<"require" | "include" | "transform" | "load" | "buildStart" | "buildEnd" | "transformPath" | "read" | "registerAliases" | "finalizeBuild" | "beforeFileUnlinked", Plugin[]>;
     constructor(dash: Dash<any>);
+    pluginsFor(hook: THookType): Plugin[];
     loadPlugins(scriptEnv?: any): Promise<void>;
+    addPlugin(pluginId: string, pluginImpl: TCompilerPluginFactory<any>, pluginOpts: any): Promise<void>;
     getCompilerOptions(): Promise<any>;
     protected getPluginContext(pluginId: string, pluginOpts?: any): Promise<{
         options: any;
@@ -47,3 +52,4 @@ export declare class AllPlugins {
     runBuildEndHooks(): Promise<void>;
     runBeforeFileUnlinked(filePath: string): Promise<void>;
 }
+export {};

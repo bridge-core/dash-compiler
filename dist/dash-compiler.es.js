@@ -26,6 +26,9 @@ class Plugin {
     this.pluginId = pluginId;
     this.plugin = plugin;
   }
+  implementsHook(hookName) {
+    return typeof this.plugin[hookName] === "function";
+  }
   async runBuildStartHook() {
     var _a, _b;
     try {
@@ -461,8 +464,8 @@ class Component {
       defineComponent: (x) => x,
       console: this.console,
       Bridge: this.v1Compat ? v1Compat$1(v1CompatModule, this.fileType) : void 0
-    }).catch(() => {
-      this.console.error(`Failed to execute component ${filePath}`);
+    }).catch((err) => {
+      this.console.error(`Failed to execute component "${filePath}": ${err}`);
       return null;
     });
     if (!module)
@@ -1734,15 +1737,32 @@ const builtInPlugins = {
   formatVersionCorrection: FormatVersionCorrection,
   generatorScripts: GeneratorScriptsPlugin
 };
+const availableHooks = [
+  "buildStart",
+  "buildEnd",
+  "include",
+  "transformPath",
+  "read",
+  "load",
+  "registerAliases",
+  "require",
+  "transform",
+  "finalizeBuild",
+  "beforeFileUnlinked"
+];
 class AllPlugins {
   constructor(dash) {
     this.dash = dash;
-    this.plugins = [];
+    this.implementedHooks = /* @__PURE__ */ new Map();
     this.pluginRuntime = new JsRuntime(this.dash.fileSystem);
+  }
+  pluginsFor(hook) {
+    var _a;
+    return (_a = this.implementedHooks.get(hook)) != null ? _a : [];
   }
   async loadPlugins(scriptEnv = {}) {
     var _a, _b;
-    this.plugins = [];
+    this.implementedHooks.clear();
     this.pluginRuntime.clearCache();
     const extensions = [
       ...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, ".bridge/extensions")).catch(() => [])).map((entry) => entry.kind === "directory" ? join(this.dash.projectRoot, ".bridge/extensions", entry.name) : void 0),
@@ -1779,13 +1799,26 @@ class AllPlugins {
         if (!module)
           continue;
         if (typeof module.__default__ === "function")
-          this.plugins.push(new Plugin(this.dash, pluginId, module.__default__(await this.getPluginContext(pluginId, pluginOpts))));
+          await this.addPlugin(pluginId, module.__default__, pluginOpts);
         else
           this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`);
       } else if (builtInPlugins[pluginId]) {
-        this.plugins.push(new Plugin(this.dash, pluginId, builtInPlugins[pluginId](await this.getPluginContext(pluginId, pluginOpts))));
+        await this.addPlugin(pluginId, builtInPlugins[pluginId], pluginOpts);
       } else {
         this.dash.console.error(`Unknown compiler plugin: ${pluginId}`);
+      }
+    }
+  }
+  async addPlugin(pluginId, pluginImpl, pluginOpts) {
+    const plugin = new Plugin(this.dash, pluginId, pluginImpl(await this.getPluginContext(pluginId, pluginOpts)));
+    for (const hook of availableHooks) {
+      if (plugin.implementsHook(hook)) {
+        let hooks = this.implementedHooks.get(hook);
+        if (!hooks) {
+          hooks = [];
+          this.implementedHooks.set(hook, hooks);
+        }
+        hooks.push(plugin);
       }
     }
   }
@@ -1860,13 +1893,13 @@ class AllPlugins {
     };
   }
   async runBuildStartHooks() {
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("buildStart")) {
       await plugin.runBuildStartHook();
     }
   }
   async runIncludeHooks() {
     let includeFiles = [];
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("include")) {
       const filesToInclude = await plugin.runIncludeHook();
       if (Array.isArray(filesToInclude))
         includeFiles.push(...filesToInclude);
@@ -1875,7 +1908,7 @@ class AllPlugins {
   }
   async runTransformPathHooks(filePath) {
     let currentFilePath = filePath;
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("transformPath")) {
       const newPath = await plugin.runTransformPathHook(currentFilePath);
       if (newPath === null)
         return null;
@@ -1885,7 +1918,7 @@ class AllPlugins {
     return currentFilePath;
   }
   async runReadHooks(filePath, fileHandle) {
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("read")) {
       const data = await plugin.runReadHook(filePath, fileHandle);
       if (data !== null && data !== void 0)
         return data;
@@ -1893,7 +1926,7 @@ class AllPlugins {
   }
   async runLoadHooks(filePath, readData) {
     let data = readData;
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("load")) {
       const tmp = await plugin.runLoadHook(filePath, data);
       if (tmp === void 0)
         continue;
@@ -1903,7 +1936,7 @@ class AllPlugins {
   }
   async runRegisterAliasesHooks(filePath, data) {
     const aliases = /* @__PURE__ */ new Set();
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("registerAliases")) {
       const tmp = await plugin.runRegisterAliasesHook(filePath, data);
       if (tmp === void 0 || tmp === null)
         continue;
@@ -1916,7 +1949,7 @@ class AllPlugins {
   }
   async runRequireHooks(filePath, data) {
     const requiredFiles = /* @__PURE__ */ new Set();
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("require")) {
       const tmp = await plugin.runRequireHook(filePath, data);
       if (tmp === void 0 || tmp === null)
         continue;
@@ -1933,7 +1966,7 @@ class AllPlugins {
       ...[...file2.aliases].map((alias) => [alias, file2.data])
     ]).flat());
     let transformedData = file.data;
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("transform")) {
       const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
       if (tmpData === void 0)
         continue;
@@ -1942,19 +1975,19 @@ class AllPlugins {
     return transformedData;
   }
   async runFinalizeBuildHooks(file) {
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("finalizeBuild")) {
       const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data);
       if (finalizedData !== void 0)
         return finalizedData;
     }
   }
   async runBuildEndHooks() {
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("buildEnd")) {
       await plugin.runBuildEndHook();
     }
   }
   async runBeforeFileUnlinked(filePath) {
-    for (const plugin of this.plugins) {
+    for (const plugin of this.pluginsFor("beforeFileUnlinked")) {
       await plugin.runBeforeFileUnlinked(filePath);
     }
   }
