@@ -57,8 +57,10 @@ export class Component {
 					? v1Compat(v1CompatModule, this.fileType)
 					: undefined,
 			})
-			.catch(() => {
-				this.console.error(`Failed to execute component ${filePath}`)
+			.catch((err) => {
+				this.console.error(
+					`Failed to execute component "${filePath}": ${err}`
+				)
 				return null
 			})
 		// Component execution failed
