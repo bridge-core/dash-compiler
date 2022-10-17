@@ -1,5 +1,6 @@
 import { Dash } from '../Dash'
-import isGlob from 'is-glob'
+import type { THookType } from '../Plugins/AllPlugins'
+import type { Plugin } from '../Plugins/Plugin'
 
 export interface IFileHandle {
 	getFile: () => Promise<File | null> | File | null
@@ -15,6 +16,8 @@ export class DashFile {
 	protected updateFiles = new Set<DashFile>()
 	protected metadata = new Map<string, any>()
 	protected ignoredByPlugins = new Set<string>()
+	protected _myImplementedHooks: Map<THookType, Plugin[]> | null = null
+	protected _cachedFile: Promise<File | null> | null = null
 
 	constructor(
 		protected dash: Dash<any>,
@@ -32,14 +35,42 @@ export class DashFile {
 	addIgnoredPlugin(pluginId: string) {
 		this.ignoredByPlugins.add(pluginId)
 	}
+	createImplementedHooksMap() {
+		this._myImplementedHooks = new Map<THookType, Plugin[]>()
+
+		for (const [
+			hookType,
+			plugins,
+		] of this.dash.plugins.getImplementedHooks()) {
+			const availablePlugins = plugins.filter(
+				(plugin) => !this.isIgnoredBy(plugin.pluginId)
+			)
+			this._myImplementedHooks.set(hookType, availablePlugins)
+		}
+
+		const readHooks = this.myImplementedHooks.get('read') ?? []
+		const hasReadHooks = readHooks.length > 0
+
+		if (hasReadHooks) {
+			this._cachedFile = this.dash.fileSystem
+				.readFile(this.filePath)
+				.catch(() => null)
+		}
+	}
+	get myImplementedHooks() {
+		if (this._myImplementedHooks) return this._myImplementedHooks
+
+		throw new Error(
+			`Tried to access implemented hooks before they were created`
+		)
+	}
 
 	setFileHandle(fileHandle: IFileHandle) {
 		this.fileHandle = fileHandle
 	}
 	setDefaultFileHandle() {
 		this.setFileHandle({
-			getFile: () =>
-				this.dash.fileSystem.readFile(this.filePath).catch(() => null),
+			getFile: () => this._cachedFile,
 		})
 	}
 
@@ -181,6 +212,8 @@ export class DashFile {
 	reset() {
 		this.isDone = false
 		this.data = null
+		this._myImplementedHooks = null
+		this._cachedFile = null
 		if (!this.isVirtual) this.setDefaultFileHandle()
 	}
 }

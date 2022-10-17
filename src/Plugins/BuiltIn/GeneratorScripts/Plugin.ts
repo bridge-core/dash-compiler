@@ -55,6 +55,13 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 			filesToUpdate.clear()
 			usedTemplateMap.clear()
 		},
+		ignore(filePath) {
+			return (
+				!isGeneratorScript(filePath) &&
+				!omitUsedTemplates.has(filePath) &&
+				!fileCollection.has(filePath)
+			)
+		},
 		transformPath(filePath) {
 			if (filePath && isGeneratorScript(filePath))
 				// Replace .js/.ts with getFileContentType(filePath)

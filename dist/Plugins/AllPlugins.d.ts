@@ -1,4 +1,4 @@
-import type { DashFile, IFileHandle } from '../Core/DashFile';
+import type { DashFile } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
 import { TCompilerPluginFactory } from './TCompilerPluginFactory';
@@ -10,7 +10,8 @@ export declare class AllPlugins {
     protected pluginRuntime: JsRuntime;
     protected implementedHooks: Map<"require" | "include" | "transform" | "load" | "buildStart" | "buildEnd" | "ignore" | "transformPath" | "read" | "registerAliases" | "finalizeBuild" | "beforeFileUnlinked", Plugin[]>;
     constructor(dash: Dash<any>);
-    pluginsFor(hook: THookType): Plugin[];
+    pluginsFor(hook: THookType, file?: DashFile): Plugin[];
+    getImplementedHooks(): Map<"require" | "include" | "transform" | "load" | "buildStart" | "buildEnd" | "ignore" | "transformPath" | "read" | "registerAliases" | "finalizeBuild" | "beforeFileUnlinked", Plugin[]>;
     loadPlugins(scriptEnv?: any): Promise<void>;
     addPlugin(pluginId: string, pluginImpl: TCompilerPluginFactory<any>, pluginOpts: any): Promise<void>;
     getCompilerOptions(): Promise<any>;
@@ -44,7 +45,7 @@ export declare class AllPlugins {
     }])[]>;
     runIgnoreHooks(file: DashFile): Promise<void>;
     runTransformPathHooks(file: DashFile): Promise<string | null>;
-    runReadHooks(file: DashFile, fileHandle?: IFileHandle): Promise<any>;
+    runReadHooks(file: DashFile): Promise<any>;
     runLoadHooks(file: DashFile): Promise<any>;
     runRegisterAliasesHooks(file: DashFile): Promise<Set<string>>;
     runRequireHooks(file: DashFile): Promise<Set<string>>;

@@ -6,6 +6,5 @@ export declare class LoadFiles {
     constructor(dash: Dash<any>);
     run(files: DashFile[], writeFiles?: boolean): Promise<void>;
     loadFile(file: DashFile, writeFiles?: boolean): Promise<void>;
-    loadRequiredFiles(file: DashFile): Promise<void>;
     awaitAllFilesCopied(): Promise<void>;
 }

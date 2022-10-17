@@ -15,14 +15,7 @@ export class LoadFiles {
 			// (Ignore files which only needed to be copied over)
 			if (file.isDone) continue
 
-			promises.push(
-				this.loadFile(file, writeFiles).then(() => {
-					// Skip files that don't need to be processed further
-					if (file.isDone) return
-
-					return this.loadRequiredFiles(file)
-				})
-			)
+			promises.push(this.loadFile(file, writeFiles))
 		}
 
 		await Promise.allSettled(promises)
@@ -34,10 +27,7 @@ export class LoadFiles {
 			this.dash.plugins.runTransformPathHooks(file),
 		])
 
-		const readData = await this.dash.plugins.runReadHooks(
-			file,
-			file.fileHandle
-		)
+		const readData = await this.dash.plugins.runReadHooks(file)
 
 		file.setOutputPath(outputPath)
 		file.setReadData(readData)
@@ -52,14 +42,12 @@ export class LoadFiles {
 			(await this.dash.plugins.runLoadHooks(file)) ?? file.data
 		)
 
-		const aliases = await this.dash.plugins.runRegisterAliasesHooks(file)
+		const [aliases, requiredFiles] = await Promise.all([
+			this.dash.plugins.runRegisterAliasesHooks(file),
+			this.dash.plugins.runRequireHooks(file),
+		])
 
 		file.setAliases(aliases)
-	}
-
-	async loadRequiredFiles(file: DashFile) {
-		const requiredFiles = await this.dash.plugins.runRequireHooks(file)
-
 		file.setRequiredFiles(requiredFiles)
 	}
 

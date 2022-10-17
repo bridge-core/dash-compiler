@@ -1633,6 +1633,9 @@ const GeneratorScriptsPlugin = ({
       filesToUpdate.clear();
       usedTemplateMap.clear();
     },
+    ignore(filePath) {
+      return !isGeneratorScript(filePath) && !omitUsedTemplates.has(filePath) && !fileCollection.has(filePath);
+    },
     transformPath(filePath) {
       if (filePath && isGeneratorScript(filePath))
         return transformPath(filePath);
@@ -1784,9 +1787,14 @@ class AllPlugins {
     this.implementedHooks = /* @__PURE__ */ new Map();
     this.pluginRuntime = new JsRuntime(this.dash.fileSystem);
   }
-  pluginsFor(hook) {
-    var _a;
-    return (_a = this.implementedHooks.get(hook)) != null ? _a : [];
+  pluginsFor(hook, file) {
+    var _a, _b;
+    if (file)
+      return (_a = file.myImplementedHooks.get(hook)) != null ? _a : [];
+    return (_b = this.implementedHooks.get(hook)) != null ? _b : [];
+  }
+  getImplementedHooks() {
+    return this.implementedHooks;
   }
   async loadPlugins(scriptEnv = {}) {
     var _a, _b;
@@ -1921,9 +1929,7 @@ class AllPlugins {
     };
   }
   async runBuildStartHooks() {
-    for (const plugin of this.pluginsFor("buildStart")) {
-      await plugin.runBuildStartHook();
-    }
+    await Promise.all(this.pluginsFor("buildStart").map((plugin) => plugin.runBuildStartHook()));
   }
   async runIncludeHooks() {
     let includeFiles = [];
@@ -1940,12 +1946,11 @@ class AllPlugins {
       if (ignore)
         file.addIgnoredPlugin(plugin.pluginId);
     }
+    file.createImplementedHooksMap();
   }
   async runTransformPathHooks(file) {
     let currentFilePath = file.filePath;
     for (const plugin of this.pluginsFor("transformPath")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
       const newPath = await plugin.runTransformPathHook(currentFilePath);
       if (newPath === null)
         return null;
@@ -1954,20 +1959,16 @@ class AllPlugins {
     }
     return currentFilePath;
   }
-  async runReadHooks(file, fileHandle) {
-    for (const plugin of this.pluginsFor("read")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
-      const data = await plugin.runReadHook(file.filePath, fileHandle);
+  async runReadHooks(file) {
+    for (const plugin of this.pluginsFor("read", file)) {
+      const data = await plugin.runReadHook(file.filePath, file.fileHandle);
       if (data !== null && data !== void 0)
         return data;
     }
   }
   async runLoadHooks(file) {
     let data = file.data;
-    for (const plugin of this.pluginsFor("load")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
+    for (const plugin of this.pluginsFor("load", file)) {
       const tmp = await plugin.runLoadHook(file.filePath, data);
       if (tmp === void 0)
         continue;
@@ -1977,9 +1978,7 @@ class AllPlugins {
   }
   async runRegisterAliasesHooks(file) {
     const aliases = /* @__PURE__ */ new Set();
-    for (const plugin of this.pluginsFor("registerAliases")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
+    for (const plugin of this.pluginsFor("registerAliases", file)) {
       const tmp = await plugin.runRegisterAliasesHook(file.filePath, file.data);
       if (tmp === void 0 || tmp === null)
         continue;
@@ -1992,9 +1991,7 @@ class AllPlugins {
   }
   async runRequireHooks(file) {
     const requiredFiles = /* @__PURE__ */ new Set();
-    for (const plugin of this.pluginsFor("require")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
+    for (const plugin of this.pluginsFor("require", file)) {
       const tmp = await plugin.runRequireHook(file.filePath, file.data);
       if (tmp === void 0 || tmp === null)
         continue;
@@ -2011,9 +2008,7 @@ class AllPlugins {
       ...[...file2.aliases].map((alias) => [alias, file2.data])
     ]).flat());
     let transformedData = file.data;
-    for (const plugin of this.pluginsFor("transform")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
+    for (const plugin of this.pluginsFor("transform", file)) {
       const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
       if (tmpData === void 0)
         continue;
@@ -2022,18 +2017,14 @@ class AllPlugins {
     return transformedData;
   }
   async runFinalizeBuildHooks(file) {
-    for (const plugin of this.pluginsFor("finalizeBuild")) {
-      if (file.isIgnoredBy(plugin.pluginId))
-        continue;
+    for (const plugin of this.pluginsFor("finalizeBuild", file)) {
       const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data);
       if (finalizedData !== void 0)
         return finalizedData;
     }
   }
   async runBuildEndHooks() {
-    for (const plugin of this.pluginsFor("buildEnd")) {
-      await plugin.runBuildEndHook();
-    }
+    await Promise.allSettled(this.pluginsFor("buildEnd").map((plugin) => plugin.runBuildEndHook()));
   }
   async runBeforeFileUnlinked(filePath) {
     for (const plugin of this.pluginsFor("beforeFileUnlinked")) {
@@ -2052,6 +2043,8 @@ class DashFile {
     this.updateFiles = /* @__PURE__ */ new Set();
     this.metadata = /* @__PURE__ */ new Map();
     this.ignoredByPlugins = /* @__PURE__ */ new Set();
+    this._myImplementedHooks = null;
+    this._cachedFile = null;
     this.outputPath = filePath;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
@@ -2062,12 +2055,33 @@ class DashFile {
   addIgnoredPlugin(pluginId) {
     this.ignoredByPlugins.add(pluginId);
   }
+  createImplementedHooksMap() {
+    var _a;
+    this._myImplementedHooks = /* @__PURE__ */ new Map();
+    for (const [
+      hookType,
+      plugins
+    ] of this.dash.plugins.getImplementedHooks()) {
+      const availablePlugins = plugins.filter((plugin) => !this.isIgnoredBy(plugin.pluginId));
+      this._myImplementedHooks.set(hookType, availablePlugins);
+    }
+    const readHooks = (_a = this.myImplementedHooks.get("read")) != null ? _a : [];
+    const hasReadHooks = readHooks.length > 0;
+    if (hasReadHooks) {
+      this._cachedFile = this.dash.fileSystem.readFile(this.filePath).catch(() => null);
+    }
+  }
+  get myImplementedHooks() {
+    if (this._myImplementedHooks)
+      return this._myImplementedHooks;
+    throw new Error(`Tried to access implemented hooks before they were created`);
+  }
   setFileHandle(fileHandle) {
     this.fileHandle = fileHandle;
   }
   setDefaultFileHandle() {
     this.setFileHandle({
-      getFile: () => this.dash.fileSystem.readFile(this.filePath).catch(() => null)
+      getFile: () => this._cachedFile
     });
   }
   setOutputPath(outputPath) {
@@ -2165,6 +2179,8 @@ class DashFile {
   reset() {
     this.isDone = false;
     this.data = null;
+    this._myImplementedHooks = null;
+    this._cachedFile = null;
     if (!this.isVirtual)
       this.setDefaultFileHandle();
   }
@@ -2311,11 +2327,7 @@ class LoadFiles {
     for (const file of files) {
       if (file.isDone)
         continue;
-      promises.push(this.loadFile(file, writeFiles).then(() => {
-        if (file.isDone)
-          return;
-        return this.loadRequiredFiles(file);
-      }));
+      promises.push(this.loadFile(file, writeFiles));
     }
     await Promise.allSettled(promises);
   }
@@ -2325,18 +2337,18 @@ class LoadFiles {
       this.dash.plugins.runIgnoreHooks(file),
       this.dash.plugins.runTransformPathHooks(file)
     ]);
-    const readData = await this.dash.plugins.runReadHooks(file, file.fileHandle);
+    const readData = await this.dash.plugins.runReadHooks(file);
     file.setOutputPath(outputPath);
     file.setReadData(readData);
     file.processAfterLoad(writeFiles, this.copyFilePromises);
     if (file.isDone)
       return;
     file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
-    const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);
+    const [aliases, requiredFiles] = await Promise.all([
+      this.dash.plugins.runRegisterAliasesHooks(file),
+      this.dash.plugins.runRequireHooks(file)
+    ]);
     file.setAliases(aliases);
-  }
-  async loadRequiredFiles(file) {
-    const requiredFiles = await this.dash.plugins.runRequireHooks(file);
     file.setRequiredFiles(requiredFiles);
   }
   async awaitAllFilesCopied() {
@@ -2669,7 +2681,6 @@ class Dash {
       getFile: async () => new File([fileData], basename(filePath))
     });
     await this.loadFiles.loadFile(file, false);
-    await this.loadFiles.loadRequiredFiles(file);
     this.progress.advance();
     const filesToLoad = file.filesToLoadForHotUpdate();
     await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => file !== currFile), false);
