@@ -36,6 +36,10 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 	const withSlashPrefix = (filePath: string) =>
 		fileTypeLib.get(filePath)?.meta?.commandsUseSlash ?? false
 
+	// Store whether the current project contains command files
+	// This is disabled because we always need the plugin to transform "/" commands atm
+	// let hasCommandFiles = false
+
 	return {
 		async buildStart() {
 			// Load default command locations and merge them with user defined locations
@@ -46,6 +50,7 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 				options.include
 			)
 			cachedPaths.clear()
+			// hasCommandFiles = false
 		},
 		ignore(filePath) {
 			return (
@@ -62,6 +67,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			if (!fileHandle) return
 
 			if (isCommand(filePath) && filePath.endsWith('.js')) {
+				// hasCommandFiles = true
+
 				const file = await fileHandle.getFile()
 				return await file?.text()
 			} else if (isMcfunction(filePath)) {
@@ -79,6 +86,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async load(filePath, fileContent) {
+			// if (!hasCommandFiles) return
+
 			if (isCommand(filePath)) {
 				const command = new Command(
 					console,
@@ -92,9 +101,13 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async registerAliases(filePath, fileContent) {
+			// if (!hasCommandFiles) return
+
 			if (isCommand(filePath)) return [`command#${fileContent.name}`]
 		},
 		async require(filePath) {
+			// if (!hasCommandFiles) return
+
 			if (loadCommandsFor(filePath) || isMcfunction(filePath)) {
 				// Register custom commands as JSON/mcfunction file dependencies
 				return [
@@ -104,6 +117,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async transform(filePath, fileContent, dependencies = {}) {
+			// if (!hasCommandFiles) return
+
 			const includePaths = loadCommandsFor(filePath)
 
 			if (includePaths && includePaths.length > 0) {
@@ -172,6 +187,8 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			}
 		},
 		finalizeBuild(filePath, fileContent) {
+			// if (!hasCommandFiles) return
+
 			// Necessary to make auto-completions work for TypeScript components
 			if (isCommand(filePath) && fileContent) {
 				return (<Command>fileContent).toString()

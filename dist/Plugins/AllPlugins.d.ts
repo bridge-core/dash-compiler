@@ -15,7 +15,7 @@ export declare class AllPlugins {
     loadPlugins(scriptEnv?: any): Promise<void>;
     addPlugin(pluginId: string, pluginImpl: TCompilerPluginFactory<any>, pluginOpts: any): Promise<void>;
     getCompilerOptions(): Promise<any>;
-    protected getPluginContext(pluginId: string, pluginOpts?: any): Promise<{
+    protected getPluginContext(pluginId: string, pluginOpts?: any): {
         options: any;
         jsRuntime: JsRuntime;
         console: import("../main").Console;
@@ -38,7 +38,7 @@ export declare class AllPlugins {
         unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
         hasComMojangDirectory: boolean;
         compileFiles: (filePaths: string[], virtual?: boolean) => Promise<void>;
-    }>;
+    };
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<(string | [string, {
         isVirtual?: boolean | undefined;

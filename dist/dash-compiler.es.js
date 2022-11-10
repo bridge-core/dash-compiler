@@ -187,19 +187,24 @@ const SimpleRewrite = ({
     }
   };
 };
-const MoLangPlugin = ({
+const MoLangPlugin = async ({
   fileType,
   projectConfig,
   requestJsonData,
   options,
   console: console2,
-  jsRuntime
+  jsRuntime,
+  fileSystem
 }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
-  const isMoLangFile = (filePath) => filePath == null ? void 0 : filePath.endsWith(".molang");
-  const molangScriptPath = projectConfig.resolvePackPath("behaviorPack", "scripts/molang/");
-  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(molangScriptPath);
+  const molangDirPaths = [
+    projectConfig.resolvePackPath("behaviorPack", "molang"),
+    projectConfig.resolvePackPath("resourcePack", "molang")
+  ];
+  const isMoLangFile = (filePath) => filePath && molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) && filePath.endsWith(".molang");
+  const molangScriptPath = projectConfig.resolvePackPath("behaviorPack", "scripts/molang");
+  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(`${molangScriptPath}/`);
   const cachedPaths = /* @__PURE__ */ new Map();
   const loadMoLangFrom = (filePath) => {
     if (cachedPaths.has(filePath))
@@ -209,10 +214,15 @@ const MoLangPlugin = ({
     return molangLocs;
   };
   let astTransformers = [];
+  let hasCustomMoLang = false;
+  const hasMolangFile = await Promise.all(molangDirPaths.map((dirPath) => fileSystem.directoryHasAnyFile(dirPath)));
+  if (!hasMolangFile.some((hasFile) => hasFile) && !await fileSystem.directoryHasAnyFile(molangScriptPath))
+    return {};
   return {
     async buildStart() {
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
       cachedPaths.clear();
+      hasCustomMoLang = false;
     },
     ignore(filePath) {
       return !isMoLangFile(filePath) && !isMoLangScript(filePath) && !loadMoLangFrom(filePath);
@@ -223,6 +233,7 @@ const MoLangPlugin = ({
     },
     async read(filePath, fileHandle) {
       if ((isMoLangFile(filePath) || isMoLangScript(filePath)) && fileHandle) {
+        hasCustomMoLang = true;
         const file = await fileHandle.getFile();
         return await (file == null ? void 0 : file.text());
       } else if (loadMoLangFrom(filePath) && filePath.endsWith(".json") && fileHandle) {
@@ -241,6 +252,8 @@ const MoLangPlugin = ({
       }
     },
     async load(filePath, fileContent) {
+      if (!hasCustomMoLang)
+        return;
       if (isMoLangFile(filePath) && fileContent) {
         customMoLang.parse(fileContent);
       } else if (isMoLangScript(filePath)) {
@@ -255,6 +268,8 @@ const MoLangPlugin = ({
       }
     },
     async require(filePath) {
+      if (!hasCustomMoLang)
+        return;
       if (loadMoLangFrom(filePath)) {
         return [
           resolve("behaviorPack", "scripts/molang/**/*.[jt]s"),
@@ -264,6 +279,8 @@ const MoLangPlugin = ({
       }
     },
     async transform(filePath, fileContent) {
+      if (!hasCustomMoLang)
+        return;
       const includePaths = loadMoLangFrom(filePath);
       if (includePaths && includePaths.length > 0) {
         includePaths.forEach((includePath) => setObjectAt(includePath, fileContent, (molang) => {
@@ -923,6 +940,7 @@ function createCustomComponentPlugin({
       cachedMayUseComponents.set(filePath, result);
       return result;
     };
+    let hasComponentFiles = false;
     return {
       buildStart() {
         usedComponents.clear();
@@ -930,6 +948,7 @@ function createCustomComponentPlugin({
         cachedMayUseComponents.clear();
         playerFile = null;
         createAdditionalFiles = {};
+        hasComponentFiles = false;
       },
       ignore(filePath) {
         return !createAdditionalFiles[filePath] && !isComponent(filePath) && !mayUseComponent(filePath) && !isPlayerFile(filePath, getAliases);
@@ -942,6 +961,7 @@ function createCustomComponentPlugin({
         if (!fileHandle)
           return createAdditionalFiles[filePath] ? json5.parse(createAdditionalFiles[filePath].fileContent) : void 0;
         if (isComponent(filePath) && filePath.endsWith(".js")) {
+          hasComponentFiles = true;
           const file = await fileHandle.getFile();
           return await (file == null ? void 0 : file.text());
         } else if (mayUseComponent(filePath) || isPlayerFile(filePath, getAliases)) {
@@ -960,6 +980,8 @@ function createCustomComponentPlugin({
         }
       },
       async load(filePath, fileContent) {
+        if (!hasComponentFiles)
+          return;
         if (isComponent(filePath) && typeof fileContent === "string") {
           const component = new Component(console2, fileType, fileContent, options.mode, !!options.v1CompatMode, targetVersion);
           component.setProjectConfig(projectConfig);
@@ -968,11 +990,15 @@ function createCustomComponentPlugin({
         }
       },
       async registerAliases(filePath, fileContent) {
+        if (!hasComponentFiles)
+          return;
         if (isComponent(filePath)) {
           return [`${fileType}Component#${fileContent.name}`];
         }
       },
       async require(filePath, fileContent) {
+        if (!hasComponentFiles)
+          return;
         if (isPlayerFile(filePath, getAliases))
           return [
             `.${projectConfig.getRelativePackRoot("behaviorPack")}/components/item/**/*.[jt]s`,
@@ -988,6 +1014,8 @@ function createCustomComponentPlugin({
       },
       async transform(filePath, fileContent, dependencies = {}) {
         var _a;
+        if (!hasComponentFiles)
+          return;
         if (isPlayerFile(filePath, getAliases)) {
           const itemComponents = Object.entries(dependencies).filter(([depName]) => depName.startsWith("itemComponent#")).map(([_, component]) => component);
           for (const component of itemComponents) {
@@ -1016,12 +1044,16 @@ function createCustomComponentPlugin({
         }
       },
       finalizeBuild(filePath, fileContent) {
+        if (!hasComponentFiles)
+          return;
         if (isComponent(filePath) && fileContent) {
           return fileContent.toString();
         } else if (mayUseComponent(filePath) || createAdditionalFiles[filePath])
           return JSON.stringify(fileContent, null, "	");
       },
       async buildEnd() {
+        if (!hasComponentFiles)
+          return;
         if (options.buildType === "fileRequest")
           return;
         createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).filter(([_, fileData]) => (fileData == null ? void 0 : fileData.fileContent) !== void 0).map(([filePath, fileData]) => [
@@ -1486,12 +1518,22 @@ const ContentsFilePlugin = ({
 const FormatVersionCorrection = ({
   fileType
 }) => {
-  const toTransform = [];
+  const toTransform = /* @__PURE__ */ new Set();
   for (const ft of fileType.all) {
     if (ft.formatVersionMap)
-      toTransform.push(ft.id);
+      toTransform.add(ft.id);
   }
-  const needsTransformation = (filePath) => filePath && toTransform.includes(fileType.getId(filePath));
+  const needsTransformationCache = /* @__PURE__ */ new Map();
+  const needsTransformation = (filePath) => {
+    if (!filePath)
+      return;
+    let needsTransform = needsTransformationCache.get(filePath);
+    if (needsTransform)
+      return needsTransform;
+    needsTransform = toTransform.has(fileType.getId(filePath));
+    needsTransformationCache.set(filePath, needsTransform);
+    return needsTransform;
+  };
   return {
     ignore(filePath) {
       return !needsTransformation(filePath);
@@ -1797,7 +1839,7 @@ class AllPlugins {
     return this.implementedHooks;
   }
   async loadPlugins(scriptEnv = {}) {
-    var _a, _b;
+    var _a;
     this.implementedHooks.clear();
     this.pluginRuntime.clearCache();
     const extensions = [
@@ -1805,48 +1847,64 @@ class AllPlugins {
       ...(await this.dash.fileSystem.readdir("extensions").catch(() => [])).map((entry) => entry.kind === "directory" ? join("extensions", entry.name) : void 0)
     ];
     const plugins = {};
+    const manifestReadPromises = [];
     for (const extension of extensions) {
       if (!extension)
         continue;
-      let manifest;
-      try {
-        manifest = await this.dash.fileSystem.readJson(join(extension, "manifest.json"));
-      } catch {
-        continue;
-      }
-      if (!((_a = manifest == null ? void 0 : manifest.compiler) == null ? void 0 : _a.plugins))
-        continue;
-      for (const pluginId in manifest.compiler.plugins) {
-        plugins[pluginId] = join(extension, manifest.compiler.plugins[pluginId]);
-      }
+      manifestReadPromises.push(this.dash.fileSystem.readJson(join(extension, "manifest.json")).then((manifest) => {
+        var _a2;
+        if (!((_a2 = manifest == null ? void 0 : manifest.compiler) == null ? void 0 : _a2.plugins))
+          return;
+        for (const pluginId in manifest.compiler.plugins) {
+          plugins[pluginId] = join(extension, manifest.compiler.plugins[pluginId]);
+        }
+      }).catch(() => {
+      }));
     }
-    const usedPlugins = (_b = (await this.getCompilerOptions()).plugins) != null ? _b : [];
-    for (const usedPlugin of usedPlugins) {
+    await Promise.all(manifestReadPromises);
+    const usedPlugins = (_a = (await this.getCompilerOptions()).plugins) != null ? _a : [];
+    const evaluatedPlugins = [];
+    const promises = [];
+    for (let i = 0; i < usedPlugins.length; i++) {
+      const usedPlugin = usedPlugins[i];
       const pluginId = typeof usedPlugin === "string" ? usedPlugin : usedPlugin[0];
-      const pluginOpts = typeof usedPlugin === "string" ? {} : usedPlugin[1];
       if (plugins[pluginId]) {
-        const module = await this.pluginRuntime.run(plugins[pluginId], {
+        promises.push(this.pluginRuntime.run(plugins[pluginId], {
           console: this.dash.console,
           ...scriptEnv
         }).catch((err) => {
           this.dash.console.error(`Failed to execute plugin ${pluginId}: ${err}`);
           return null;
-        });
-        if (!module)
-          continue;
-        if (typeof module.__default__ === "function")
-          await this.addPlugin(pluginId, module.__default__, pluginOpts);
-        else
-          this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`);
+        }).then((module) => {
+          if (!module)
+            return;
+          if (typeof module.__default__ === "function") {
+            evaluatedPlugins[i] = module.__default__;
+          } else {
+            evaluatedPlugins[i] = null;
+            this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`);
+          }
+        }));
       } else if (builtInPlugins[pluginId]) {
-        await this.addPlugin(pluginId, builtInPlugins[pluginId], pluginOpts);
+        evaluatedPlugins[i] = builtInPlugins[pluginId];
       } else {
+        evaluatedPlugins[i] = null;
         this.dash.console.error(`Unknown compiler plugin: ${pluginId}`);
       }
     }
+    await Promise.all(promises);
+    for (let i = 0; i < usedPlugins.length; i++) {
+      const currPlugin = evaluatedPlugins[i];
+      if (!currPlugin)
+        continue;
+      const usedPlugin = usedPlugins[i];
+      const pluginOpts = typeof usedPlugin === "string" ? {} : usedPlugin[1];
+      const pluginId = typeof usedPlugin === "string" ? usedPlugin : usedPlugin[0];
+      this.addPlugin(pluginId, currPlugin, pluginOpts);
+    }
   }
   async addPlugin(pluginId, pluginImpl, pluginOpts) {
-    const plugin = new Plugin(this.dash, pluginId, pluginImpl(await this.getPluginContext(pluginId, pluginOpts)));
+    const plugin = new Plugin(this.dash, pluginId, await pluginImpl(this.getPluginContext(pluginId, pluginOpts)));
     for (const hook of availableHooks) {
       if (plugin.implementsHook(hook)) {
         let hooks = this.implementedHooks.get(hook);
@@ -1865,7 +1923,7 @@ class AllPlugins {
       return (_a = this.dash.projectConfig.get().compiler) != null ? _a : {};
     return await this.dash.fileSystem.readJson(compilerConfigPath);
   }
-  async getPluginContext(pluginId, pluginOpts = {}) {
+  getPluginContext(pluginId, pluginOpts = {}) {
     const dash = this.dash;
     return {
       options: {
@@ -2798,6 +2856,10 @@ class FileSystem {
       }
     }
     return files;
+  }
+  async directoryHasAnyFile(path) {
+    const entries = await this.readdir(path).catch(() => []);
+    return entries.length > 0;
   }
   async copyFile(from, to, outputFs = this) {
     const file = await this.readFile(from);

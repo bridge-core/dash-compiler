@@ -101,70 +101,86 @@ export class AllPlugins {
 		]
 
 		const plugins: Record<string, string> = {}
+		const manifestReadPromises: Promise<void>[] = []
 		// Read extension manifests to extract compiler plugins
 		for (const extension of extensions) {
 			if (!extension) continue
 
-			let manifest: any
-			try {
-				manifest = await this.dash.fileSystem.readJson(
-					join(extension, 'manifest.json')
-				)
-			} catch {
-				continue
-			}
+			manifestReadPromises.push(
+				this.dash.fileSystem
+					.readJson(join(extension, 'manifest.json'))
+					.then((manifest) => {
+						if (!manifest?.compiler?.plugins) return
 
-			if (!manifest?.compiler?.plugins) continue
-
-			for (const pluginId in manifest.compiler.plugins) {
-				plugins[pluginId] = join(
-					extension,
-					manifest.compiler.plugins[pluginId]
-				)
-			}
+						for (const pluginId in manifest.compiler.plugins) {
+							plugins[pluginId] = join(
+								extension,
+								manifest.compiler.plugins[pluginId]
+							)
+						}
+					})
+					.catch(() => {})
+			)
 		}
+
+		await Promise.all(manifestReadPromises)
 
 		const usedPlugins: (string | [string, any])[] =
 			(await this.getCompilerOptions()).plugins ?? []
-		for (const usedPlugin of usedPlugins) {
+		const evaluatedPlugins: (TCompilerPluginFactory<any> | null)[] = []
+		const promises = []
+		for (let i = 0; i < usedPlugins.length; i++) {
+			const usedPlugin = usedPlugins[i]
 			const pluginId =
 				typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
-			const pluginOpts =
-				typeof usedPlugin === 'string' ? {} : usedPlugin[1]
 
 			if (plugins[pluginId]) {
-				const module = await this.pluginRuntime
-					.run(plugins[pluginId], {
-						console: this.dash.console,
-						...scriptEnv,
-					})
-					.catch((err) => {
-						this.dash.console.error(
-							`Failed to execute plugin ${pluginId}: ${err}`
-						)
-						return null
-					})
-				if (!module) continue
+				promises.push(
+					this.pluginRuntime
+						.run(plugins[pluginId], {
+							console: this.dash.console,
+							...scriptEnv,
+						})
+						.catch((err) => {
+							this.dash.console.error(
+								`Failed to execute plugin ${pluginId}: ${err}`
+							)
+							return null
+						})
+						.then((module) => {
+							if (!module) return
 
-				if (typeof module.__default__ === 'function')
-					await this.addPlugin(
-						pluginId,
-						module.__default__,
-						pluginOpts
-					)
-				else
-					this.dash.console.error(
-						`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
-					)
-			} else if (builtInPlugins[pluginId]) {
-				await this.addPlugin(
-					pluginId,
-					builtInPlugins[pluginId],
-					pluginOpts
+							if (typeof module.__default__ === 'function') {
+								evaluatedPlugins[i] = module.__default__
+							} else {
+								evaluatedPlugins[i] = null
+								this.dash.console.error(
+									`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
+								)
+							}
+						})
 				)
+			} else if (builtInPlugins[pluginId]) {
+				evaluatedPlugins[i] = builtInPlugins[pluginId]
 			} else {
+				evaluatedPlugins[i] = null
 				this.dash.console.error(`Unknown compiler plugin: ${pluginId}`)
 			}
+		}
+
+		await Promise.all(promises)
+
+		for (let i = 0; i < usedPlugins.length; i++) {
+			const currPlugin = evaluatedPlugins[i]
+			if (!currPlugin) continue
+
+			const usedPlugin = usedPlugins[i]
+			const pluginOpts =
+				typeof usedPlugin === 'string' ? {} : usedPlugin[1]
+			const pluginId =
+				typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
+
+			this.addPlugin(pluginId, currPlugin, pluginOpts)
 		}
 	}
 
@@ -176,7 +192,7 @@ export class AllPlugins {
 		const plugin = new Plugin(
 			this.dash,
 			pluginId,
-			pluginImpl(await this.getPluginContext(pluginId, pluginOpts))
+			await pluginImpl(this.getPluginContext(pluginId, pluginOpts))
 		)
 
 		for (const hook of availableHooks) {
@@ -205,7 +221,7 @@ export class AllPlugins {
 	 * @param pluginId The plugin ID to get the context for
 	 * @returns The plugin context
 	 */
-	protected async getPluginContext(pluginId: string, pluginOpts: any = {}) {
+	protected getPluginContext(pluginId: string, pluginOpts: any = {}) {
 		const dash = this.dash
 
 		return {

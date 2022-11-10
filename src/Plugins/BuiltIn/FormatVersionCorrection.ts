@@ -5,12 +5,23 @@ export const FormatVersionCorrection: TCompilerPluginFactory = ({
 	fileType,
 }) => {
 	// Get file types that need transforming
-	const toTransform: string[] = []
+	const toTransform = new Set<string>()
 	for (const ft of fileType.all) {
-		if (ft.formatVersionMap) toTransform.push(ft.id)
+		if (ft.formatVersionMap) toTransform.add(ft.id)
 	}
-	const needsTransformation = (filePath: string) =>
-		filePath && toTransform.includes(fileType.getId(filePath))
+
+	// Cache for file types
+	const needsTransformationCache = new Map<string, boolean>()
+	const needsTransformation = (filePath: string) => {
+		if (!filePath) return
+
+		let needsTransform = needsTransformationCache.get(filePath)
+		if (needsTransform) return needsTransform
+
+		needsTransform = toTransform.has(fileType.getId(filePath))
+		needsTransformationCache.set(filePath, needsTransform)
+		return needsTransform
+	}
 
 	return {
 		ignore(filePath) {

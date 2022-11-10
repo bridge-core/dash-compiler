@@ -5,27 +5,35 @@ import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const MoLangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
-}> = ({
+}> = async ({
 	fileType,
 	projectConfig,
 	requestJsonData,
 	options,
 	console,
 	jsRuntime,
+	fileSystem,
 }) => {
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
-	//Custom MoLang parser from https://github.com/bridge-core/MoLang
+	// Custom MoLang parser from https://github.com/bridge-core/molang
 	const customMoLang = new CustomMoLang({})
+
+	const molangDirPaths = [
+		projectConfig.resolvePackPath('behaviorPack', 'molang'),
+		projectConfig.resolvePackPath('resourcePack', 'molang'),
+	]
 	const isMoLangFile = (filePath: string | null) =>
-		filePath?.endsWith('.molang')
+		filePath &&
+		molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) &&
+		filePath.endsWith('.molang')
 	const molangScriptPath = projectConfig.resolvePackPath(
 		'behaviorPack',
-		'scripts/molang/'
+		'scripts/molang'
 	)
 	const isMoLangScript = (filePath: string | null) =>
-		filePath?.startsWith(molangScriptPath)
+		filePath?.startsWith(`${molangScriptPath}/`)
 
 	// Caching the result of the function has a huge performance impact because the fileType.getId function is expensive
 	const cachedPaths = new Map<string, string[] | undefined>()
@@ -39,6 +47,21 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 
 	let astTransformers: ((expr: IExpression) => IExpression | undefined)[] = []
 
+	// Store whether custom MoLang features are used within the project
+	let hasCustomMoLang = false
+
+	// Store whether the project uses a .molang file
+	const hasMolangFile = await Promise.all(
+		molangDirPaths.map((dirPath) => fileSystem.directoryHasAnyFile(dirPath))
+	)
+
+	// Don't create plugin if it's not needed
+	if (
+		!hasMolangFile.some((hasFile) => hasFile) &&
+		!(await fileSystem.directoryHasAnyFile(molangScriptPath))
+	)
+		return {}
+
 	return {
 		async buildStart() {
 			// Load default MoLang locations and merge them with user defined locations
@@ -49,6 +72,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				options.include
 			)
 			cachedPaths.clear()
+			hasCustomMoLang = false
 		},
 		ignore(filePath) {
 			return (
@@ -66,6 +90,8 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 				(isMoLangFile(filePath) || isMoLangScript(filePath)) &&
 				fileHandle
 			) {
+				hasCustomMoLang = true
+
 				// Load MoLang files as text
 				const file = await fileHandle.getFile()
 				return await file?.text()
@@ -90,6 +116,8 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async load(filePath, fileContent) {
+			if (!hasCustomMoLang) return
+
 			if (isMoLangFile(filePath) && fileContent) {
 				// Load the custom MoLang functions
 				customMoLang.parse(fileContent)
@@ -110,6 +138,8 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async require(filePath) {
+			if (!hasCustomMoLang) return
+
 			if (loadMoLangFrom(filePath)) {
 				// Register molang files & molang scripts as JSON file dependencies
 				return [
@@ -121,6 +151,8 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		},
 
 		async transform(filePath, fileContent) {
+			if (!hasCustomMoLang) return
+
 			const includePaths = loadMoLangFrom(filePath)
 
 			if (includePaths && includePaths.length > 0) {

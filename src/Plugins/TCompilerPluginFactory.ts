@@ -31,7 +31,7 @@ export type TCompilerPluginFactory<T = void> = (context: {
 		filePaths: string[],
 		clearPrevious?: boolean
 	) => void
-}) => Partial<TCompilerPlugin>
+}) => Partial<TCompilerPlugin> | Promise<Partial<TCompilerPlugin>>
 
 interface IFileMetadata {
 	get: (key: string) => any

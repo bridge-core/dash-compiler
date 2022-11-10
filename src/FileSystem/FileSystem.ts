@@ -29,6 +29,10 @@ export abstract class FileSystem {
 
 		return files
 	}
+	async directoryHasAnyFile(path: string) {
+		const entries = await this.readdir(path).catch(() => [])
+		return entries.length > 0
+	}
 
 	async copyFile(from: string, to: string, outputFs = this) {
 		const file = await this.readFile(from)

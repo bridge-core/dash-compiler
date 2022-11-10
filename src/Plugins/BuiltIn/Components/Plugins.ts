@@ -77,6 +77,9 @@ export function createCustomComponentPlugin({
 			return result
 		}
 
+		// Store whether the current project contains component files
+		let hasComponentFiles = false
+
 		return {
 			buildStart() {
 				usedComponents.clear()
@@ -84,6 +87,7 @@ export function createCustomComponentPlugin({
 				cachedMayUseComponents.clear()
 				playerFile = null
 				createAdditionalFiles = {}
+				hasComponentFiles = false
 			},
 			ignore(filePath) {
 				return (
@@ -111,7 +115,10 @@ export function createCustomComponentPlugin({
 						: undefined
 
 				if (isComponent(filePath) && filePath.endsWith('.js')) {
+					hasComponentFiles = true
+
 					const file = await fileHandle.getFile()
+
 					return await file?.text()
 				} else if (
 					mayUseComponent(filePath) ||
@@ -134,6 +141,8 @@ export function createCustomComponentPlugin({
 				}
 			},
 			async load(filePath, fileContent) {
+				if (!hasComponentFiles) return
+
 				if (isComponent(filePath) && typeof fileContent === 'string') {
 					const component = new Component(
 						console,
@@ -153,11 +162,15 @@ export function createCustomComponentPlugin({
 				}
 			},
 			async registerAliases(filePath, fileContent) {
+				if (!hasComponentFiles) return
+
 				if (isComponent(filePath)) {
 					return [`${fileType}Component#${fileContent.name}`]
 				}
 			},
 			async require(filePath, fileContent) {
+				if (!hasComponentFiles) return
+
 				if (isPlayerFile(filePath, getAliases))
 					return [
 						`.${projectConfig.getRelativePackRoot(
@@ -185,6 +198,8 @@ export function createCustomComponentPlugin({
 				// }
 			},
 			async transform(filePath, fileContent, dependencies = {}) {
+				if (!hasComponentFiles) return
+
 				if (isPlayerFile(filePath, getAliases)) {
 					// Get item components from the dependencies
 					const itemComponents = <Component[]>Object.entries(
@@ -254,6 +269,8 @@ export function createCustomComponentPlugin({
 				}
 			},
 			finalizeBuild(filePath, fileContent) {
+				if (!hasComponentFiles) return
+
 				// Necessary to make auto-completions work for TypeScript components
 				if (isComponent(filePath) && fileContent) {
 					return (<Component>fileContent).toString()
@@ -264,6 +281,8 @@ export function createCustomComponentPlugin({
 					return JSON.stringify(fileContent, null, '\t')
 			},
 			async buildEnd() {
+				if (!hasComponentFiles) return
+
 				// TODO: Calling compileFiles within file request mode currently causes an error
 				// inside of bridge. We should look into properly enabling support for this in the future
 				if (options.buildType === 'fileRequest') return
