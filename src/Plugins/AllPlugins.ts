@@ -247,6 +247,9 @@ export class AllPlugins {
 			getAliases: (filePath: string) => [
 				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
 			],
+			getAliasesWhere: (criteria: (alias: string) => boolean) => {
+				return this.dash.includedFiles.getAliasesWhere(criteria)
+			},
 			getFileMetadata: (filePath: string) => {
 				const file = this.dash.includedFiles.get(filePath)
 				if (!file)

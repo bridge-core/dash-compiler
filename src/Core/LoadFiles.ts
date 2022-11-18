@@ -19,6 +19,17 @@ export class LoadFiles {
 		}
 
 		await Promise.allSettled(promises)
+
+		// All aliases need to be defined before requiring files
+		// That's why we need to loop over all files again
+		await Promise.allSettled(
+			files.map(async (file) => {
+				const requiredFiles = await this.dash.plugins.runRequireHooks(
+					file
+				)
+				file.setRequiredFiles(requiredFiles)
+			})
+		)
 	}
 
 	async loadFile(file: DashFile, writeFiles = true) {
@@ -42,13 +53,9 @@ export class LoadFiles {
 			(await this.dash.plugins.runLoadHooks(file)) ?? file.data
 		)
 
-		const [aliases, requiredFiles] = await Promise.all([
-			this.dash.plugins.runRegisterAliasesHooks(file),
-			this.dash.plugins.runRequireHooks(file),
-		])
+		const aliases = await this.dash.plugins.runRegisterAliasesHooks(file)
 
 		file.setAliases(aliases)
-		file.setRequiredFiles(requiredFiles)
 	}
 
 	async awaitAllFilesCopied() {

@@ -36,6 +36,10 @@ export class IncludedFiles {
 	addAlias(alias: string, DashFile: DashFile) {
 		this.aliases.set(alias, DashFile)
 	}
+	getAliasesWhere(keepAlias: (alias: string) => boolean) {
+		const aliases = [...this.aliases.keys()].filter(keepAlias)
+		return aliases
+	}
 	queryGlob(glob: string) {
 		if (this.queryCache.has(glob)) {
 			return this.queryCache.get(glob)!

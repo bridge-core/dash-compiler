@@ -28,6 +28,7 @@ export function createCustomComponentPlugin({
 		projectRoot,
 		compileFiles,
 		getAliases,
+		getAliasesWhere,
 		options,
 		jsRuntime,
 		targetVersion,
@@ -94,7 +95,10 @@ export function createCustomComponentPlugin({
 					!createAdditionalFiles[filePath] &&
 					!isComponent(filePath) &&
 					!mayUseComponent(filePath) &&
-					!isPlayerFile(filePath, getAliases)
+					!(
+						fileType === 'item' &&
+						fileTypeLib.getId(filePath) === 'entity'
+					)
 				)
 			},
 			transformPath(filePath) {
@@ -114,7 +118,7 @@ export function createCustomComponentPlugin({
 						  )
 						: undefined
 
-				if (isComponent(filePath) && filePath.endsWith('.js')) {
+				if (isComponent(filePath)) {
 					hasComponentFiles = true
 
 					const file = await fileHandle.getFile()
@@ -171,15 +175,11 @@ export function createCustomComponentPlugin({
 			async require(filePath, fileContent) {
 				if (!hasComponentFiles) return
 
-				if (isPlayerFile(filePath, getAliases))
-					return [
-						`.${projectConfig.getRelativePackRoot(
-							'behaviorPack'
-						)}/components/item/**/*.[jt]s`,
-						`.${projectConfig.getRelativePackRoot(
-							'behaviorPack'
-						)}/items/**/*.json`,
-					]
+				if (isPlayerFile(filePath, getAliases)) {
+					return getAliasesWhere((alias) =>
+						alias.startsWith('itemComponent#')
+					)
+				}
 
 				if (mayUseComponent(filePath)) {
 					const components = findCustomComponents(
@@ -217,7 +217,8 @@ export function createCustomComponentPlugin({
 							createAdditionalFiles,
 							await component.processAdditionalFiles(
 								filePath,
-								fileContent
+								fileContent,
+								true
 							)
 						)
 					}

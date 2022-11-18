@@ -102,9 +102,19 @@ export class Component {
 		return true
 	}
 	reset() {
-		// Clear previous animation (controllers)
-		this.animations = []
-		this.animationControllers = []
+		/**
+		 * Clear previous animation (controllers)
+		 *
+		 * **Items:**
+		 * In order to make the player.animation() and player.animationController() calls work,
+		 * we should not clear the arrays here
+		 */
+		if (this.fileType !== 'item') {
+			this.animations = []
+			this.animationControllers = []
+		}
+
+		// Clear other files
 		this.clientFiles = {}
 		this.serverFiles = []
 	}
@@ -334,12 +344,13 @@ export class Component {
 						template: any,
 						location?: string,
 						operation?: any
-					) =>
+					) => {
 						this.createOnPlayer.push([
 							location ?? `minecraft:entity`,
 							template,
 							operation,
-						]),
+						])
+					},
 				},
 			})
 		} else if (this.fileType === 'block') {
@@ -359,14 +370,19 @@ export class Component {
 		}
 	}
 
-	async processAdditionalFiles(filePath: string, fileContent: any) {
+	async processAdditionalFiles(
+		filePath: string,
+		fileContent: any,
+		isPlayerFile = false
+	) {
 		const bpRoot =
 			this.projectConfig?.getRelativePackRoot('behaviorPack') ?? 'BP'
 		const rpRoot = this.projectConfig?.getRelativePackRoot('resourcePack')
 		// Try getting file identifier
-		const identifier =
-			fileContent[`minecraft:${this.fileType}`]?.description
-				?.identifier ?? 'bridge:no_identifier'
+		const identifier = isPlayerFile
+			? 'minecraft:player'
+			: fileContent[`minecraft:${this.fileType}`]?.description
+					?.identifier ?? 'bridge:no_identifier'
 
 		const fileName = await hashString(`${this.name}/${identifier}`)
 		const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`
@@ -386,18 +402,27 @@ export class Component {
 			)
 		}
 
+		let anims = {}
+		// Only create animations if we are not an item or we're a player file
+		if (this.fileType !== 'item' || identifier === 'minecraft:player') {
+			// Create animations
+			anims = {
+				[animFileName]: {
+					baseFile: filePath,
+					fileContent: this.createAnimations(fileName, fileContent),
+				},
+				[animControllerFileName]: {
+					baseFile: filePath,
+					fileContent: this.createAnimationControllers(
+						fileName,
+						fileContent
+					),
+				},
+			}
+		}
+
 		return {
-			[animFileName]: {
-				baseFile: filePath,
-				fileContent: this.createAnimations(fileName, fileContent),
-			},
-			[animControllerFileName]: {
-				baseFile: filePath,
-				fileContent: this.createAnimationControllers(
-					fileName,
-					fileContent
-				),
-			},
+			...anims,
 			[join(bpRoot, `dialogue/bridge/${fileName}.json`)]:
 				this.dialogueScenes[fileName] &&
 				this.dialogueScenes[fileName].length > 0
