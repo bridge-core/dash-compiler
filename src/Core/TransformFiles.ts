@@ -16,7 +16,8 @@ export class FileTransformer {
 			if (
 				writeData !== undefined &&
 				writeData !== null &&
-				file.outputPath
+				file.outputPath !== null &&
+				file.filePath !== file.outputPath
 			) {
 				promises.push(
 					this.dash.outputFileSystem.writeFile(
