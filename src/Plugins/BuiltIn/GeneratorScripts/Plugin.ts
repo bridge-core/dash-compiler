@@ -1,3 +1,4 @@
+import { dirname } from 'path-browserify'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Collection } from './Collection'
 import { createModule } from './Module'
@@ -80,67 +81,68 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 			if (fromCollection) return fromCollection
 		},
 		async load(filePath, fileContent) {
-			if (isGeneratorScript(filePath)) {
-				if (!fileContent) return null
+			if (!isGeneratorScript(filePath)) return
 
-				const currentTemplates = new Set<string>()
-				jsRuntime.registerModule(
-					'@bridge/generate',
-					createModule({
-						generatorPath: filePath,
-						fileSystem,
-						omitUsedTemplates: currentTemplates,
+			// No file content = omit file
+			if (!fileContent) return null
+
+			const currentTemplates = new Set<string>()
+			jsRuntime.registerModule(
+				'@bridge/generate',
+				createModule({
+					generatorPath: filePath,
+					fileSystem,
+					omitUsedTemplates: currentTemplates,
+					console,
+				})
+			)
+
+			const module = await jsRuntime
+				.run(
+					filePath,
+					{
 						console,
-					})
+					},
+					fileContent
 				)
-
-				const module = await jsRuntime
-					.run(
-						filePath,
-						{
-							console,
-						},
-						fileContent
-					)
-					.catch((err) => {
-						console.error(
-							`Failed to execute generator script "${filePath}": ${err}`
-						)
-						return null
-					})
-				if (!module) return null
-				if (!module.__default__) {
+				.catch((err) => {
 					console.error(
-						`Expected generator script "${filePath}" to provide file content as default export!`
+						`Failed to execute generator script "${filePath}": ${err}`
 					)
 					return null
-				}
-
-				const fileMetadata = getFileMetadata(filePath)
-
-				// These files were unlinked previously but are no longer being used as templates...
-				const previouslyUnlinkedFiles = (
-					fileMetadata.get('unlinkedFiles') ?? []
-				).filter((filePath: string) => !currentTemplates.has(filePath))
-				// ...so we should compile them again
-				previouslyUnlinkedFiles.forEach((file: string) =>
-					filesToUpdate.add(file)
+				})
+			if (!module) return null
+			if (!module.__default__) {
+				console.error(
+					`Expected generator script "${filePath}" to provide file content as default export!`
 				)
-
-				// Save template files we unlink
-				fileMetadata.set('unlinkedFiles', [...currentTemplates])
-				// Collect all previously generated files
-				const generatedFiles = fileMetadata.get('generatedFiles') ?? []
-				// Unlink templates and previously generated files
-				await unlinkOutputFiles([
-					...generatedFiles,
-					...currentTemplates,
-				]).catch(() => {})
-
-				usedTemplateMap.set(filePath, currentTemplates)
-
-				return module.__default__
+				return null
 			}
+
+			const fileMetadata = getFileMetadata(filePath)
+
+			// These files were unlinked previously but are no longer being used as templates...
+			const previouslyUnlinkedFiles = (
+				fileMetadata.get('unlinkedFiles') ?? []
+			).filter((filePath: string) => !currentTemplates.has(filePath))
+			// ...so we should compile them again
+			previouslyUnlinkedFiles.forEach((file: string) =>
+				filesToUpdate.add(file)
+			)
+
+			// Save template files we unlink
+			fileMetadata.set('unlinkedFiles', [...currentTemplates])
+			// Collect all previously generated files
+			const generatedFiles = fileMetadata.get('generatedFiles') ?? []
+			// Unlink templates and previously generated files
+			await unlinkOutputFiles([
+				...generatedFiles,
+				...currentTemplates,
+			]).catch(() => {})
+
+			usedTemplateMap.set(filePath, currentTemplates)
+
+			return module.__default__
 		},
 		require(filePath) {
 			const usedTemplates = usedTemplateMap.get(filePath)
@@ -168,7 +170,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 				const fileMetadata = getFileMetadata(filePath)
 
 				if (fileContent instanceof Collection) {
-					fileCollection.addFrom(fileContent)
+					fileCollection.addFrom(fileContent, dirname(filePath))
 					// Cache the files this generator script generated
 					fileMetadata.set(
 						'generatedFiles',

@@ -3,7 +3,7 @@ import { Console } from '../../../Common/Console'
 
 export class Collection {
 	protected files = new Map<string, any>()
-	constructor(protected console: Console, protected baseDir?: string) {}
+	constructor(protected console: Console) {}
 
 	get hasFiles() {
 		return this.files.size > 0
@@ -21,23 +21,21 @@ export class Collection {
 		this.files.clear()
 	}
 	add(filePath: string, fileContent: any) {
-		const resolvedPath = this.baseDir
-			? join(this.baseDir, filePath)
-			: filePath
-		if (this.files.has(resolvedPath)) {
+		if (this.files.has(filePath)) {
 			this.console.warn(
-				`Omitting file "${resolvedPath}" from collection because it would overwrite a previously generated file!`
+				`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`
 			)
 			return
 		}
-		this.files.set(resolvedPath, fileContent)
+		this.files.set(filePath, fileContent)
 	}
 	has(filePath: string) {
 		return this.files.has(filePath)
 	}
-	addFrom(collection: Collection) {
+	addFrom(collection: Collection, baseDir?: string) {
 		for (const [filePath, fileContent] of collection.getAll()) {
-			this.add(filePath, fileContent)
+			const resolvedPath = baseDir ? join(baseDir, filePath) : filePath
+			this.add(resolvedPath, fileContent)
 		}
 	}
 }

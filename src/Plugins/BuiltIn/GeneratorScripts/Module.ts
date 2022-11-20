@@ -36,6 +36,6 @@ export function createModule({
 					.readFile(templatePath)
 					.then((file) => file.text())
 		},
-		createCollection: () => new Collection(console, dirname(generatorPath)),
+		createCollection: () => new Collection(console),
 	}
 }
