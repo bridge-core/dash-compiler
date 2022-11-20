@@ -33,18 +33,7 @@ export declare class Component {
     create(fileContent: any, template: any, location?: string, operation?: (deepMerge: (oldData: any, newData: any) => any, oldData: any, newData: any) => any): void;
     protected getObjAtLocation(fileContent: any, location: string[]): any;
     processTemplates(fileContent: any, componentArgs: any, location: string): Promise<void>;
-    processAdditionalFiles(filePath: string, fileContent: any): Promise<{
-        [x: string]: {
-            baseFile: string;
-            fileContent: string;
-        } | {
-            baseFile: string;
-            fileContent: string;
-        } | {
-            baseFile: string;
-            fileContent: string | undefined;
-        } | undefined;
-    }>;
+    processAdditionalFiles(filePath: string, fileContent: any, isPlayerFile?: boolean): Promise<{}>;
     protected createAnimations(fileName: string, fileContent: any): string | undefined;
     protected createAnimationControllers(fileName: string, fileContent: any): string | undefined;
     protected getAnimName(prefix: string, fileName: string, id: number): string;

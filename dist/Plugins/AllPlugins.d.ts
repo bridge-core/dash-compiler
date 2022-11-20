@@ -28,6 +28,7 @@ export declare class AllPlugins {
         targetVersion: string | undefined;
         requestJsonData: <T = any>(dataPath: string) => Promise<T>;
         getAliases: (filePath: string) => string[];
+        getAliasesWhere: (criteria: (alias: string) => boolean) => string[];
         getFileMetadata: (filePath: string) => {
             get(key: string): any;
             set(key: string, value: any): void;

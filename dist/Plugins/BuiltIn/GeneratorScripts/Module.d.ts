@@ -1,6 +1,5 @@
-import { FileSystem } from '../../../FileSystem/FileSystem';
-import { Console } from '../../../Common/Console';
-import { Collection } from './Collection';
+import type { FileSystem } from '../../../FileSystem/FileSystem';
+import type { Console } from '../../../Common/Console';
 export interface IModuleOpts {
     generatorPath: string;
     omitUsedTemplates: Set<string>;
@@ -10,8 +9,6 @@ export interface IModuleOpts {
 interface IUseTemplateOptions {
     omitTemplate?: boolean;
 }
-export declare function createModule({ generatorPath, omitUsedTemplates, fileSystem, console, }: IModuleOpts): {
-    useTemplate: (filePath: string, { omitTemplate }?: IUseTemplateOptions) => Promise<any>;
-    createCollection: () => Collection;
-};
+export declare function useTemplate(filePath: string, { omitTemplate }?: IUseTemplateOptions): Promise<any>;
+export declare function createCollection(): any;
 export {};

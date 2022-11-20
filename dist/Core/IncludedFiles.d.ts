@@ -12,6 +12,7 @@ export declare class IncludedFiles {
     getFromFilePath(filePath: string): DashFile | undefined;
     query(query: string): DashFile[];
     addAlias(alias: string, DashFile: DashFile): void;
+    getAliasesWhere(keepAlias: (alias: string) => boolean): string[];
     queryGlob(glob: string): DashFile[];
     loadAll(): Promise<void>;
     addOne(filePath: string, isVirtual?: boolean): DashFile;

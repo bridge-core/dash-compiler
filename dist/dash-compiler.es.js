@@ -193,8 +193,7 @@ const MoLangPlugin = async ({
   requestJsonData,
   options,
   console: console2,
-  jsRuntime,
-  fileSystem
+  jsRuntime
 }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
   const customMoLang = new CustomMoLang({});
@@ -214,15 +213,10 @@ const MoLangPlugin = async ({
     return molangLocs;
   };
   let astTransformers = [];
-  let hasCustomMoLang = false;
-  const hasMolangFile = await Promise.all(molangDirPaths.map((dirPath) => fileSystem.directoryHasAnyFile(dirPath)));
-  if (!hasMolangFile.some((hasFile) => hasFile) && !await fileSystem.directoryHasAnyFile(molangScriptPath))
-    return {};
   return {
     async buildStart() {
       options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
       cachedPaths.clear();
-      hasCustomMoLang = false;
     },
     ignore(filePath) {
       return !isMoLangFile(filePath) && !isMoLangScript(filePath) && !loadMoLangFrom(filePath);
@@ -233,7 +227,6 @@ const MoLangPlugin = async ({
     },
     async read(filePath, fileHandle) {
       if ((isMoLangFile(filePath) || isMoLangScript(filePath)) && fileHandle) {
-        hasCustomMoLang = true;
         const file = await fileHandle.getFile();
         return await (file == null ? void 0 : file.text());
       } else if (loadMoLangFrom(filePath) && filePath.endsWith(".json") && fileHandle) {
@@ -252,8 +245,6 @@ const MoLangPlugin = async ({
       }
     },
     async load(filePath, fileContent) {
-      if (!hasCustomMoLang)
-        return;
       if (isMoLangFile(filePath) && fileContent) {
         customMoLang.parse(fileContent);
       } else if (isMoLangScript(filePath)) {
@@ -268,8 +259,6 @@ const MoLangPlugin = async ({
       }
     },
     async require(filePath) {
-      if (!hasCustomMoLang)
-        return;
       if (loadMoLangFrom(filePath)) {
         return [
           resolve("behaviorPack", "scripts/molang/**/*.[jt]s"),
@@ -279,8 +268,6 @@ const MoLangPlugin = async ({
       }
     },
     async transform(filePath, fileContent) {
-      if (!hasCustomMoLang)
-        return;
       const includePaths = loadMoLangFrom(filePath);
       if (includePaths && includePaths.length > 0) {
         includePaths.forEach((includePath) => setObjectAt(includePath, fileContent, (molang) => {
@@ -536,8 +523,10 @@ class Component {
     return true;
   }
   reset() {
-    this.animations = [];
-    this.animationControllers = [];
+    if (this.fileType !== "item") {
+      this.animations = [];
+      this.animationControllers = [];
+    }
     this.clientFiles = {};
     this.serverFiles = [];
   }
@@ -670,11 +659,13 @@ class Component {
         player: {
           animationController,
           animation,
-          create: (template, location2, operation) => this.createOnPlayer.push([
-            location2 != null ? location2 : `minecraft:entity`,
-            template,
-            operation
-          ])
+          create: (template, location2, operation) => {
+            this.createOnPlayer.push([
+              location2 != null ? location2 : `minecraft:entity`,
+              template,
+              operation
+            ]);
+          }
         }
       });
     } else if (this.fileType === "block") {
@@ -691,11 +682,11 @@ class Component {
       });
     }
   }
-  async processAdditionalFiles(filePath, fileContent) {
+  async processAdditionalFiles(filePath, fileContent, isPlayerFile = false) {
     var _a, _b, _c, _d, _e, _f;
     const bpRoot = (_b = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack")) != null ? _b : "BP";
     const rpRoot = (_c = this.projectConfig) == null ? void 0 : _c.getRelativePackRoot("resourcePack");
-    const identifier = (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
+    const identifier = isPlayerFile ? "minecraft:player" : (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
     const fileName = await hashString(`${this.name}/${identifier}`);
     const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
     const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`;
@@ -708,15 +699,21 @@ class Component {
       this.clientFiles = {};
       this.console.error(`[${this.name}] Dash was unable to load the root of your resource pack and therefore cannot generate client files for this component.`);
     }
+    let anims = {};
+    if (this.fileType !== "item" || identifier === "minecraft:player") {
+      anims = {
+        [animFileName]: {
+          baseFile: filePath,
+          fileContent: this.createAnimations(fileName, fileContent)
+        },
+        [animControllerFileName]: {
+          baseFile: filePath,
+          fileContent: this.createAnimationControllers(fileName, fileContent)
+        }
+      };
+    }
     return {
-      [animFileName]: {
-        baseFile: filePath,
-        fileContent: this.createAnimations(fileName, fileContent)
-      },
-      [animControllerFileName]: {
-        baseFile: filePath,
-        fileContent: this.createAnimationControllers(fileName, fileContent)
-      },
+      ...anims,
       [join(bpRoot, `dialogue/bridge/${fileName}.json`)]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
         baseFile: filePath,
         fileContent: JSON.stringify({
@@ -904,6 +901,7 @@ function createCustomComponentPlugin({
     projectRoot,
     compileFiles,
     getAliases,
+    getAliasesWhere,
     options,
     jsRuntime,
     targetVersion,
@@ -951,7 +949,7 @@ function createCustomComponentPlugin({
         hasComponentFiles = false;
       },
       ignore(filePath) {
-        return !createAdditionalFiles[filePath] && !isComponent(filePath) && !mayUseComponent(filePath) && !isPlayerFile(filePath, getAliases);
+        return !createAdditionalFiles[filePath] && !isComponent(filePath) && !mayUseComponent(filePath) && !(fileType === "item" && fileTypeLib.getId(filePath) === "entity");
       },
       transformPath(filePath) {
         if (isComponent(filePath) && options.buildType !== "fileRequest")
@@ -960,7 +958,7 @@ function createCustomComponentPlugin({
       async read(filePath, fileHandle) {
         if (!fileHandle)
           return createAdditionalFiles[filePath] ? json5.parse(createAdditionalFiles[filePath].fileContent) : void 0;
-        if (isComponent(filePath) && filePath.endsWith(".js")) {
+        if (isComponent(filePath)) {
           hasComponentFiles = true;
           const file = await fileHandle.getFile();
           return await (file == null ? void 0 : file.text());
@@ -999,11 +997,9 @@ function createCustomComponentPlugin({
       async require(filePath, fileContent) {
         if (!hasComponentFiles)
           return;
-        if (isPlayerFile(filePath, getAliases))
-          return [
-            `.${projectConfig.getRelativePackRoot("behaviorPack")}/components/item/**/*.[jt]s`,
-            `.${projectConfig.getRelativePackRoot("behaviorPack")}/items/**/*.json`
-          ];
+        if (isPlayerFile(filePath, getAliases)) {
+          return getAliasesWhere((alias) => alias.startsWith("itemComponent#"));
+        }
         if (mayUseComponent(filePath)) {
           const components = findCustomComponents(getComponentObjects(fileContent));
           usedComponents.set(filePath, components);
@@ -1021,7 +1017,7 @@ function createCustomComponentPlugin({
           for (const component of itemComponents) {
             if (!component)
               return;
-            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
+            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent, true));
           }
         } else if (mayUseComponent(filePath)) {
           const components = /* @__PURE__ */ new Set();
@@ -1389,7 +1385,7 @@ const TypeScriptPlugin = ({ options }) => {
       return await (file == null ? void 0 : file.text());
     },
     async load(filePath, fileContent) {
-      if (!filePath.endsWith(".ts"))
+      if (!filePath.endsWith(".ts") || fileContent === null)
         return;
       await loadedWasm;
       return transformSync(fileContent, {
@@ -1575,9 +1571,9 @@ const FormatVersionCorrection = ({
   };
 };
 class Collection {
-  constructor(console2, baseDir) {
+  constructor(console2) {
     this.console = console2;
-    this.baseDir = baseDir;
+    this.__isCollection = true;
     this.files = /* @__PURE__ */ new Map();
   }
   get hasFiles() {
@@ -1593,41 +1589,24 @@ class Collection {
     this.files.clear();
   }
   add(filePath, fileContent) {
-    const resolvedPath = this.baseDir ? join(this.baseDir, filePath) : filePath;
-    if (this.files.has(resolvedPath)) {
-      this.console.warn(`Omitting file "${resolvedPath}" from collection because it would overwrite a previously generated file!`);
+    if (this.files.has(filePath)) {
+      this.console.warn(`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`);
       return;
     }
-    this.files.set(resolvedPath, fileContent);
+    this.files.set(filePath, fileContent);
   }
   has(filePath) {
     return this.files.has(filePath);
   }
-  addFrom(collection) {
+  addFrom(collection, baseDir) {
     for (const [filePath, fileContent] of collection.getAll()) {
-      this.add(filePath, fileContent);
+      const resolvedPath = baseDir ? join(baseDir, filePath) : filePath;
+      this.add(resolvedPath, fileContent);
     }
   }
 }
-function createModule({
-  generatorPath,
-  omitUsedTemplates,
-  fileSystem,
-  console: console2
-}) {
-  return {
-    useTemplate: (filePath, { omitTemplate = true } = {}) => {
-      const templatePath = join(dirname(generatorPath), filePath);
-      if (omitTemplate)
-        omitUsedTemplates.add(templatePath);
-      if (filePath.endsWith(".json"))
-        return fileSystem.readJson(templatePath);
-      else
-        return fileSystem.readFile(templatePath).then((file) => file.text());
-    },
-    createCollection: () => new Collection(console2, dirname(generatorPath))
-  };
-}
+var GeneratorScriptModule = "import { dirname, join } from 'path-browserify'\nimport type { FileSystem } from '../../../FileSystem/FileSystem'\nimport type { Console } from '../../../Common/Console'\n// @ts-expect-error\nimport { Collection } from '@bridge-interal/collection'\n\ndeclare const __fileSystem: FileSystem\ndeclare const console: Console\ndeclare const __omitUsedTemplates: Set<string>\ndeclare const __baseDirectory: string\n\nexport interface IModuleOpts {\n	generatorPath: string\n	omitUsedTemplates: Set<string>\n	fileSystem: FileSystem\n	console: Console\n}\n\ninterface IUseTemplateOptions {\n	omitTemplate?: boolean\n}\n\nexport function useTemplate(\n	filePath: string,\n	{ omitTemplate = true }: IUseTemplateOptions = {}\n) {\n	const templatePath = join(__baseDirectory, filePath)\n	if (omitTemplate) __omitUsedTemplates.add(templatePath)\n\n	// TODO(@solvedDev): Pipe file through compileFile API\n	if (filePath.endsWith('.json')) return __fileSystem.readJson(templatePath)\n	else return __fileSystem.readFile(templatePath).then((file) => file.text())\n}\n\nexport function createCollection() {\n	return new Collection(console)\n}\n";
+var CollectionModule = "import { join } from 'path-browserify'\nimport { Console } from '../../../Common/Console'\n\nexport class Collection {\n	public readonly __isCollection = true\n	protected files = new Map<string, any>()\n	constructor(protected console: Console) {}\n\n	get hasFiles() {\n		return this.files.size > 0\n	}\n\n	getAll() {\n		return [...this.files.entries()]\n	}\n\n	get(filePath: string) {\n		return this.files.get(filePath)\n	}\n\n	clear() {\n		this.files.clear()\n	}\n	add(filePath: string, fileContent: any) {\n		if (this.files.has(filePath)) {\n			this.console.warn(\n				`Omitting file \"${filePath}\" from collection because it would overwrite a previously generated file!`\n			)\n			return\n		}\n		this.files.set(filePath, fileContent)\n	}\n	has(filePath: string) {\n		return this.files.has(filePath)\n	}\n	addFrom(collection: Collection, baseDir?: string) {\n		for (const [filePath, fileContent] of collection.getAll()) {\n			const resolvedPath = baseDir ? join(baseDir, filePath) : filePath\n			this.add(resolvedPath, fileContent)\n		}\n	}\n}\n";
 const GeneratorScriptsPlugin = ({
   options,
   fileType,
@@ -1674,6 +1653,12 @@ const GeneratorScriptsPlugin = ({
       omitUsedTemplates.clear();
       filesToUpdate.clear();
       usedTemplateMap.clear();
+      jsRuntime.registerModule("@bridge-interal/collection", CollectionModule);
+      jsRuntime.registerModule("@bridge/generate", GeneratorScriptModule);
+      jsRuntime.registerModule("path-browserify", {
+        dirname,
+        join
+      });
     },
     ignore(filePath) {
       return !isGeneratorScript(filePath) && !omitUsedTemplates.has(filePath) && !fileCollection.has(filePath);
@@ -1695,41 +1680,38 @@ const GeneratorScriptsPlugin = ({
     },
     async load(filePath, fileContent) {
       var _a2, _b;
-      if (isGeneratorScript(filePath)) {
-        if (!fileContent)
-          return null;
-        const currentTemplates = /* @__PURE__ */ new Set();
-        jsRuntime.registerModule("@bridge/generate", createModule({
-          generatorPath: filePath,
-          fileSystem,
-          omitUsedTemplates: currentTemplates,
-          console: console2
-        }));
-        const module = await jsRuntime.run(filePath, {
-          console: console2
-        }, fileContent).catch((err) => {
-          console2.error(`Failed to execute generator script "${filePath}": ${err}`);
-          return null;
-        });
-        if (!module)
-          return null;
-        if (!module.__default__) {
-          console2.error(`Expected generator script "${filePath}" to provide file content as default export!`);
-          return null;
-        }
-        const fileMetadata = getFileMetadata(filePath);
-        const previouslyUnlinkedFiles = ((_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : []).filter((filePath2) => !currentTemplates.has(filePath2));
-        previouslyUnlinkedFiles.forEach((file) => filesToUpdate.add(file));
-        fileMetadata.set("unlinkedFiles", [...currentTemplates]);
-        const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
-        await unlinkOutputFiles([
-          ...generatedFiles,
-          ...currentTemplates
-        ]).catch(() => {
-        });
-        usedTemplateMap.set(filePath, currentTemplates);
-        return module.__default__;
+      if (!isGeneratorScript(filePath))
+        return;
+      if (!fileContent)
+        return null;
+      const currentTemplates = /* @__PURE__ */ new Set();
+      const module = await jsRuntime.run(filePath, {
+        console: console2,
+        __baseDirectory: dirname(filePath),
+        __omitUsedTemplates: omitUsedTemplates,
+        __fileSystem: fileSystem
+      }, fileContent).catch((err) => {
+        console2.error(`Failed to execute generator script "${filePath}": ${err}`);
+        return null;
+      });
+      if (!module)
+        return null;
+      if (!module.__default__) {
+        console2.error(`Expected generator script "${filePath}" to provide file content as default export!`);
+        return null;
       }
+      const fileMetadata = getFileMetadata(filePath);
+      const previouslyUnlinkedFiles = ((_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : []).filter((filePath2) => !currentTemplates.has(filePath2));
+      previouslyUnlinkedFiles.forEach((file) => filesToUpdate.add(file));
+      fileMetadata.set("unlinkedFiles", [...currentTemplates]);
+      const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
+      await unlinkOutputFiles([
+        ...generatedFiles,
+        ...currentTemplates
+      ]).catch(() => {
+      });
+      usedTemplateMap.set(filePath, currentTemplates);
+      return module.__default__;
     },
     require(filePath) {
       const usedTemplates = usedTemplateMap.get(filePath);
@@ -1748,8 +1730,8 @@ const GeneratorScriptsPlugin = ({
         if (fileContent === null)
           return null;
         const fileMetadata = getFileMetadata(filePath);
-        if (fileContent instanceof Collection) {
-          fileCollection.addFrom(fileContent);
+        if (fileContent.__isCollection) {
+          fileCollection.addFrom(fileContent, dirname(filePath));
           fileMetadata.set("generatedFiles", fileContent.getAll().map(([filePath2]) => filePath2));
           return null;
         }
@@ -1759,6 +1741,8 @@ const GeneratorScriptsPlugin = ({
     },
     async buildEnd() {
       jsRuntime.deleteModule("@bridge/generate");
+      jsRuntime.deleteModule("@bridge-interal/collection");
+      jsRuntime.deleteModule("path-browserify");
       if (filesToUpdate.size > 0)
         await compileFiles([...filesToUpdate].filter((filePath) => !fileCollection.has(filePath)), false);
       if (fileCollection.hasFiles)
@@ -1788,7 +1772,7 @@ class JsRuntime extends Runtime {
     this.fs = fs;
   }
   readFile(filePath) {
-    return this.fs.readFile(filePath).then((file) => file.text());
+    return this.fs.readFile(filePath);
   }
   deleteModule(moduleName) {
     this.baseModules.delete(moduleName);
@@ -1950,6 +1934,9 @@ class AllPlugins {
         return [
           ...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []
         ];
+      },
+      getAliasesWhere: (criteria) => {
+        return this.dash.includedFiles.getAliasesWhere(criteria);
       },
       getFileMetadata: (filePath) => {
         const file = this.dash.includedFiles.get(filePath);
@@ -2277,6 +2264,10 @@ class IncludedFiles {
   addAlias(alias, DashFile2) {
     this.aliases.set(alias, DashFile2);
   }
+  getAliasesWhere(keepAlias) {
+    const aliases = [...this.aliases.keys()].filter(keepAlias);
+    return aliases;
+  }
   queryGlob(glob) {
     if (this.queryCache.has(glob)) {
       return this.queryCache.get(glob);
@@ -2352,6 +2343,7 @@ class IncludedFiles {
       file.setAliases(new Set(sFile.aliases));
       file.setRequiredFiles(new Set(sFile.requiredFiles));
       file.setMetadata(sFile.metadata);
+      file.createImplementedHooksMap();
       files.push(file);
       for (const alias of sFile.aliases) {
         this.aliases.set(alias, file);
@@ -2388,6 +2380,10 @@ class LoadFiles {
       promises.push(this.loadFile(file, writeFiles));
     }
     await Promise.allSettled(promises);
+    await Promise.allSettled(files.map(async (file) => {
+      const requiredFiles = await this.dash.plugins.runRequireHooks(file);
+      file.setRequiredFiles(requiredFiles);
+    }));
   }
   async loadFile(file, writeFiles = true) {
     var _a;
@@ -2402,12 +2398,8 @@ class LoadFiles {
     if (file.isDone)
       return;
     file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
-    const [aliases, requiredFiles] = await Promise.all([
-      this.dash.plugins.runRegisterAliasesHooks(file),
-      this.dash.plugins.runRequireHooks(file)
-    ]);
+    const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);
     file.setAliases(aliases);
-    file.setRequiredFiles(requiredFiles);
   }
   async awaitAllFilesCopied() {
     if (this.copyFilePromises.length === 0)
@@ -2466,7 +2458,7 @@ class FileTransformer {
       if (file.isDone)
         continue;
       let writeData = await this.transformFile(file, true, skipTransform);
-      if (writeData !== void 0 && writeData !== null && file.outputPath) {
+      if (writeData !== void 0 && writeData !== null && file.outputPath !== null && file.filePath !== file.outputPath) {
         promises.push(this.dash.outputFileSystem.writeFile(file.outputPath, writeData));
       }
     }
