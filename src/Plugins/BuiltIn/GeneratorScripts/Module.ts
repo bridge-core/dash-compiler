@@ -1,7 +1,13 @@
 import { dirname, join } from 'path-browserify'
-import { FileSystem } from '../../../FileSystem/FileSystem'
-import { Console } from '../../../Common/Console'
-import { Collection } from './Collection'
+import type { FileSystem } from '../../../FileSystem/FileSystem'
+import type { Console } from '../../../Common/Console'
+// @ts-expect-error
+import { Collection } from '@bridge-interal/collection'
+
+declare const __fileSystem: FileSystem
+declare const console: Console
+declare const __omitUsedTemplates: Set<string>
+declare const __baseDirectory: string
 
 export interface IModuleOpts {
 	generatorPath: string
@@ -14,28 +20,18 @@ interface IUseTemplateOptions {
 	omitTemplate?: boolean
 }
 
-export function createModule({
-	generatorPath,
-	omitUsedTemplates,
-	fileSystem,
-	console,
-}: IModuleOpts) {
-	return {
-		useTemplate: (
-			filePath: string,
-			{ omitTemplate = true }: IUseTemplateOptions = {}
-		) => {
-			const templatePath = join(dirname(generatorPath), filePath)
-			if (omitTemplate) omitUsedTemplates.add(templatePath)
+export function useTemplate(
+	filePath: string,
+	{ omitTemplate = true }: IUseTemplateOptions = {}
+) {
+	const templatePath = join(__baseDirectory, filePath)
+	if (omitTemplate) __omitUsedTemplates.add(templatePath)
 
-			// TODO(@solvedDev): Pipe file through compileFile API
-			if (filePath.endsWith('.json'))
-				return fileSystem.readJson(templatePath)
-			else
-				return fileSystem
-					.readFile(templatePath)
-					.then((file) => file.text())
-		},
-		createCollection: () => new Collection(console),
-	}
+	// TODO(@solvedDev): Pipe file through compileFile API
+	if (filePath.endsWith('.json')) return __fileSystem.readJson(templatePath)
+	else return __fileSystem.readFile(templatePath).then((file) => file.text())
+}
+
+export function createCollection() {
+	return new Collection(console)
 }

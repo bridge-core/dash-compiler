@@ -1,7 +1,8 @@
-import { dirname } from 'path-browserify'
+import { dirname, join } from 'path-browserify'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Collection } from './Collection'
-import { createModule } from './Module'
+import GeneratorScriptModule from './Module?raw'
+import CollectionModule from './Collection?raw'
 
 export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 	ignoredFileTypes?: string[]
@@ -55,6 +56,16 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 			omitUsedTemplates.clear()
 			filesToUpdate.clear()
 			usedTemplateMap.clear()
+
+			jsRuntime.registerModule(
+				'@bridge-interal/collection',
+				CollectionModule
+			)
+			jsRuntime.registerModule('@bridge/generate', GeneratorScriptModule)
+			jsRuntime.registerModule('path-browserify', {
+				dirname,
+				join,
+			})
 		},
 		ignore(filePath) {
 			return (
@@ -87,21 +98,15 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 			if (!fileContent) return null
 
 			const currentTemplates = new Set<string>()
-			jsRuntime.registerModule(
-				'@bridge/generate',
-				createModule({
-					generatorPath: filePath,
-					fileSystem,
-					omitUsedTemplates: currentTemplates,
-					console,
-				})
-			)
 
 			const module = await jsRuntime
 				.run(
 					filePath,
 					{
 						console,
+						__baseDirectory: dirname(filePath),
+						__omitUsedTemplates: omitUsedTemplates,
+						__fileSystem: fileSystem,
 					},
 					fileContent
 				)
@@ -169,12 +174,17 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 
 				const fileMetadata = getFileMetadata(filePath)
 
-				if (fileContent instanceof Collection) {
-					fileCollection.addFrom(fileContent, dirname(filePath))
+				if (fileContent.__isCollection) {
+					fileCollection.addFrom(
+						fileContent as Collection,
+						dirname(filePath)
+					)
 					// Cache the files this generator script generated
 					fileMetadata.set(
 						'generatedFiles',
-						fileContent.getAll().map(([filePath]) => filePath)
+						(fileContent as Collection)
+							.getAll()
+							.map(([filePath]) => filePath)
 					)
 
 					return null
@@ -190,6 +200,8 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 		},
 		async buildEnd() {
 			jsRuntime.deleteModule('@bridge/generate')
+			jsRuntime.deleteModule('@bridge-interal/collection')
+			jsRuntime.deleteModule('path-browserify')
 
 			if (filesToUpdate.size > 0)
 				await compileFiles(

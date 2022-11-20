@@ -2,6 +2,7 @@ import { join } from 'path-browserify'
 import { Console } from '../../../Common/Console'
 
 export class Collection {
+	public readonly __isCollection = true
 	protected files = new Map<string, any>()
 	constructor(protected console: Console) {}
 
