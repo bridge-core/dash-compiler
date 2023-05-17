@@ -89,7 +89,7 @@ export function createCustomComponentPlugin({
 				cachedMayUseComponents.clear()
 				playerFile = null
 				createAdditionalFiles = {}
-				hasComponentFiles = (await fileSystem.allFiles(projectRoot + "/BP/components")).length > 0
+				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`)).length > 0
 			},
 			ignore(filePath) {
 				return (
