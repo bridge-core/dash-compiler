@@ -942,12 +942,13 @@ function createCustomComponentPlugin({
     let hasComponentFiles = false;
     return {
       async buildStart() {
+        var _a, _b;
         usedComponents.clear();
         cachedIsComponent.clear();
         cachedMayUseComponents.clear();
         playerFile = null;
         createAdditionalFiles = {};
-        hasComponentFiles = (await fileSystem.allFiles(projectRoot + "/BP/components")).length > 0;
+        hasComponentFiles = (await fileSystem.allFiles(`${projectRoot}${(_b = (_a = projectConfig.get().packs) == null ? void 0 : _a.behaviorPack) == null ? void 0 : _b.substring(1)}/components`)).length > 0;
       },
       ignore(filePath) {
         return !createAdditionalFiles[filePath] && !isComponent(filePath) && !mayUseComponent(filePath) && !(fileType === "item" && fileTypeLib.getId(filePath) === "entity");
