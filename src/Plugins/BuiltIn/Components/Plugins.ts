@@ -33,6 +33,7 @@ export function createCustomComponentPlugin({
 		jsRuntime,
 		targetVersion,
 		fileType: fileTypeLib,
+		fileSystem
 	}) => {
 		let playerFile: string | null = null
 		const isPlayerFile = (
@@ -82,13 +83,13 @@ export function createCustomComponentPlugin({
 		let hasComponentFiles = false
 
 		return {
-			buildStart() {
+			async buildStart() {
 				usedComponents.clear()
 				cachedIsComponent.clear()
 				cachedMayUseComponents.clear()
 				playerFile = null
 				createAdditionalFiles = {}
-				hasComponentFiles = false
+				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`)).length > 0
 			},
 			ignore(filePath) {
 				return (
