@@ -33,7 +33,6 @@ export function createCustomComponentPlugin({
 		targetVersion,
 		fileType: fileTypeLib,
 		fileSystem
-
 	}) => {
 		let playerFile: string | null = null
 		const isPlayerFile = (
