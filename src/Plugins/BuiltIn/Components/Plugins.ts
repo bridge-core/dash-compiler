@@ -1,10 +1,9 @@
 import json5 from 'json5'
-import { get, deepMerge } from 'bridge-common-utils'
+import { get, deepMerge, hasAnyPath } from 'bridge-common-utils'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Component } from './Component'
 import { findCustomComponents } from './findComponents'
 import { join } from 'path-browserify'
-
 interface IOpts {
 	fileType: string
 	getComponentObjects: (fileContent: any) => [string, any][]
@@ -34,6 +33,7 @@ export function createCustomComponentPlugin({
 		targetVersion,
 		fileType: fileTypeLib,
 		fileSystem
+
 	}) => {
 		let playerFile: string | null = null
 		const isPlayerFile = (
@@ -81,6 +81,7 @@ export function createCustomComponentPlugin({
 
 		// Store whether the current project contains component files
 		let hasComponentFiles = false
+		let ComponentFiles = []
 
 		return {
 			async buildStart() {
@@ -89,7 +90,7 @@ export function createCustomComponentPlugin({
 				cachedMayUseComponents.clear()
 				playerFile = null
 				createAdditionalFiles = {}
-				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`)).length > 0
+				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`).catch(() => [])).length > 0
 			},
 			ignore(filePath) {
 				return (
