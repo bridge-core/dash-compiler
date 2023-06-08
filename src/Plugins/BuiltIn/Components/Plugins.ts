@@ -80,7 +80,6 @@ export function createCustomComponentPlugin({
 
 		// Store whether the current project contains component files
 		let hasComponentFiles = false
-		let ComponentFiles = []
 
 		return {
 			async buildStart() {
