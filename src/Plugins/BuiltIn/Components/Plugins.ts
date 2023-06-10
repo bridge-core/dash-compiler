@@ -4,7 +4,6 @@ import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Component } from './Component'
 import { findCustomComponents } from './findComponents'
 import { join } from 'path-browserify'
-
 interface IOpts {
 	fileType: string
 	getComponentObjects: (fileContent: any) => [string, any][]
@@ -89,7 +88,7 @@ export function createCustomComponentPlugin({
 				cachedMayUseComponents.clear()
 				playerFile = null
 				createAdditionalFiles = {}
-				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`)).length > 0
+				hasComponentFiles = (await fileSystem.allFiles( `${projectRoot}${projectConfig.get().packs?.behaviorPack?.substring(1)}/components`).catch(() => [])).length > 0
 			},
 			ignore(filePath) {
 				return (
