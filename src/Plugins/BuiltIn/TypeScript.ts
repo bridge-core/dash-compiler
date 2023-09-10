@@ -8,7 +8,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 }> = ({ options }) => {
 	return {
 		ignore(filePath) {
-			return !filePath.endsWith('.ts')
+			return !filePath.endsWith('.ts') || filePath.endsWith('.d.ts')
 		},
 
 		async transformPath(filePath) {
