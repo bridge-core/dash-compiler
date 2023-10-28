@@ -1376,8 +1376,11 @@ const TypeScriptPlugin = ({ options }) => {
       return !filePath.endsWith(".ts");
     },
     async transformPath(filePath) {
+      console.log("Typescript transforming", filePath);
       if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
         return;
+      if (filePath == null ? void 0 : filePath.endsWith(".d.ts"))
+        return null;
       return `${filePath.slice(0, -3)}.js`;
     },
     async read(filePath, fileHandle) {
@@ -1387,6 +1390,7 @@ const TypeScriptPlugin = ({ options }) => {
       return await (file == null ? void 0 : file.text());
     },
     async load(filePath, fileContent) {
+      console.log("Typescript loading", filePath, fileContent);
       if (!filePath.endsWith(".ts") || fileContent === null)
         return;
       await loadedWasm;
@@ -1933,9 +1937,7 @@ class AllPlugins {
       requestJsonData: this.dash.requestJsonData,
       getAliases: (filePath) => {
         var _a, _b;
-        return [
-          ...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []
-        ];
+        return [...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []];
       },
       getAliasesWhere: (criteria) => {
         return this.dash.includedFiles.getAliasesWhere(criteria);
@@ -1999,6 +2001,8 @@ class AllPlugins {
     let currentFilePath = file.filePath;
     for (const plugin of this.pluginsFor("transformPath")) {
       const newPath = await plugin.runTransformPathHook(currentFilePath);
+      if (newPath === null)
+        console.warn("Removing", file.filePath, "from build");
       if (newPath === null)
         return null;
       else if (newPath !== void 0)
@@ -2389,6 +2393,7 @@ class LoadFiles {
   }
   async loadFile(file, writeFiles = true) {
     var _a;
+    console.warn("Loading file", file.filePath);
     const [_, outputPath] = await Promise.all([
       this.dash.plugins.runIgnoreHooks(file),
       this.dash.plugins.runTransformPathHooks(file)
@@ -2397,7 +2402,7 @@ class LoadFiles {
     file.setOutputPath(outputPath);
     file.setReadData(readData);
     file.processAfterLoad(writeFiles, this.copyFilePromises);
-    if (file.isDone)
+    if (file.isDone || outputPath === null)
       return;
     file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
     const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);

@@ -14,6 +14,8 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 		async transformPath(filePath) {
 			if (!filePath?.endsWith('.ts')) return
 
+			if (filePath?.endsWith('.d.ts')) return null
+
 			return `${filePath.slice(0, -3)}.js`
 		},
 		async read(filePath, fileHandle) {
@@ -48,8 +50,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			 * This is necessary because e.g. custom component files need their own
 			 * logic to be transformed from the Component instance back to a transpiled string
 			 */
-			if (filePath.endsWith('.ts') && typeof fileContent === 'string')
-				return fileContent
+			if (filePath.endsWith('.ts') && typeof fileContent === 'string') return fileContent
 		},
 	}
 }

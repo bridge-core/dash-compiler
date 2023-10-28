@@ -23,10 +23,8 @@ export class LoadFiles {
 		// All aliases need to be defined before requiring files
 		// That's why we need to loop over all files again
 		await Promise.allSettled(
-			files.map(async (file) => {
-				const requiredFiles = await this.dash.plugins.runRequireHooks(
-					file
-				)
+			files.map(async file => {
+				const requiredFiles = await this.dash.plugins.runRequireHooks(file)
 				file.setRequiredFiles(requiredFiles)
 			})
 		)
@@ -47,11 +45,9 @@ export class LoadFiles {
 
 		// If file is already done processing (no file read hook defined),
 		// we can skip the rest of the compiler pipeline for this file
-		if (file.isDone) return
+		if (file.isDone || outputPath === null) return
 
-		file.setReadData(
-			(await this.dash.plugins.runLoadHooks(file)) ?? file.data
-		)
+		file.setReadData((await this.dash.plugins.runLoadHooks(file)) ?? file.data)
 
 		const aliases = await this.dash.plugins.runRegisterAliasesHooks(file)
 
