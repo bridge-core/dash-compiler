@@ -13,6 +13,8 @@ import { Console } from './Common/Console'
 import { DefaultConsole } from './Common/DefaultConsole'
 import { JsRuntime } from './Common/JsRuntime'
 import { MoLang, expressions } from 'molang'
+import { initRuntimes as initBridgeJsRuntimes } from 'bridge-js-runtime'
+import initSwc from '@swc/wasm-web'
 
 export interface IDashOptions<TSetupArg = void> {
 	/**
@@ -143,10 +145,7 @@ export class Dash<TSetupArg = void> {
 	get isCompilerActivated() {
 		const config = this.projectConfig.get()
 
-		return (
-			config.compiler !== undefined &&
-			Array.isArray(config.compiler.plugins)
-		)
+		return config.compiler !== undefined && Array.isArray(config.compiler.plugins)
 	}
 
 	async build() {
@@ -183,9 +182,7 @@ export class Dash<TSetupArg = void> {
 		this.progress.advance()
 
 		this.console.log(
-			`Dash compiled ${this.includedFiles.all().length} files in ${
-				Date.now() - startTime
-			}ms!`
+			`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`
 		)
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
@@ -201,9 +198,7 @@ export class Dash<TSetupArg = void> {
 		this.progress.setTotal(8)
 
 		// Update files in output
-		this.console.log(
-			`Dash is starting to update ${filePaths.length} files...`
-		)
+		this.console.log(`Dash is starting to update ${filePaths.length} files...`)
 
 		await this.includedFiles.load(this.dashFilePath)
 		await this.plugins.runBuildStartHooks()
@@ -233,50 +228,33 @@ export class Dash<TSetupArg = void> {
 
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i]
-			const newDeps = [...file.requiredFiles].filter(
-				(dep) => !oldDeps[i].has(dep)
+			const newDeps = [...file.requiredFiles].filter(dep => !oldDeps[i].has(dep))
+
+			newDeps.forEach(dep =>
+				this.includedFiles.query(dep).forEach(depFile => depFile.addUpdateFile(file))
 			)
 
-			newDeps.forEach((dep) =>
-				this.includedFiles
-					.query(dep)
-					.forEach((depFile) => depFile.addUpdateFile(file))
-			)
+			const removedDeps = [...oldDeps[i]].filter(dep => !file.requiredFiles.has(dep))
 
-			const removedDeps = [...oldDeps[i]].filter(
-				(dep) => !file.requiredFiles.has(dep)
-			)
-
-			removedDeps.forEach((dep) =>
-				this.includedFiles
-					.query(dep)
-					.forEach((depFile) => depFile.removeUpdateFile(file))
+			removedDeps.forEach(dep =>
+				this.includedFiles.query(dep).forEach(depFile => depFile.removeUpdateFile(file))
 			)
 		}
 
 		this.progress.advance() // 4
 
-		const filesToLoad = new Set(
-			files.map((file) => [...file.filesToLoadForHotUpdate()]).flat()
-		)
+		const filesToLoad = new Set(files.map(file => [...file.filesToLoadForHotUpdate()]).flat())
 		this.console.log(`Dash is loading ${filesToLoad.size} files...`)
-		await this.loadFiles.run(
-			[...filesToLoad.values()].filter(
-				(currFile) => !files.includes(currFile)
-			)
-		)
+		await this.loadFiles.run([...filesToLoad.values()].filter(currFile => !files.includes(currFile)))
 
 		this.progress.advance() // 5
 
-		const filesToTransform = new Set(
-			files.map((file) => [...file.getHotUpdateChain()]).flat()
-		)
+		const filesToTransform = new Set(files.map(file => [...file.getHotUpdateChain()]).flat())
 
 		for (const file of filesToLoad) {
 			if (file.isDone) continue
 
-			file.data =
-				(await this.plugins.runTransformHooks(file)) ?? file.data
+			file.data = (await this.plugins.runTransformHooks(file)) ?? file.data
 
 			if (!filesToTransform.has(file)) file.isDone = true
 		}
@@ -297,16 +275,11 @@ export class Dash<TSetupArg = void> {
 
 		if (saveDashFile) await this.saveDashFile()
 		this.includedFiles.resetAll()
-		this.console.log(
-			`Dash finished updating ${filesToTransform.size} files!`
-		)
+		this.console.log(`Dash finished updating ${filesToTransform.size} files!`)
 
 		this.progress.advance() // 8
 	}
-	async compileFile(
-		filePath: string,
-		fileData: Uint8Array
-	): Promise<[string[], any]> {
+	async compileFile(filePath: string, fileData: Uint8Array): Promise<[string[], any]> {
 		if (!this.isCompilerActivated) return [[], fileData]
 		this.buildType = 'fileRequest'
 
@@ -337,7 +310,7 @@ export class Dash<TSetupArg = void> {
 		const filesToLoad = file.filesToLoadForHotUpdate()
 		// Load all file dependencies
 		await this.loadFiles.run(
-			[...filesToLoad.values()].filter((currFile) => file !== currFile),
+			[...filesToLoad.values()].filter(currFile => file !== currFile),
 			false
 		)
 
@@ -347,18 +320,13 @@ export class Dash<TSetupArg = void> {
 		for (const file of filesToLoad) {
 			if (file.isDone) continue
 
-			file.data =
-				(await this.plugins.runTransformHooks(file)) ?? file.data
+			file.data = (await this.plugins.runTransformHooks(file)) ?? file.data
 		}
 
 		this.progress.advance() // 3
 
 		// Transform original file data
-		const transformedData = await this.fileTransformer.transformFile(
-			file,
-			true,
-			true
-		)
+		const transformedData = await this.fileTransformer.transformFile(file, true, true)
 
 		this.progress.advance() // 4
 
@@ -369,22 +337,16 @@ export class Dash<TSetupArg = void> {
 
 		await this.plugins.runBuildEndHooks()
 
-		return [[...filesToLoad].map((file) => file.filePath), transformedData]
+		return [[...filesToLoad].map(file => file.filePath), transformedData]
 	}
 
-	async unlinkMultiple(
-		paths: string[],
-		saveDashFile = true,
-		onlyChangeOutput = false
-	) {
+	async unlinkMultiple(paths: string[], saveDashFile = true, onlyChangeOutput = false) {
 		if (!this.isCompilerActivated || paths.length === 0) return
 
 		const errors: Error[] = []
 
 		for (const path of paths) {
-			await this.unlink(path, false, onlyChangeOutput).catch((err) =>
-				errors.push(err)
-			)
+			await this.unlink(path, false, onlyChangeOutput).catch(err => errors.push(err))
 		}
 
 		if (errors.length > 0) {
@@ -394,11 +356,7 @@ export class Dash<TSetupArg = void> {
 		if (saveDashFile) await this.saveDashFile()
 	}
 
-	async unlink(
-		path: string,
-		updateDashFile = true,
-		onlyChangeOutput = false
-	) {
+	async unlink(path: string, updateDashFile = true, onlyChangeOutput = false) {
 		if (!this.isCompilerActivated) return
 
 		const outputPath = await this.getCompilerOutputPath(path)
@@ -425,14 +383,11 @@ export class Dash<TSetupArg = void> {
 	async getCompilerOutputPath(filePath: string) {
 		if (!this.isCompilerActivated) return
 
-		const includedFile: DashFile =
-			this.includedFiles.get(filePath) ?? new DashFile(this, filePath)
+		const includedFile: DashFile = this.includedFiles.get(filePath) ?? new DashFile(this, filePath)
 		if (includedFile && includedFile.outputPath !== filePath)
 			return includedFile.outputPath ?? undefined
 
-		const outputPath = await this.plugins.runTransformPathHooks(
-			includedFile
-		)
+		const outputPath = await this.plugins.runTransformPathHooks(includedFile)
 		if (!outputPath) return
 
 		return outputPath
@@ -456,13 +411,8 @@ export class Dash<TSetupArg = void> {
 
 		return <string[]>(
 			[...file.filesToLoadForHotUpdate()]
-				.map((file) =>
-					file.isVirtual ? file.outputPath : file.filePath
-				)
-				.filter(
-					(currFilePath) =>
-						currFilePath !== null && currFilePath !== filePath
-				)
+				.map(file => (file.isVirtual ? file.outputPath : file.filePath))
+				.filter(currFilePath => currFilePath !== null && currFilePath !== filePath)
 		)
 	}
 
@@ -471,9 +421,7 @@ export class Dash<TSetupArg = void> {
 		await this.includedFiles.save(this.dashFilePath)
 	}
 
-	protected async compileIncludedFiles(
-		files: DashFile[] = this.includedFiles.all()
-	) {
+	protected async compileIncludedFiles(files: DashFile[] = this.includedFiles.all()) {
 		this.console.time('Loading files...')
 		await this.loadFiles.run(files)
 		this.console.timeEnd('Loading files...')
@@ -502,7 +450,13 @@ export class Dash<TSetupArg = void> {
 		const virtualFiles = await this.includedFiles.add(filePaths, virtual)
 		this.progress.addToTotal(3)
 
-		virtualFiles.forEach((virtual) => virtual.reset())
+		virtualFiles.forEach(virtual => virtual.reset())
 		await this.compileIncludedFiles(virtualFiles)
 	}
+}
+
+export function initRuntimes(wasmLocation: string) {
+	initBridgeJsRuntimes(wasmLocation)
+
+	initSwc(wasmLocation)
 }

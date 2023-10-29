@@ -3,9 +3,8 @@ import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMoLang, expressions, MoLang } from "molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
 import json5 from "json5";
-import { transformSync } from "@swc/wasm-web";
-import { loadedWasm, Runtime } from "bridge-js-runtime";
-export { initRuntimes } from "bridge-js-runtime";
+import initSwc, { transformSync } from "@swc/wasm-web";
+import { loadedWasm, Runtime, initRuntimes as initRuntimes$1 } from "bridge-js-runtime";
 import isGlob from "is-glob";
 class DashProjectConfig extends ProjectConfig {
   constructor(fileSystem, configPath) {
@@ -1376,7 +1375,6 @@ const TypeScriptPlugin = ({ options }) => {
       return !filePath.endsWith(".ts");
     },
     async transformPath(filePath) {
-      console.log("Typescript transforming", filePath);
       if (!(filePath == null ? void 0 : filePath.endsWith(".ts")))
         return;
       if (filePath == null ? void 0 : filePath.endsWith(".d.ts"))
@@ -1390,7 +1388,6 @@ const TypeScriptPlugin = ({ options }) => {
       return await (file == null ? void 0 : file.text());
     },
     async load(filePath, fileContent) {
-      console.log("Typescript loading", filePath, fileContent);
       if (!filePath.endsWith(".ts") || fileContent === null)
         return;
       await loadedWasm;
@@ -1937,7 +1934,9 @@ class AllPlugins {
       requestJsonData: this.dash.requestJsonData,
       getAliases: (filePath) => {
         var _a, _b;
-        return [...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []];
+        return [
+          ...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []
+        ];
       },
       getAliasesWhere: (criteria) => {
         return this.dash.includedFiles.getAliasesWhere(criteria);
@@ -2001,8 +2000,6 @@ class AllPlugins {
     let currentFilePath = file.filePath;
     for (const plugin of this.pluginsFor("transformPath")) {
       const newPath = await plugin.runTransformPathHook(currentFilePath);
-      if (newPath === null)
-        console.warn("Removing", file.filePath, "from build");
       if (newPath === null)
         return null;
       else if (newPath !== void 0)
@@ -2393,7 +2390,6 @@ class LoadFiles {
   }
   async loadFile(file, writeFiles = true) {
     var _a;
-    console.warn("Loading file", file.filePath);
     const [_, outputPath] = await Promise.all([
       this.dash.plugins.runIgnoreHooks(file),
       this.dash.plugins.runTransformPathHooks(file)
@@ -2402,7 +2398,7 @@ class LoadFiles {
     file.setOutputPath(outputPath);
     file.setReadData(readData);
     file.processAfterLoad(writeFiles, this.copyFilePromises);
-    if (file.isDone || outputPath === null)
+    if (file.isDone)
       return;
     file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
     const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);
@@ -2843,6 +2839,10 @@ class Dash {
     await this.compileIncludedFiles(virtualFiles);
   }
 }
+function initRuntimes(wasmLocation) {
+  initRuntimes$1(wasmLocation);
+  initSwc(wasmLocation);
+}
 class FileSystem {
   async allFiles(path) {
     const files = [];
@@ -2879,4 +2879,4 @@ class FileSystem {
     console.warn("Watching a directory for changes is not supported on this platform!");
   }
 }
-export { Command, Component, Console, Dash, DefaultConsole, FileSystem };
+export { Command, Component, Console, Dash, DefaultConsole, FileSystem, initRuntimes };

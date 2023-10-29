@@ -61,3 +61,4 @@ export declare class Dash<TSetupArg = void> {
     protected compileIncludedFiles(files?: DashFile[]): Promise<void>;
     compileAdditionalFiles(filePaths: string[], virtual?: boolean): Promise<void>;
 }
+export declare function initRuntimes(wasmLocation: string): void;
