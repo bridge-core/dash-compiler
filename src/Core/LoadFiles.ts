@@ -45,7 +45,7 @@ export class LoadFiles {
 
 		// If file is already done processing (no file read hook defined),
 		// we can skip the rest of the compiler pipeline for this file
-		if (file.isDone || outputPath === null) return
+		if (file.isDone) return
 
 		file.setReadData((await this.dash.plugins.runLoadHooks(file)) ?? file.data)
 
