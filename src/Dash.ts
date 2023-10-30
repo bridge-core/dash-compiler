@@ -409,11 +409,10 @@ export class Dash<TSetupArg = void> {
 		const file = this.includedFiles.get(filePath)
 		if (!file) return []
 
-		return <string[]>(
-			[...file.filesToLoadForHotUpdate()]
-				.map(file => (file.isVirtual ? file.outputPath : file.filePath))
-				.filter(currFilePath => currFilePath !== null && currFilePath !== filePath)
-		)
+		return <string[]>[...file.filesToLoadForHotUpdate()]
+			.filter(file => !file.isVirtual)
+			.map(file => file.filePath)
+			.filter(currFilePath => currFilePath !== null && currFilePath !== filePath)
 	}
 
 	// Save compiler data
