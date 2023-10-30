@@ -25,7 +25,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			return await file?.text()
 		},
 		async load(filePath, fileContent) {
-			if (!filePath.endsWith('.ts') || fileContent === null) return
+			if (!filePath.endsWith('.ts') || fileContent === null || typeof fileContent !== 'string') return
 
 			await loadedWasm
 

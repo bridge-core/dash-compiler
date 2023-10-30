@@ -1388,7 +1388,7 @@ const TypeScriptPlugin = ({ options }) => {
       return await (file == null ? void 0 : file.text());
     },
     async load(filePath, fileContent) {
-      if (!filePath.endsWith(".ts") || fileContent === null)
+      if (!filePath.endsWith(".ts") || fileContent === null || typeof fileContent !== "string")
         return;
       await loadedWasm;
       return transformSync(fileContent, {
@@ -1934,9 +1934,7 @@ class AllPlugins {
       requestJsonData: this.dash.requestJsonData,
       getAliases: (filePath) => {
         var _a, _b;
-        return [
-          ...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []
-        ];
+        return [...(_b = (_a = this.dash.includedFiles.get(filePath)) == null ? void 0 : _a.aliases) != null ? _b : []];
       },
       getAliasesWhere: (criteria) => {
         return this.dash.includedFiles.getAliasesWhere(criteria);
@@ -2017,11 +2015,13 @@ class AllPlugins {
   async runLoadHooks(file) {
     let data = file.data;
     for (const plugin of this.pluginsFor("load", file)) {
+      console.log("Running load hook for", plugin.pluginId, data);
       const tmp = await plugin.runLoadHook(file.filePath, data);
       if (tmp === void 0)
         continue;
       data = tmp;
     }
+    console.log("result data", data);
     return data;
   }
   async runRegisterAliasesHooks(file) {
@@ -2390,17 +2390,20 @@ class LoadFiles {
   }
   async loadFile(file, writeFiles = true) {
     var _a;
+    console.log("Loading file", file);
     const [_, outputPath] = await Promise.all([
       this.dash.plugins.runIgnoreHooks(file),
       this.dash.plugins.runTransformPathHooks(file)
     ]);
     const readData = await this.dash.plugins.runReadHooks(file);
+    console.log(readData);
     file.setOutputPath(outputPath);
     file.setReadData(readData);
     file.processAfterLoad(writeFiles, this.copyFilePromises);
     if (file.isDone)
       return;
     file.setReadData((_a = await this.dash.plugins.runLoadHooks(file)) != null ? _a : file.data);
+    console.log(file.data, typeof file.data, file.data.length);
     const aliases = await this.dash.plugins.runRegisterAliasesHooks(file);
     file.setAliases(aliases);
   }
@@ -2661,6 +2664,7 @@ class Dash {
   }
   async updateFiles(filePaths, saveDashFile = true) {
     var _a;
+    this.console.log("updating file paths", filePaths);
     if (!this.isCompilerActivated || filePaths.length === 0)
       return;
     this.buildType = "hotUpdate";
@@ -2684,6 +2688,10 @@ class Dash {
     }
     this.progress.advance();
     await this.loadFiles.run(files);
+    try {
+      this.console.log(files);
+    } catch {
+    }
     this.progress.advance();
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
