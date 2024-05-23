@@ -1,5 +1,5 @@
 {
-	"name": "dash-compiler",
+	"name": "@bridge-editor/dash-compiler",
 	"version": "0.10.11",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
@@ -23,6 +23,12 @@
 		"url": "git+https://github.com/bridge-core/dash-compiler.git"
 	},
 	"author": "solvedDev",
+	"contributors": [
+		{
+			"name": "Thomas Orsbourne",
+			"email": "thomas@gamemodeone.com"
+		}
+	],
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/bridge-core/dash-compiler/issues"
