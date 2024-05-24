@@ -23,8 +23,8 @@ export declare class AllPlugins {
         outputFileSystem: import("../main").FileSystem;
         projectConfig: import("../DashProjectConfig").DashProjectConfig;
         projectRoot: string;
-        packType: import("mc-project-core").PackType<any>;
-        fileType: import("mc-project-core").FileType<any>;
+        packType: import("@bridge-editor/mc-project-core").PackType<any>;
+        fileType: import("@bridge-editor/mc-project-core").FileType<any>;
         targetVersion: string | undefined;
         requestJsonData: <T = any>(dataPath: string) => Promise<T>;
         getAliases: (filePath: string) => string[];

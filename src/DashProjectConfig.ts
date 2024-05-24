@@ -1,4 +1,4 @@
-import { ProjectConfig } from 'mc-project-core'
+import { ProjectConfig } from '@bridge-editor/mc-project-core'
 import { FileSystem } from './FileSystem/FileSystem'
 import { dirname } from 'path-browserify'
 

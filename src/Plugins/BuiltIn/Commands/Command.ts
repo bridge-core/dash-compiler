@@ -1,9 +1,8 @@
 import { transformCommands } from './transformCommands'
 import { v1Compat } from './v1Compat'
-import { tokenizeCommand } from 'bridge-common-utils'
-import { castType } from 'bridge-common-utils'
+import { tokenizeCommand, castType } from '@bridge-editor/common-utils'
 import { Console } from '../../../Common/Console'
-import { Runtime } from 'bridge-js-runtime'
+import { Runtime } from '@bridge-editor/js-runtime'
 export type TTemplate = (commandArgs: unknown[], opts: any) => string | string[]
 
 export class Command {

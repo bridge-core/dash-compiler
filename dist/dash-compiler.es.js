@@ -1,10 +1,10 @@
-import { ProjectConfig } from "mc-project-core";
+import { ProjectConfig } from "@bridge-editor/mc-project-core";
 import { dirname, relative, join, basename } from "path-browserify";
-import { CustomMoLang, expressions, MoLang } from "molang";
-import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "bridge-common-utils";
+import { CustomMolang, expressions, Molang } from "@bridge-editor/molang";
+import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "@bridge-editor/common-utils";
 import json5 from "json5";
 import initSwc, { transformSync } from "@swc/wasm-web";
-import { loadedWasm, Runtime, initRuntimes as initRuntimes$1 } from "bridge-js-runtime";
+import { loadedWasm, Runtime, initRuntimes as initRuntimes$1 } from "@bridge-editor/js-runtime";
 import isGlob from "is-glob";
 class DashProjectConfig extends ProjectConfig {
   constructor(fileSystem, configPath) {
@@ -186,7 +186,7 @@ const SimpleRewrite = ({
     }
   };
 };
-const MoLangPlugin = async ({
+const MolangPlugin = async ({
   fileType,
   projectConfig,
   requestJsonData,
@@ -195,16 +195,16 @@ const MoLangPlugin = async ({
   jsRuntime
 }) => {
   const resolve = (packId, path) => projectConfig.resolvePackPath(packId, path);
-  const customMoLang = new CustomMoLang({});
+  const customMolang = new CustomMolang({});
   const molangDirPaths = [
     projectConfig.resolvePackPath("behaviorPack", "molang"),
     projectConfig.resolvePackPath("resourcePack", "molang")
   ];
-  const isMoLangFile = (filePath) => filePath && molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) && filePath.endsWith(".molang");
+  const isMolangFile = (filePath) => filePath && molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) && filePath.endsWith(".molang");
   const molangScriptPath = projectConfig.resolvePackPath("behaviorPack", "scripts/molang");
-  const isMoLangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(`${molangScriptPath}/`);
+  const isMolangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(`${molangScriptPath}/`);
   const cachedPaths = /* @__PURE__ */ new Map();
-  const loadMoLangFrom = (filePath) => {
+  const loadMolangFrom = (filePath) => {
     if (cachedPaths.has(filePath))
       return cachedPaths.get(filePath);
     const molangLocs = options.include[fileType.getId(filePath)];
@@ -214,21 +214,21 @@ const MoLangPlugin = async ({
   let astTransformers = [];
   return {
     async buildStart() {
-      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMoLang.json"), options.include);
+      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMolang.json"), options.include);
       cachedPaths.clear();
     },
     ignore(filePath) {
-      return !isMoLangFile(filePath) && !isMoLangScript(filePath) && !loadMoLangFrom(filePath);
+      return !isMolangFile(filePath) && !isMolangScript(filePath) && !loadMolangFrom(filePath);
     },
     transformPath(filePath) {
-      if (isMoLangFile(filePath) || isMoLangScript(filePath))
+      if (isMolangFile(filePath) || isMolangScript(filePath))
         return null;
     },
     async read(filePath, fileHandle) {
-      if ((isMoLangFile(filePath) || isMoLangScript(filePath)) && fileHandle) {
+      if ((isMolangFile(filePath) || isMolangScript(filePath)) && fileHandle) {
         const file = await fileHandle.getFile();
         return await (file == null ? void 0 : file.text());
-      } else if (loadMoLangFrom(filePath) && filePath.endsWith(".json") && fileHandle) {
+      } else if (loadMolangFrom(filePath) && filePath.endsWith(".json") && fileHandle) {
         const file = await fileHandle.getFile();
         if (!file)
           return;
@@ -244,9 +244,9 @@ const MoLangPlugin = async ({
       }
     },
     async load(filePath, fileContent) {
-      if (isMoLangFile(filePath) && fileContent) {
-        customMoLang.parse(fileContent);
-      } else if (isMoLangScript(filePath)) {
+      if (isMolangFile(filePath) && fileContent) {
+        customMolang.parse(fileContent);
+      } else if (isMolangScript(filePath)) {
         const module = await jsRuntime.run(filePath, { console: console2 }, fileContent).catch((err) => {
           console2.error(`Failed to execute Molang AST script "${filePath}": ${err}`);
           return null;
@@ -258,7 +258,7 @@ const MoLangPlugin = async ({
       }
     },
     async require(filePath) {
-      if (loadMoLangFrom(filePath)) {
+      if (loadMolangFrom(filePath)) {
         return [
           resolve("behaviorPack", "scripts/molang/**/*.[jt]s"),
           resolve("behaviorPack", "molang/**/*.molang"),
@@ -267,7 +267,7 @@ const MoLangPlugin = async ({
       }
     },
     async transform(filePath, fileContent) {
-      const includePaths = loadMoLangFrom(filePath);
+      const includePaths = loadMolangFrom(filePath);
       if (includePaths && includePaths.length > 0) {
         includePaths.forEach((includePath) => setObjectAt(includePath, fileContent, (molang) => {
           if (typeof molang !== "string")
@@ -277,7 +277,7 @@ const MoLangPlugin = async ({
           if (astTransformers.length > 0) {
             let ast = null;
             try {
-              ast = customMoLang.parse(molang);
+              ast = customMolang.parse(molang);
             } catch (err) {
               if (options.buildType !== "fileRequest")
                 console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
@@ -290,7 +290,7 @@ const MoLangPlugin = async ({
             }
           }
           try {
-            return customMoLang.transform(molang);
+            return customMolang.transform(molang);
           } catch (err) {
             if (options.buildType !== "fileRequest")
               console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
@@ -300,7 +300,7 @@ const MoLangPlugin = async ({
       }
     },
     finalizeBuild(filePath, fileContent) {
-      if (loadMoLangFrom(filePath) && typeof fileContent !== "string")
+      if (loadMolangFrom(filePath) && typeof fileContent !== "string")
         return JSON.stringify(fileContent, null, "	");
     },
     buildEnd() {
@@ -1784,8 +1784,8 @@ class JsRuntime extends Runtime {
 const builtInPlugins = {
   simpleRewrite: SimpleRewrite,
   rewriteForPackaging: RewriteForPackaging,
-  moLang: MoLangPlugin,
-  molang: MoLangPlugin,
+  moLang: MolangPlugin,
+  molang: MolangPlugin,
   entityIdentifierAlias: EntityIdentifierAlias,
   customEntityComponents: CustomEntityComponentPlugin,
   customItemComponents: CustomItemComponentPlugin,
@@ -2583,11 +2583,11 @@ class Dash {
     this.console = (_a = options.console) != null ? _a : new DefaultConsole(options.verbose);
     this.jsRuntime = new JsRuntime(this.fileSystem, [
       ["@molang/expressions", expressions],
-      ["@molang/core", { MoLang }],
+      ["@molang/core", { Molang }],
       [
         "molang",
         {
-          MoLang,
+          Molang,
           ...expressions
         }
       ],

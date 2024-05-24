@@ -1,4 +1,4 @@
-import { Runtime } from 'bridge-js-runtime';
+import { Runtime } from '@bridge-editor/js-runtime';
 import { FileSystem } from '../FileSystem/FileSystem';
 export declare class JsRuntime extends Runtime {
     protected fs: FileSystem;

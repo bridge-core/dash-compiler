@@ -1,7 +1,7 @@
 import { TCompilerPlugin } from './TCompilerPlugin';
 import { FileSystem } from '../FileSystem/FileSystem';
 import { DashProjectConfig } from '../DashProjectConfig';
-import { FileType, PackType } from 'mc-project-core';
+import { FileType, PackType } from '@bridge-editor/mc-project-core';
 import { Console } from '../Common/Console';
 import { JsRuntime } from '../Common/JsRuntime';
 export declare type TCompilerPluginFactory<T = void> = (context: {

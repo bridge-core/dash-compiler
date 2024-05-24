@@ -1,9 +1,9 @@
-import { CustomMoLang, IExpression, MoLang, expressions } from 'molang'
-import { setObjectAt } from 'bridge-common-utils'
+import { CustomMolang, IExpression, Molang, expressions } from '@bridge-editor/molang'
+import { setObjectAt } from '@bridge-editor/common-utils'
 import json5 from 'json5'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
-export const MoLangPlugin: TCompilerPluginFactory<{
+export const MolangPlugin: TCompilerPluginFactory<{
 	include: Record<string, string[]>
 }> = async ({
 	fileType,
@@ -16,14 +16,14 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 	const resolve = (packId: string, path: string) =>
 		projectConfig.resolvePackPath(<any>packId, path)
 
-	// Custom MoLang parser from https://github.com/bridge-core/molang
-	const customMoLang = new CustomMoLang({})
+	// Custom Molang parser from https://github.com/bridge-core/molang
+	const customMolang = new CustomMolang({})
 
 	const molangDirPaths = [
 		projectConfig.resolvePackPath('behaviorPack', 'molang'),
 		projectConfig.resolvePackPath('resourcePack', 'molang'),
 	]
-	const isMoLangFile = (filePath: string | null) =>
+	const isMolangFile = (filePath: string | null) =>
 		filePath &&
 		molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) &&
 		filePath.endsWith('.molang')
@@ -31,12 +31,12 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		'behaviorPack',
 		'scripts/molang'
 	)
-	const isMoLangScript = (filePath: string | null) =>
+	const isMolangScript = (filePath: string | null) =>
 		filePath?.startsWith(`${molangScriptPath}/`)
 
 	// Caching the result of the function has a huge performance impact because the fileType.getId function is expensive
 	const cachedPaths = new Map<string, string[] | undefined>()
-	const loadMoLangFrom = (filePath: string) => {
+	const loadMolangFrom = (filePath: string) => {
 		if (cachedPaths.has(filePath)) return cachedPaths.get(filePath)
 
 		const molangLocs = options.include[fileType.getId(filePath)]
@@ -48,10 +48,10 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 
 	return {
 		async buildStart() {
-			// Load default MoLang locations and merge them with user defined locations
+			// Load default Molang locations and merge them with user defined locations
 			options.include = Object.assign(
 				await requestJsonData(
-					'data/packages/minecraftBedrock/location/validMoLang.json'
+					'data/packages/minecraftBedrock/location/validMolang.json'
 				),
 				options.include
 			)
@@ -59,29 +59,29 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		},
 		ignore(filePath) {
 			return (
-				!isMoLangFile(filePath) &&
-				!isMoLangScript(filePath) &&
-				!loadMoLangFrom(filePath)
+				!isMolangFile(filePath) &&
+				!isMolangScript(filePath) &&
+				!loadMolangFrom(filePath)
 			)
 		},
 		transformPath(filePath) {
-			// MoLang files & MoLang scripts should get omitted from output
-			if (isMoLangFile(filePath) || isMoLangScript(filePath)) return null
+			// Molang files & Molang scripts should get omitted from output
+			if (isMolangFile(filePath) || isMolangScript(filePath)) return null
 		},
 		async read(filePath, fileHandle) {
 			if (
-				(isMoLangFile(filePath) || isMoLangScript(filePath)) &&
+				(isMolangFile(filePath) || isMolangScript(filePath)) &&
 				fileHandle
 			) {
-				// Load MoLang files as text
+				// Load Molang files as text
 				const file = await fileHandle.getFile()
 				return await file?.text()
 			} else if (
-				loadMoLangFrom(filePath) &&
+				loadMolangFrom(filePath) &&
 				filePath.endsWith('.json') &&
 				fileHandle
 			) {
-				// Currently, MoLang in function files is not supported so we can only load JSON files
+				// Currently, Molang in function files is not supported so we can only load JSON files
 				const file = await fileHandle.getFile()
 				if (!file) return
 
@@ -97,10 +97,10 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async load(filePath, fileContent) {
-			if (isMoLangFile(filePath) && fileContent) {
-				// Load the custom MoLang functions
-				customMoLang.parse(fileContent)
-			} else if (isMoLangScript(filePath)) {
+			if (isMolangFile(filePath) && fileContent) {
+				// Load the custom Molang functions
+				customMolang.parse(fileContent)
+			} else if (isMolangScript(filePath)) {
 				const module = await jsRuntime
 					.run(filePath, { console }, fileContent)
 					.catch((err) => {
@@ -117,7 +117,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 			}
 		},
 		async require(filePath) {
-			if (loadMoLangFrom(filePath)) {
+			if (loadMolangFrom(filePath)) {
 				// Register molang files & molang scripts as JSON file dependencies
 				return [
 					resolve('behaviorPack', 'scripts/molang/**/*.[jt]s'),
@@ -128,10 +128,10 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 		},
 
 		async transform(filePath, fileContent) {
-			const includePaths = loadMoLangFrom(filePath)
+			const includePaths = loadMolangFrom(filePath)
 
 			if (includePaths && includePaths.length > 0) {
-				// For every MoLang location
+				// For every Molang location
 				includePaths.forEach((includePath) =>
 					// Search it inside of the JSON & transform it if it exists
 					setObjectAt<string>(includePath, fileContent, (molang) => {
@@ -144,7 +144,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 							let ast: IExpression | null = null
 
 							try {
-								ast = customMoLang.parse(molang)
+								ast = customMolang.parse(molang)
 							} catch (err) {
 								if (options.buildType !== 'fileRequest')
 									console.error(
@@ -162,7 +162,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 						}
 
 						try {
-							return customMoLang.transform(molang)
+							return customMolang.transform(molang)
 						} catch (err) {
 							if (options.buildType !== 'fileRequest')
 								console.error(
@@ -178,7 +178,7 @@ export const MoLangPlugin: TCompilerPluginFactory<{
 
 		finalizeBuild(filePath, fileContent) {
 			// Make sure JSON files are transformed back into a format that we can write to disk
-			if (loadMoLangFrom(filePath) && typeof fileContent !== 'string')
+			if (loadMolangFrom(filePath) && typeof fileContent !== 'string')
 				return JSON.stringify(fileContent, null, '\t')
 		},
 
