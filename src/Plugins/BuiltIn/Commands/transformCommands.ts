@@ -1,5 +1,5 @@
 import { Command } from './Command'
-import { tokenizeCommand } from 'bridge-common-utils'
+import { tokenizeCommand } from '@bridge-editor/common-utils'
 
 /**
  * @param {`/${string}`[]} commands Must start with a "/"

@@ -1,5 +1,5 @@
 import json5 from 'json5'
-import { get, deepMerge } from 'bridge-common-utils'
+import { get, deepMerge } from '@bridge-editor/common-utils'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Component } from './Component'
 import { findCustomComponents } from './findComponents'

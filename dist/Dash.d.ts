@@ -5,7 +5,7 @@ import { IncludedFiles } from './Core/IncludedFiles';
 import { LoadFiles } from './Core/LoadFiles';
 import { ResolveFileOrder } from './Core/ResolveFileOrder';
 import { FileTransformer } from './Core/TransformFiles';
-import { FileType, PackType } from 'mc-project-core';
+import { FileType, PackType } from '@bridge-editor/mc-project-core';
 import { DashFile } from './Core/DashFile';
 import { Progress } from './Core/Progress';
 import { Console } from './Common/Console';

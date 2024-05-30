@@ -4,7 +4,7 @@ import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
 import { TCompilerPluginFactory } from './TCompilerPluginFactory'
 import { SimpleRewrite } from './BuiltIn/SimpleRewrite'
-import { MoLangPlugin } from './BuiltIn/MoLang'
+import { MolangPlugin } from './BuiltIn/Molang'
 import { EntityIdentifierAlias } from './BuiltIn/EntityIdentifier'
 import {
 	CustomBlockComponentPlugin,
@@ -22,8 +22,8 @@ import { JsRuntime } from '../Common/JsRuntime'
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
 	rewriteForPackaging: RewriteForPackaging,
-	moLang: MoLangPlugin,
-	molang: MoLangPlugin,
+	moLang: MolangPlugin,
+	molang: MolangPlugin,
 	entityIdentifierAlias: EntityIdentifierAlias,
 	customEntityComponents: CustomEntityComponentPlugin,
 	customItemComponents: CustomItemComponentPlugin,

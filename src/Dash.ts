@@ -6,14 +6,14 @@ import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
 import { ResolveFileOrder } from './Core/ResolveFileOrder'
 import { FileTransformer } from './Core/TransformFiles'
-import { FileType, PackType } from 'mc-project-core'
+import { FileType, PackType } from '@bridge-editor/mc-project-core'
 import { DashFile } from './Core/DashFile'
 import { Progress } from './Core/Progress'
 import { Console } from './Common/Console'
 import { DefaultConsole } from './Common/DefaultConsole'
 import { JsRuntime } from './Common/JsRuntime'
-import { MoLang, expressions } from 'molang'
-import { initRuntimes as initBridgeJsRuntimes } from 'bridge-js-runtime'
+import { Molang, expressions } from '@bridge-editor/molang'
+import { initRuntimes as initBridgeJsRuntimes } from '@bridge-editor/js-runtime'
 import initSwc from '@swc/wasm-web'
 
 export interface IDashOptions<TSetupArg = void> {
@@ -85,11 +85,11 @@ export class Dash<TSetupArg = void> {
 		this.console = options.console ?? new DefaultConsole(options.verbose)
 		this.jsRuntime = new JsRuntime(this.fileSystem, [
 			['@molang/expressions', expressions],
-			['@molang/core', { MoLang }],
+			['@molang/core', { Molang }],
 			[
 				'molang',
 				{
-					MoLang,
+					Molang,
 					...expressions,
 				},
 			],

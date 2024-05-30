@@ -1,4 +1,4 @@
-import { TPackTypeId } from 'mc-project-core'
+import { TPackTypeId } from '@bridge-editor/mc-project-core'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const ContentsFilePlugin: TCompilerPluginFactory = ({

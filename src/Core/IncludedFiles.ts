@@ -1,4 +1,4 @@
-import { isMatch } from 'bridge-common-utils'
+import { isMatch } from '@bridge-editor/common-utils'
 import isGlob from 'is-glob'
 import type { Dash } from '../Dash'
 import { DashFile, ISerializedDashFile } from './DashFile'
