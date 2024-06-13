@@ -36,7 +36,7 @@ export declare class Component {
     processAdditionalFiles(filePath: string, fileContent: any, isPlayerFile?: boolean): Promise<{}>;
     protected createAnimations(fileName: string, fileContent: any): string | undefined;
     protected createAnimationControllers(fileName: string, fileContent: any): string | undefined;
-    protected getAnimName(prefix: string, fileName: string, id: number): string;
+    protected getAnimName(prefix: string, namespace: string, fileName: string, id: number): string;
     protected getShortAnimName(category: string, fileName: string, id: number): string;
     protected registerLifecycleHook(fileContent: any, location: string, eventResponse: any, permutationEventName: string, type: 'activated' | 'deactivated'): void;
     protected addEventReponse(event: any, eventResponse: any): void;

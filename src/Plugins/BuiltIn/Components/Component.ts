@@ -182,6 +182,7 @@ export class Component {
 				?.identifier ?? 'bridge:no_identifier'
 		// Used to compose the animation (controller) short name so the user knows how to reference their animation (controller)
 		const fileName = await hashString(`${this.name}/${identifier}`)
+
 		const projectNamespace =
 			this.projectConfig?.get()?.namespace ?? 'bridge'
 
@@ -470,6 +471,9 @@ export class Component {
 	protected createAnimations(fileName: string, fileContent: any) {
 		if (this.animations.length === 0) return
 
+		const projectNamespace =
+			this.projectConfig?.get()?.namespace ?? 'bridge'
+
 		let id = 0
 		const animations: any = { format_version: '1.10.0', animations: {} }
 
@@ -480,10 +484,10 @@ export class Component {
 			}
 
 			// Create unique animId
-			const animId = this.getAnimName('animation', fileName, id)
+			const animId = this.getAnimName('animation', projectNamespace, fileName, id)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('a', fileName, id)
-
+			
 			// Save animation to animations object
 			animations.animations[animId] = anim
 
@@ -523,6 +527,9 @@ export class Component {
 	protected createAnimationControllers(fileName: string, fileContent: any) {
 		if (this.animationControllers.length === 0) return
 
+		const projectNamespace =
+			this.projectConfig?.get()?.namespace ?? 'bridge'
+
 		let id = 0
 		const animationControllers: any = {
 			format_version: '1.10.0',
@@ -538,6 +545,7 @@ export class Component {
 			// Create unique animId
 			const animId = this.getAnimName(
 				'controller.animation',
+				projectNamespace,
 				fileName,
 				id
 			)
@@ -581,8 +589,8 @@ export class Component {
 		return JSON.stringify(animationControllers, null, '\t')
 	}
 
-	protected getAnimName(prefix: string, fileName: string, id: number) {
-		return `${prefix}.${fileName}_${id}`
+	protected getAnimName(prefix: string, namespace: string, fileName: string, id: number) {
+		return `${prefix}.${namespace}:${fileName}_${id}`
 	}
 	protected getShortAnimName(category: string, fileName: string, id: number) {
 		return `${fileName.slice(0, 16) ?? 'bridge_auto'}_${category}_${id}`
