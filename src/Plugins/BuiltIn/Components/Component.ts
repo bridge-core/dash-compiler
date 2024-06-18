@@ -183,14 +183,17 @@ export class Component {
 		// Used to compose the animation (controller) short name so the user knows how to reference their animation (controller)
 		const fileName = await hashString(`${this.name}/${identifier}`)
 
-		let projectNamespace =
+		const projectNamespace =
 			this.projectConfig?.get()?.namespace ?? 'bridge'
-
-		if(projectNamespace.includes('_')){
-			const studioname = projectNamespace.split('_')[0]
-			const packname = projectNamespace.split('_')[1]
-			projectNamespace = `${studioname}/${packname}`
+		let folderNamespace: string;
+		if (projectNamespace.includes('_')) {
+			const studioname = projectNamespace.split('_')[0];
+			const packname = projectNamespace.split('_')[1];
+			folderNamespace = `${studioname}/${packname}`;
+		} else {
+			folderNamespace = 'bridge';
 		}
+		
 
 		// Setup animation/animationController helper
 		const animation = (animation: any, molangCondition?: string) => {
@@ -219,7 +222,7 @@ export class Component {
 
 		const lootTable = (lootTableDef: any) => {
 			//TODO In the marketplace add-ons need to be follow the format of loot_tables/<studio name>/<pack name>/<trade table name>.json
-			const lootId = `loot_tables/${projectNamespace}/${this.getShortAnimName(
+			const lootId = `loot_tables/${folderNamespace}/${this.getShortAnimName(
 				'lt',
 				fileName,
 				this.serverFiles.length
@@ -230,7 +233,7 @@ export class Component {
 		}
 		const tradeTable = (tradeTableDef: any) => {
 			//TODO In the marketplace add-ons need to be follow the format of trading/<studio name>/<pack name>/<trade table name>.json
-			const tradeId = `trading/${projectNamespace}/${this.getShortAnimName(
+			const tradeId = `trading/${folderNamespace}/${this.getShortAnimName(
 				'tt',
 				fileName,
 				this.serverFiles.length
