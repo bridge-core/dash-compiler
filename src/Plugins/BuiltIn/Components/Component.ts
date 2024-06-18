@@ -387,7 +387,7 @@ export class Component {
 			: fileContent[`minecraft:${this.fileType}`]?.description
 					?.identifier ?? 'bridge:no_identifier'
 
-		const fileName = await hashString(`${this.name}/${identifier}`)
+		const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25)
 		const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`
 		const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`
 
@@ -486,7 +486,7 @@ export class Component {
 			}
 
 			// Create unique animId
-			const animId = this.getAnimName('animation', projectNamespace, fileName, id)
+			const animId = this.getAnimName('animation', projectNamespace, fileName, id).slice(0, 25)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('a', fileName, id)
 			
@@ -550,7 +550,7 @@ export class Component {
 				projectNamespace,
 				fileName,
 				id
-			)
+			).slice(0, 25)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('ac', fileName, id)
 
