@@ -212,6 +212,7 @@ export class Component {
 		}
 
 		const lootTable = (lootTableDef: any) => {
+			//TODO In the marketplace add-ons need to be follow the format of loot_tables/<studio name>/<pack name>/<trade table name>.json
 			const lootId = `loot_tables/bridge/${this.getShortAnimName(
 				'lt',
 				fileName,
@@ -222,6 +223,7 @@ export class Component {
 			return lootId
 		}
 		const tradeTable = (tradeTableDef: any) => {
+			//TODO In the marketplace add-ons need to be follow the format of trading/<studio name>/<pack name>/<trade table name>.json
 			const tradeId = `trading/bridge/${this.getShortAnimName(
 				'tt',
 				fileName,
