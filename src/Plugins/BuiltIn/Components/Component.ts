@@ -188,7 +188,7 @@ export class Component {
 		let folderNamespace: string;
 		if (projectNamespace.includes('_')) {
 			const studioname = projectNamespace.split('_')[0];
-			const packname = projectNamespace.split('_')[1];
+			const packname = projectNamespace.split('_').slice(1).join('_')
 			folderNamespace = `${studioname}/${packname}`;
 		} else {
 			folderNamespace = 'bridge';

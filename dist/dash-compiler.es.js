@@ -569,11 +569,12 @@ class Component {
     let folderNamespace;
     if (projectNamespace.includes("_")) {
       const studioname = projectNamespace.split("_")[0];
-      const packname = projectNamespace.split("_")[1];
+      const packname = projectNamespace.split("_").slice(1).join("_");
       folderNamespace = `${studioname}/${packname}`;
     } else {
       folderNamespace = "bridge";
     }
+    this.console.log(`Folder Namespace: ${folderNamespace}`);
     const animation = (animation2, molangCondition) => {
       this.animations.push([animation2, molangCondition]);
       return this.getShortAnimName("a", fileName, this.animations.length - 1);
