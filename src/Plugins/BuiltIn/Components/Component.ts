@@ -486,7 +486,7 @@ export class Component {
 			}
 
 			// Create unique animId
-			const animId = this.getAnimName('animation', projectNamespace, fileName, id).slice(0, 25)
+			const animId = this.getAnimName('animation', projectNamespace, fileName, id)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('a', fileName, id)
 			
@@ -550,7 +550,7 @@ export class Component {
 				projectNamespace,
 				fileName,
 				id
-			).slice(0, 25)
+			)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('ac', fileName, id)
 

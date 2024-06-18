@@ -750,7 +750,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("animation", projectNamespace, fileName, id).slice(0, 25);
+      const animId = this.getAnimName("animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("a", fileName, id);
       animations.animations[animId] = anim;
       this.create(fileContent, {
@@ -785,7 +785,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id).slice(0, 25);
+      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("ac", fileName, id);
       animationControllers.animation_controllers[animId] = anim;
       this.create(fileContent, {
