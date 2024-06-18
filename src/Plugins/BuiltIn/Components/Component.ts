@@ -193,7 +193,6 @@ export class Component {
 		} else {
 			folderNamespace = 'bridge';
 		}
-		
 
 		// Setup animation/animationController helper
 		const animation = (animation: any, molangCondition?: string) => {

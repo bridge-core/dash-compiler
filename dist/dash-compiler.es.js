@@ -565,11 +565,14 @@ class Component {
       return;
     const identifier = (_c = (_b = (_a = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _a.description) == null ? void 0 : _b.identifier) != null ? _c : "bridge:no_identifier";
     const fileName = await hashString(`${this.name}/${identifier}`);
-    let projectNamespace = (_f = (_e = (_d = this.projectConfig) == null ? void 0 : _d.get()) == null ? void 0 : _e.namespace) != null ? _f : "bridge";
+    const projectNamespace = (_f = (_e = (_d = this.projectConfig) == null ? void 0 : _d.get()) == null ? void 0 : _e.namespace) != null ? _f : "bridge";
+    let folderNamespace;
     if (projectNamespace.includes("_")) {
       const studioname = projectNamespace.split("_")[0];
       const packname = projectNamespace.split("_")[1];
-      projectNamespace = `${studioname}/${packname}`;
+      folderNamespace = `${studioname}/${packname}`;
+    } else {
+      folderNamespace = "bridge";
     }
     const animation = (animation2, molangCondition) => {
       this.animations.push([animation2, molangCondition]);
@@ -583,12 +586,12 @@ class Component {
       return this.getShortAnimName("ac", fileName, this.animationControllers.length - 1);
     };
     const lootTable = (lootTableDef) => {
-      const lootId = `loot_tables/${projectNamespace}/${this.getShortAnimName("lt", fileName, this.serverFiles.length)}.json`;
+      const lootId = `loot_tables/${folderNamespace}/${this.getShortAnimName("lt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([lootId, lootTableDef]);
       return lootId;
     };
     const tradeTable = (tradeTableDef) => {
-      const tradeId = `trading/${projectNamespace}/${this.getShortAnimName("tt", fileName, this.serverFiles.length)}.json`;
+      const tradeId = `trading/${folderNamespace}/${this.getShortAnimName("tt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([tradeId, tradeTableDef]);
       return tradeId;
     };
