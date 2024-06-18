@@ -686,7 +686,7 @@ class Component {
     const bpRoot = (_b = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack")) != null ? _b : "BP";
     const rpRoot = (_c = this.projectConfig) == null ? void 0 : _c.getRelativePackRoot("resourcePack");
     const identifier = isPlayerFile ? "minecraft:player" : (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
-    const fileName = await hashString(`${this.name}/${identifier}`);
+    const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25);
     const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
     const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`;
     if (identifier === "minecraft:player") {
@@ -750,7 +750,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("animation", projectNamespace, fileName, id);
+      const animId = this.getAnimName("animation", projectNamespace, fileName, id).slice(0, 25);
       const shortAnimId = this.getShortAnimName("a", fileName, id);
       animations.animations[animId] = anim;
       this.create(fileContent, {
@@ -785,7 +785,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id);
+      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id).slice(0, 25);
       const shortAnimId = this.getShortAnimName("ac", fileName, id);
       animationControllers.animation_controllers[animId] = anim;
       this.create(fileContent, {
@@ -806,7 +806,7 @@ class Component {
     return JSON.stringify(animationControllers, null, "	");
   }
   getAnimName(prefix, namespace, fileName, id) {
-    return `${prefix}.${namespace}:${fileName}_${id}`;
+    return `${prefix}.${namespace}_${fileName}_${id}`;
   }
   getShortAnimName(category, fileName, id) {
     var _a;
