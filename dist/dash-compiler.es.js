@@ -686,7 +686,7 @@ class Component {
     const bpRoot = (_b = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack")) != null ? _b : "BP";
     const rpRoot = (_c = this.projectConfig) == null ? void 0 : _c.getRelativePackRoot("resourcePack");
     const identifier = isPlayerFile ? "minecraft:player" : (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
-    const fileName = await hashString(`${this.name}/${identifier}`);
+    const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25);
     const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
     const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`;
     if (identifier === "minecraft:player") {
@@ -739,8 +739,10 @@ class Component {
     };
   }
   createAnimations(fileName, fileContent) {
+    var _a, _b, _c;
     if (this.animations.length === 0)
       return;
+    const projectNamespace = (_c = (_b = (_a = this.projectConfig) == null ? void 0 : _a.get()) == null ? void 0 : _b.namespace) != null ? _c : "bridge";
     let id = 0;
     const animations = { format_version: "1.10.0", animations: {} };
     for (const [anim, condition] of this.animations) {
@@ -748,7 +750,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("animation", fileName, id);
+      const animId = this.getAnimName("animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("a", fileName, id);
       animations.animations[animId] = anim;
       this.create(fileContent, {
@@ -769,8 +771,10 @@ class Component {
     return JSON.stringify(animations, null, "	");
   }
   createAnimationControllers(fileName, fileContent) {
+    var _a, _b, _c;
     if (this.animationControllers.length === 0)
       return;
+    const projectNamespace = (_c = (_b = (_a = this.projectConfig) == null ? void 0 : _a.get()) == null ? void 0 : _b.namespace) != null ? _c : "bridge";
     let id = 0;
     const animationControllers = {
       format_version: "1.10.0",
@@ -781,7 +785,7 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName("controller.animation", fileName, id);
+      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("ac", fileName, id);
       animationControllers.animation_controllers[animId] = anim;
       this.create(fileContent, {
@@ -801,8 +805,8 @@ class Component {
     }
     return JSON.stringify(animationControllers, null, "	");
   }
-  getAnimName(prefix, fileName, id) {
-    return `${prefix}.${fileName}_${id}`;
+  getAnimName(prefix, namespace, fileName, id) {
+    return `${prefix}.${namespace}_${fileName}_${id}`;
   }
   getShortAnimName(category, fileName, id) {
     var _a;
