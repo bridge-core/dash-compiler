@@ -185,6 +185,14 @@ export class Component {
 
 		const projectNamespace =
 			this.projectConfig?.get()?.namespace ?? 'bridge'
+		let folderNamespace: string
+		if (projectNamespace.includes('_')) {
+			const studioname = projectNamespace.split('_')[0]
+			const packname = projectNamespace.split('_').slice(1).join('_')
+			folderNamespace = `${studioname}/${packname}`
+		} else {
+			folderNamespace = 'bridge'
+		}
 
 		// Setup animation/animationController helper
 		const animation = (animation: any, molangCondition?: string) => {
@@ -213,7 +221,7 @@ export class Component {
 
 		const lootTable = (lootTableDef: any) => {
 			//TODO In the marketplace add-ons need to be follow the format of loot_tables/<studio name>/<pack name>/<trade table name>.json
-			const lootId = `loot_tables/bridge/${this.getShortAnimName(
+			const lootId = `loot_tables/${folderNamespace}/${this.getShortAnimName(
 				'lt',
 				fileName,
 				this.serverFiles.length
@@ -224,7 +232,7 @@ export class Component {
 		}
 		const tradeTable = (tradeTableDef: any) => {
 			//TODO In the marketplace add-ons need to be follow the format of trading/<studio name>/<pack name>/<trade table name>.json
-			const tradeId = `trading/bridge/${this.getShortAnimName(
+			const tradeId = `trading/${folderNamespace}/${this.getShortAnimName(
 				'tt',
 				fileName,
 				this.serverFiles.length
@@ -235,7 +243,7 @@ export class Component {
 		}
 		const recipe = (recipeDef: any) => {
 			this.serverFiles.push([
-				`recipes/bridge/${this.getShortAnimName(
+				`recipes/${folderNamespace}/${this.getShortAnimName(
 					'recipe',
 					fileName,
 					this.serverFiles.length
@@ -245,7 +253,7 @@ export class Component {
 		}
 		const spawnRule = (spawnRuleDef: any) => {
 			this.serverFiles.push([
-				`spawn_rules/bridge/${this.getShortAnimName(
+				`spawn_rules/${folderNamespace}/${this.getShortAnimName(
 					'sr',
 					fileName,
 					this.serverFiles.length
@@ -313,7 +321,9 @@ export class Component {
 				onDeactivated,
 				client: {
 					create: (clientEntity: any, formatVersion = '1.10.0') => {
-						this.clientFiles[`entity/bridge/${fileName}.json`] = {
+						this.clientFiles[
+							`entity/${folderNamespace}/${fileName}.json`
+						] = {
 							format_version: formatVersion,
 							'minecraft:client_entity': Object.assign(
 								{
@@ -387,9 +397,23 @@ export class Component {
 			: fileContent[`minecraft:${this.fileType}`]?.description
 					?.identifier ?? 'bridge:no_identifier'
 
-		const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25)
-		const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`
-		const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`
+		const projectNamespace =
+			this.projectConfig?.get()?.namespace ?? 'bridge'
+		let folderNamespace: string
+		if (projectNamespace.includes('_')) {
+			const studioname = projectNamespace.split('_')[0]
+			const packname = projectNamespace.split('_').slice(1).join('_')
+			folderNamespace = `${studioname}/${packname}`
+		} else {
+			folderNamespace = 'bridge'
+		}
+
+		const fileName = (await hashString(`${this.name}/${identifier}`)).slice(
+			0,
+			25
+		)
+		const animFileName = `${bpRoot}/animations/${folderNamespace}/${fileName}.json`
+		const animControllerFileName = `${bpRoot}/animation_controllers/${folderNamespace}/${fileName}.json`
 
 		if (identifier === 'minecraft:player') {
 			this.createOnPlayer.forEach(([location, template, operation]) => {
@@ -426,7 +450,7 @@ export class Component {
 
 		return {
 			...anims,
-			[join(bpRoot, `dialogue/bridge/${fileName}.json`)]:
+			[join(bpRoot, `dialogue/${folderNamespace}/${fileName}.json`)]:
 				this.dialogueScenes[fileName] &&
 				this.dialogueScenes[fileName].length > 0
 					? {
@@ -486,10 +510,15 @@ export class Component {
 			}
 
 			// Create unique animId
-			const animId = this.getAnimName('animation', projectNamespace, fileName, id)
+			const animId = this.getAnimName(
+				'animation',
+				projectNamespace,
+				fileName,
+				id
+			)
 			// Create shorter reference to animId that's unique per entity
 			const shortAnimId = this.getShortAnimName('a', fileName, id)
-			
+
 			// Save animation to animations object
 			animations.animations[animId] = anim
 
@@ -591,7 +620,12 @@ export class Component {
 		return JSON.stringify(animationControllers, null, '\t')
 	}
 
-	protected getAnimName(prefix: string, namespace: string, fileName: string, id: number) {
+	protected getAnimName(
+		prefix: string,
+		namespace: string,
+		fileName: string,
+		id: number
+	) {
 		return `${prefix}.${namespace}_${fileName}_${id}`
 	}
 	protected getShortAnimName(category: string, fileName: string, id: number) {
