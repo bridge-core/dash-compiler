@@ -1,4 +1,4 @@
-export type TCompilerPlugin = {
+export declare type TCompilerPlugin = {
     buildStart(): Promise<void> | void;
     include(): Maybe<(string | [string, {
         isVirtual?: boolean;

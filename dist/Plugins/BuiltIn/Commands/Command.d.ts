@@ -1,6 +1,6 @@
 import { Console } from '../../../Common/Console';
 import { Runtime } from '@bridge-editor/js-runtime';
-export type TTemplate = (commandArgs: unknown[], opts: any) => string | string[];
+export declare type TTemplate = (commandArgs: unknown[], opts: any) => string | string[];
 export declare class Command {
     protected console: Console;
     protected commandSrc: string;

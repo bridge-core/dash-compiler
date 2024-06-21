@@ -4,7 +4,7 @@ import { Plugin } from './Plugin';
 import { TCompilerPluginFactory } from './TCompilerPluginFactory';
 import { JsRuntime } from '../Common/JsRuntime';
 declare const availableHooks: readonly ["buildStart", "buildEnd", "include", "ignore", "transformPath", "read", "load", "registerAliases", "require", "transform", "finalizeBuild", "beforeFileUnlinked"];
-export type THookType = typeof availableHooks[number];
+export declare type THookType = typeof availableHooks[number];
 export declare class AllPlugins {
     protected dash: Dash<any>;
     protected pluginRuntime: JsRuntime;

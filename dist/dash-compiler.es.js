@@ -33,10 +33,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).buildStart) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "buildStart" hook:`, err);
     }
   }
   async runIncludeHook() {
@@ -44,10 +41,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).include) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "include" hook:`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "include" hook:`, err);
     }
   }
   async runIgnoreHook(filePath) {
@@ -55,10 +49,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).ignore) == null ? void 0 : _b.call(_a, filePath));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "ignore" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "ignore" hook for "${filePath}":`, err);
     }
   }
   async runTransformPathHook(filePath) {
@@ -66,10 +57,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).transformPath) == null ? void 0 : _b.call(_a, filePath));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "transformPath" hook for "${filePath}":`, err);
     }
   }
   async runReadHook(filePath, fileHandle) {
@@ -77,10 +65,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).read) == null ? void 0 : _b.call(_a, filePath, fileHandle));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "read" hook for "${filePath}":`, err);
     }
   }
   async runLoadHook(filePath, fileContent) {
@@ -88,10 +73,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).load) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "load" hook for "${filePath}":`, err);
     }
   }
   async runRegisterAliasesHook(filePath, fileContent) {
@@ -99,10 +81,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).registerAliases) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "registerAliases" hook for "${filePath}":`, err);
     }
   }
   async runRequireHook(filePath, fileContent) {
@@ -110,26 +89,15 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).require) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "require" hook for "${filePath}":`, err);
     }
   }
   async runTransformHook(filePath, fileContent, dependencies) {
     var _a, _b;
     try {
-      return await ((_b = (_a = this.plugin).transform) == null ? void 0 : _b.call(
-        _a,
-        filePath,
-        fileContent,
-        dependencies
-      ));
+      return await ((_b = (_a = this.plugin).transform) == null ? void 0 : _b.call(_a, filePath, fileContent, dependencies));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "transform" hook for "${filePath}":`, err);
     }
   }
   async runFinalizeBuildHook(filePath, fileContent) {
@@ -137,10 +105,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).finalizeBuild) == null ? void 0 : _b.call(_a, filePath, fileContent));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "finalizeBuild" hook for "${filePath}":`, err);
     }
   }
   async runBuildEndHook() {
@@ -148,10 +113,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).buildEnd) == null ? void 0 : _b.call(_a));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "buildEnd" hook:`, err);
     }
   }
   async runBeforeFileUnlinked(filePath) {
@@ -159,10 +121,7 @@ class Plugin {
     try {
       return await ((_b = (_a = this.plugin).beforeFileUnlinked) == null ? void 0 : _b.call(_a, filePath));
     } catch (err) {
-      this.dash.console.error(
-        `The plugin "${this.pluginId}" threw an error while running the "beforeFileUnlinked" hook for "${filePath}":`,
-        err
-      );
+      this.dash.console.error(`The plugin "${this.pluginId}" threw an error while running the "beforeFileUnlinked" hook for "${filePath}":`, err);
     }
   }
 }
@@ -197,9 +156,7 @@ const SimpleRewrite = ({
             const pack = packType.getFromId(packId);
             if (!pack)
               continue;
-            await outputFileSystem.unlink(
-              pathPrefixWithPack(packId, pack.defaultPackPath)
-            ).catch(() => {
+            await outputFileSystem.unlink(pathPrefixWithPack(packId, pack.defaultPackPath)).catch(() => {
             });
           }
         } else {
@@ -225,13 +182,7 @@ const SimpleRewrite = ({
         "skinPack",
         "worldTemplate"
       ].includes(pack.id))
-        return join(
-          pathPrefixWithPack(
-            pack.id,
-            (_b = (_a2 = options.packNameSuffix) == null ? void 0 : _a2[pack.id]) != null ? _b : pack.defaultPackPath
-          ),
-          relPath
-        );
+        return join(pathPrefixWithPack(pack.id, (_b = (_a2 = options.packNameSuffix) == null ? void 0 : _a2[pack.id]) != null ? _b : pack.defaultPackPath), relPath);
     }
   };
 };
@@ -250,10 +201,7 @@ const MolangPlugin = async ({
     projectConfig.resolvePackPath("resourcePack", "molang")
   ];
   const isMolangFile = (filePath) => filePath && molangDirPaths.some((path) => filePath.startsWith(`${path}/`)) && filePath.endsWith(".molang");
-  const molangScriptPath = projectConfig.resolvePackPath(
-    "behaviorPack",
-    "scripts/molang"
-  );
+  const molangScriptPath = projectConfig.resolvePackPath("behaviorPack", "scripts/molang");
   const isMolangScript = (filePath) => filePath == null ? void 0 : filePath.startsWith(`${molangScriptPath}/`);
   const cachedPaths = /* @__PURE__ */ new Map();
   const loadMolangFrom = (filePath) => {
@@ -266,12 +214,7 @@ const MolangPlugin = async ({
   let astTransformers = [];
   return {
     async buildStart() {
-      options.include = Object.assign(
-        await requestJsonData(
-          "data/packages/minecraftBedrock/location/validMolang.json"
-        ),
-        options.include
-      );
+      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validMolang.json"), options.include);
       cachedPaths.clear();
     },
     ignore(filePath) {
@@ -305,9 +248,7 @@ const MolangPlugin = async ({
         customMolang.parse(fileContent);
       } else if (isMolangScript(filePath)) {
         const module = await jsRuntime.run(filePath, { console: console2 }, fileContent).catch((err) => {
-          console2.error(
-            `Failed to execute Molang AST script "${filePath}": ${err}`
-          );
+          console2.error(`Failed to execute Molang AST script "${filePath}": ${err}`);
           return null;
         });
         if (!module)
@@ -328,40 +269,34 @@ const MolangPlugin = async ({
     async transform(filePath, fileContent) {
       const includePaths = loadMolangFrom(filePath);
       if (includePaths && includePaths.length > 0) {
-        includePaths.forEach(
-          (includePath) => setObjectAt(includePath, fileContent, (molang) => {
-            if (typeof molang !== "string")
-              return molang;
-            if (molang[0] === "/" || molang[0] === "@")
-              return molang;
-            if (astTransformers.length > 0) {
-              let ast = null;
-              try {
-                ast = customMolang.parse(molang);
-              } catch (err) {
-                if (options.buildType !== "fileRequest")
-                  console2.error(
-                    `Error within file "${filePath}"; script "${molang}": ${err}`
-                  );
-              }
-              if (ast) {
-                for (const transformer of astTransformers) {
-                  ast = ast.walk(transformer);
-                }
-                molang = ast.toString();
-              }
-            }
+        includePaths.forEach((includePath) => setObjectAt(includePath, fileContent, (molang) => {
+          if (typeof molang !== "string")
+            return molang;
+          if (molang[0] === "/" || molang[0] === "@")
+            return molang;
+          if (astTransformers.length > 0) {
+            let ast = null;
             try {
-              return customMolang.transform(molang);
+              ast = customMolang.parse(molang);
             } catch (err) {
               if (options.buildType !== "fileRequest")
-                console2.error(
-                  `Error within file "${filePath}"; script "${molang}": ${err}`
-                );
-              return molang;
+                console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
             }
-          })
-        );
+            if (ast) {
+              for (const transformer of astTransformers) {
+                ast = ast.walk(transformer);
+              }
+              molang = ast.toString();
+            }
+          }
+          try {
+            return customMolang.transform(molang);
+          } catch (err) {
+            if (options.buildType !== "fileRequest")
+              console2.error(`Error within file "${filePath}"; script "${molang}": ${err}`);
+            return molang;
+          }
+        }));
       }
     },
     finalizeBuild(filePath, fileContent) {
@@ -453,14 +388,10 @@ const operatorResMap = {
 const allowedOperators = Object.keys(operatorResMap);
 const assertValidOperator = (op) => {
   if (typeof op !== "string") {
-    throw new TypeError(
-      `Invalid operator type, expected string but got ${typeof op}`
-    );
+    throw new TypeError(`Invalid operator type, expected string but got ${typeof op}`);
   }
   if (allowedOperators.indexOf(op) === -1) {
-    throw new Error(
-      `Invalid operator, expected one of ${allowedOperators.join("|")}`
-    );
+    throw new Error(`Invalid operator, expected one of ${allowedOperators.join("|")}`);
   }
 };
 const v1Compat$1 = (v1CompatModule, fileType) => ({
@@ -471,15 +402,9 @@ const v1Compat$1 = (v1CompatModule, fileType) => ({
     v1CompatModule.component = ({ name, schema, template }) => {
       const component = new componentClass();
       name(componentClass.component_name);
-      schema(
-        transformV1AutoCompletions(
-          Object.values(component.onPropose())[0]
-        )
-      );
+      schema(transformV1AutoCompletions(Object.values(component.onPropose())[0]));
       template((componentArgs, { create }) => {
-        create(
-          component.onApply(componentArgs, "components")[`minecraft:${fileType}`]
-        );
+        create(component.onApply(componentArgs, "components")[`minecraft:${fileType}`]);
       });
     };
   }
@@ -558,9 +483,7 @@ class Component {
       console: this.console,
       Bridge: this.v1Compat ? v1Compat$1(v1CompatModule, this.fileType) : void 0
     }).catch((err) => {
-      this.console.error(
-        `Failed to execute component "${filePath}": ${err}`
-      );
+      this.console.error(`Failed to execute component "${filePath}": ${err}`);
       return null;
     });
     if (!module)
@@ -569,9 +492,7 @@ class Component {
       if (v1CompatModule.component) {
         module.__default__ = v1CompatModule.component;
       } else {
-        this.console.error(
-          `Component ${filePath} is not a valid component. Expected a function as the default export.`
-        );
+        this.console.error(`Component ${filePath} is not a valid component. Expected a function as the default export.`);
         return false;
       }
     }
@@ -653,78 +574,43 @@ class Component {
     } else {
       folderNamespace = "bridge";
     }
+    this.console.log(`Folder Namespace: ${folderNamespace}`);
     const animation = (animation2, molangCondition) => {
       this.animations.push([animation2, molangCondition]);
-      return this.getShortAnimName(
-        "a",
-        fileName,
-        this.animations.length - 1
-      );
+      return this.getShortAnimName("a", fileName, this.animations.length - 1);
     };
     const animationController = (animationController2, molangCondition) => {
       this.animationControllers.push([
         animationController2,
         molangCondition
       ]);
-      return this.getShortAnimName(
-        "ac",
-        fileName,
-        this.animationControllers.length - 1
-      );
+      return this.getShortAnimName("ac", fileName, this.animationControllers.length - 1);
     };
     const lootTable = (lootTableDef) => {
-      const lootId = `loot_tables/${folderNamespace}/${this.getShortAnimName(
-        "lt",
-        fileName,
-        this.serverFiles.length
-      )}.json`;
+      const lootId = `loot_tables/${folderNamespace}/${this.getShortAnimName("lt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([lootId, lootTableDef]);
       return lootId;
     };
     const tradeTable = (tradeTableDef) => {
-      const tradeId = `trading/${folderNamespace}/${this.getShortAnimName(
-        "tt",
-        fileName,
-        this.serverFiles.length
-      )}.json`;
+      const tradeId = `trading/${folderNamespace}/${this.getShortAnimName("tt", fileName, this.serverFiles.length)}.json`;
       this.serverFiles.push([tradeId, tradeTableDef]);
       return tradeId;
     };
     const recipe = (recipeDef) => {
       this.serverFiles.push([
-        `recipes/${folderNamespace}/${this.getShortAnimName(
-          "recipe",
-          fileName,
-          this.serverFiles.length
-        )}.json`,
+        `recipes/bridge/${this.getShortAnimName("recipe", fileName, this.serverFiles.length)}.json`,
         recipeDef
       ]);
     };
     const spawnRule = (spawnRuleDef) => {
       this.serverFiles.push([
-        `spawn_rules/${folderNamespace}/${this.getShortAnimName(
-          "sr",
-          fileName,
-          this.serverFiles.length
-        )}.json`,
+        `spawn_rules/bridge/${this.getShortAnimName("sr", fileName, this.serverFiles.length)}.json`,
         spawnRuleDef
       ]);
     };
     const permutationEventName = (await hashString(`${this.name}/${location}`)).slice(0, 16);
-    const onActivated = (eventResponse) => this.registerLifecycleHook(
-      fileContent,
-      location,
-      eventResponse,
-      permutationEventName,
-      "activated"
-    );
-    const onDeactivated = (eventResponse) => this.registerLifecycleHook(
-      fileContent,
-      location,
-      eventResponse,
-      permutationEventName,
-      "deactivated"
-    );
+    const onActivated = (eventResponse) => this.registerLifecycleHook(fileContent, location, eventResponse, permutationEventName, "activated");
+    const onDeactivated = (eventResponse) => this.registerLifecycleHook(fileContent, location, eventResponse, permutationEventName, "deactivated");
     if (this.fileType === "entity") {
       this.template(componentArgs != null ? componentArgs : {}, {
         mode: this.mode,
@@ -756,16 +642,13 @@ class Component {
         onDeactivated,
         client: {
           create: (clientEntity, formatVersion = "1.10.0") => {
-            this.clientFiles[`entity/${folderNamespace}/${fileName}.json`] = {
+            this.clientFiles[`entity/bridge/${fileName}.json`] = {
               format_version: formatVersion,
-              "minecraft:client_entity": Object.assign(
-                {
-                  description: {
-                    identifier
-                  }
-                },
-                clientEntity
-              )
+              "minecraft:client_entity": Object.assign({
+                description: {
+                  identifier
+                }
+              }, clientEntity)
             };
           }
         }
@@ -808,25 +691,13 @@ class Component {
     }
   }
   async processAdditionalFiles(filePath, fileContent, isPlayerFile = false) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
+    var _a, _b, _c, _d, _e, _f;
     const bpRoot = (_b = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack")) != null ? _b : "BP";
     const rpRoot = (_c = this.projectConfig) == null ? void 0 : _c.getRelativePackRoot("resourcePack");
     const identifier = isPlayerFile ? "minecraft:player" : (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
-    const projectNamespace = (_i = (_h = (_g = this.projectConfig) == null ? void 0 : _g.get()) == null ? void 0 : _h.namespace) != null ? _i : "bridge";
-    let folderNamespace;
-    if (projectNamespace.includes("_")) {
-      const studioname = projectNamespace.split("_")[0];
-      const packname = projectNamespace.split("_").slice(1).join("_");
-      folderNamespace = `${studioname}/${packname}`;
-    } else {
-      folderNamespace = "bridge";
-    }
-    const fileName = (await hashString(`${this.name}/${identifier}`)).slice(
-      0,
-      25
-    );
-    const animFileName = `${bpRoot}/animations/${folderNamespace}/${fileName}.json`;
-    const animControllerFileName = `${bpRoot}/animation_controllers/${folderNamespace}/${fileName}.json`;
+    const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25);
+    const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
+    const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`;
     if (identifier === "minecraft:player") {
       this.createOnPlayer.forEach(([location, template, operation]) => {
         this.create(fileContent, template, location, operation);
@@ -834,9 +705,7 @@ class Component {
     }
     if (!rpRoot) {
       this.clientFiles = {};
-      this.console.error(
-        `[${this.name}] Dash was unable to load the root of your resource pack and therefore cannot generate client files for this component.`
-      );
+      this.console.error(`[${this.name}] Dash was unable to load the root of your resource pack and therefore cannot generate client files for this component.`);
     }
     let anims = {};
     if (this.fileType !== "item" || identifier === "minecraft:player") {
@@ -847,52 +716,35 @@ class Component {
         },
         [animControllerFileName]: {
           baseFile: filePath,
-          fileContent: this.createAnimationControllers(
-            fileName,
-            fileContent
-          )
+          fileContent: this.createAnimationControllers(fileName, fileContent)
         }
       };
     }
     return {
       ...anims,
-      [join(bpRoot, `dialogue/${folderNamespace}/${fileName}.json`)]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
+      [join(bpRoot, `dialogue/bridge/${fileName}.json`)]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
         baseFile: filePath,
-        fileContent: JSON.stringify(
-          {
-            format_version: this.targetVersion,
-            "minecraft:npc_dialogue": {
-              scenes: this.dialogueScenes[fileName]
-            }
-          },
-          null,
-          "	"
-        )
-      } : void 0,
-      ...Object.fromEntries(
-        this.serverFiles.map(([currFilePath, fileDef]) => [
-          join(bpRoot, currFilePath),
-          {
-            baseFile: filePath,
-            fileContent: JSON.stringify(fileDef, null, "	")
+        fileContent: JSON.stringify({
+          format_version: this.targetVersion,
+          "minecraft:npc_dialogue": {
+            scenes: this.dialogueScenes[fileName]
           }
-        ])
-      ),
-      ...Object.fromEntries(
-        Object.entries(this.clientFiles).map(
-          ([currFilePath, jsonContent]) => [
-            join(rpRoot, currFilePath),
-            {
-              baseFile: filePath,
-              fileContent: JSON.stringify(
-                jsonContent,
-                null,
-                "	"
-              )
-            }
-          ]
-        )
-      )
+        }, null, "	")
+      } : void 0,
+      ...Object.fromEntries(this.serverFiles.map(([currFilePath, fileDef]) => [
+        join(bpRoot, currFilePath),
+        {
+          baseFile: filePath,
+          fileContent: JSON.stringify(fileDef, null, "	")
+        }
+      ])),
+      ...Object.fromEntries(Object.entries(this.clientFiles).map(([currFilePath, jsonContent]) => [
+        join(rpRoot, currFilePath),
+        {
+          baseFile: filePath,
+          fileContent: JSON.stringify(jsonContent, null, "	")
+        }
+      ]))
     };
   }
   createAnimations(fileName, fileContent) {
@@ -907,35 +759,22 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName(
-        "animation",
-        projectNamespace,
-        fileName,
-        id
-      );
+      const animId = this.getAnimName("animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("a", fileName, id);
       animations.animations[animId] = anim;
-      this.create(
-        fileContent,
-        {
-          animations: {
-            [shortAnimId]: animId
-          }
-        },
-        "minecraft:entity/description"
-      );
+      this.create(fileContent, {
+        animations: {
+          [shortAnimId]: animId
+        }
+      }, "minecraft:entity/description");
       if (condition !== false)
-        this.create(
-          fileContent,
-          {
-            scripts: {
-              animate: [
-                !condition ? shortAnimId : { [shortAnimId]: condition }
-              ]
-            }
-          },
-          "minecraft:entity/description"
-        );
+        this.create(fileContent, {
+          scripts: {
+            animate: [
+              !condition ? shortAnimId : { [shortAnimId]: condition }
+            ]
+          }
+        }, "minecraft:entity/description");
       id++;
     }
     return JSON.stringify(animations, null, "	");
@@ -955,35 +794,22 @@ class Component {
         id++;
         continue;
       }
-      const animId = this.getAnimName(
-        "controller.animation",
-        projectNamespace,
-        fileName,
-        id
-      );
+      const animId = this.getAnimName("controller.animation", projectNamespace, fileName, id);
       const shortAnimId = this.getShortAnimName("ac", fileName, id);
       animationControllers.animation_controllers[animId] = anim;
-      this.create(
-        fileContent,
-        {
-          animations: {
-            [shortAnimId]: animId
-          }
-        },
-        "minecraft:entity/description"
-      );
+      this.create(fileContent, {
+        animations: {
+          [shortAnimId]: animId
+        }
+      }, "minecraft:entity/description");
       if (condition !== false)
-        this.create(
-          fileContent,
-          {
-            scripts: {
-              animate: [
-                !condition ? shortAnimId : { [shortAnimId]: condition }
-              ]
-            }
-          },
-          "minecraft:entity/description"
-        );
+        this.create(fileContent, {
+          scripts: {
+            animate: [
+              !condition ? shortAnimId : { [shortAnimId]: condition }
+            ]
+          }
+        }, "minecraft:entity/description");
       id++;
     }
     return JSON.stringify(animationControllers, null, "	");
@@ -1002,26 +828,15 @@ class Component {
     if (type === "activated" && location === `minecraft:${this.fileType}/components`) {
       if (!entityEvents["minecraft:entity_spawned"])
         entityEvents["minecraft:entity_spawned"] = {};
-      this.addEventReponse(
-        entityEvents["minecraft:entity_spawned"],
-        eventResponse
-      );
+      this.addEventReponse(entityEvents["minecraft:entity_spawned"], eventResponse);
     } else if (this.fileType === "entity" && location.startsWith(`minecraft:${this.fileType}/component_groups/`)) {
       const componentGroupName = location.split("/").pop();
-      const eventsWithReferences = this.findComponentGroupReferences(
-        entityEvents,
-        type === "activated" ? "add" : "remove",
-        componentGroupName
-      );
-      eventsWithReferences.forEach(
-        (eventWithReference) => this.addEventReponse(eventWithReference, eventResponse)
-      );
+      const eventsWithReferences = this.findComponentGroupReferences(entityEvents, type === "activated" ? "add" : "remove", componentGroupName);
+      eventsWithReferences.forEach((eventWithReference) => this.addEventReponse(eventWithReference, eventResponse));
     } else if (location.startsWith(`minecraft:${this.fileType}/permutations/`)) {
       const keys = location.split("/");
       if (keys.pop() !== "components")
-        throw new Error(
-          "Invalid component location inside of permutation"
-        );
+        throw new Error("Invalid component location inside of permutation");
       const permutation = this.getObjAtLocation(fileContent, [...keys]);
       const eventName = `bridge:${permutationEventName}_${type}_${type === "activated" ? this.lifecycleHookCount.activated++ : this.lifecycleHookCount.deactivated++}`;
       if (permutation.condition)
@@ -1058,21 +873,9 @@ class Component {
     for (const eventName in events) {
       const event = events[eventName];
       if (Array.isArray(event.sequence))
-        eventsWithComponentGroups.push(
-          ...this.findComponentGroupReferences(
-            event.sequence,
-            type,
-            componentGroupName
-          )
-        );
+        eventsWithComponentGroups.push(...this.findComponentGroupReferences(event.sequence, type, componentGroupName));
       else if (Array.isArray(event.randomize))
-        eventsWithComponentGroups.push(
-          ...this.findComponentGroupReferences(
-            event.randomize,
-            type,
-            componentGroupName
-          )
-        );
+        eventsWithComponentGroups.push(...this.findComponentGroupReferences(event.randomize, type, componentGroupName));
       else {
         const componentGroups = (_b = (_a = event[type]) == null ? void 0 : _a.component_groups) != null ? _b : [];
         if (componentGroups.includes(componentGroupName))
@@ -1168,9 +971,7 @@ function createCustomComponentPlugin({
       },
       async read(filePath, fileHandle) {
         if (!fileHandle)
-          return createAdditionalFiles[filePath] ? json5.parse(
-            createAdditionalFiles[filePath].fileContent
-          ) : void 0;
+          return createAdditionalFiles[filePath] ? json5.parse(createAdditionalFiles[filePath].fileContent) : void 0;
         if (isComponent(filePath)) {
           hasComponentFiles = true;
           const file = await fileHandle.getFile();
@@ -1183,9 +984,7 @@ function createCustomComponentPlugin({
             return json5.parse(await file.text());
           } catch (err) {
             if (options.buildType !== "fileRequest")
-              console2.error(
-                `Error within file "${filePath}": ${err}`
-              );
+              console2.error(`Error within file "${filePath}": ${err}`);
             return {
               __error__: `Failed to load original file: ${err}`
             };
@@ -1196,19 +995,9 @@ function createCustomComponentPlugin({
         if (!hasComponentFiles)
           return;
         if (isComponent(filePath) && typeof fileContent === "string") {
-          const component = new Component(
-            console2,
-            fileType,
-            fileContent,
-            options.mode,
-            !!options.v1CompatMode,
-            targetVersion
-          );
+          const component = new Component(console2, fileType, fileContent, options.mode, !!options.v1CompatMode, targetVersion);
           component.setProjectConfig(projectConfig);
-          const loadedCorrectly = await component.load(
-            jsRuntime,
-            filePath
-          );
+          const loadedCorrectly = await component.load(jsRuntime, filePath);
           return loadedCorrectly ? component : fileContent;
         }
       },
@@ -1223,18 +1012,12 @@ function createCustomComponentPlugin({
         if (!hasComponentFiles)
           return;
         if (isPlayerFile(filePath, getAliases)) {
-          return getAliasesWhere(
-            (alias) => alias.startsWith("itemComponent#")
-          );
+          return getAliasesWhere((alias) => alias.startsWith("itemComponent#"));
         }
         if (mayUseComponent(filePath)) {
-          const components = findCustomComponents(
-            getComponentObjects(fileContent)
-          );
+          const components = findCustomComponents(getComponentObjects(fileContent));
           usedComponents.set(filePath, components);
-          return components.map(
-            (component) => `${fileType}Component#${component[0]}`
-          );
+          return components.map((component) => `${fileType}Component#${component[0]}`);
         } else if (createAdditionalFiles[filePath]) {
           return [createAdditionalFiles[filePath].baseFile];
         }
@@ -1244,53 +1027,26 @@ function createCustomComponentPlugin({
         if (!hasComponentFiles)
           return;
         if (isPlayerFile(filePath, getAliases)) {
-          const itemComponents = Object.entries(
-            dependencies
-          ).filter(
-            ([depName]) => depName.startsWith("itemComponent#")
-          ).map(([_, component]) => component);
+          const itemComponents = Object.entries(dependencies).filter(([depName]) => depName.startsWith("itemComponent#")).map(([_, component]) => component);
           for (const component of itemComponents) {
             if (!component)
               return;
-            createAdditionalFiles = deepMerge(
-              createAdditionalFiles,
-              await component.processAdditionalFiles(
-                filePath,
-                fileContent,
-                true
-              )
-            );
+            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent, true));
           }
         } else if (mayUseComponent(filePath)) {
           const components = /* @__PURE__ */ new Set();
-          for (const [componentName, location] of (_a = usedComponents.get(
-            filePath
-          )) != null ? _a : []) {
+          for (const [componentName, location] of (_a = usedComponents.get(filePath)) != null ? _a : []) {
             const component = dependencies[`${fileType}Component#${componentName}`];
             if (!component)
               continue;
-            const parentObj = get(
-              fileContent,
-              location.split("/"),
-              {}
-            );
+            const parentObj = get(fileContent, location.split("/"), {});
             const componentArgs = parentObj[componentName];
             delete parentObj[componentName];
-            await component.processTemplates(
-              fileContent,
-              componentArgs,
-              location
-            );
+            await component.processTemplates(fileContent, componentArgs, location);
             components.add(component);
           }
           for (const component of components) {
-            createAdditionalFiles = deepMerge(
-              createAdditionalFiles,
-              await component.processAdditionalFiles(
-                filePath,
-                fileContent
-              )
-            );
+            createAdditionalFiles = deepMerge(createAdditionalFiles, await component.processAdditionalFiles(filePath, fileContent));
           }
           for (const component of components) {
             component.reset();
@@ -1310,14 +1066,10 @@ function createCustomComponentPlugin({
           return;
         if (options.buildType === "fileRequest")
           return;
-        createAdditionalFiles = Object.fromEntries(
-          Object.entries(createAdditionalFiles).filter(
-            ([_, fileData]) => (fileData == null ? void 0 : fileData.fileContent) !== void 0
-          ).map(([filePath, fileData]) => [
-            join(projectRoot, filePath),
-            fileData
-          ])
-        );
+        createAdditionalFiles = Object.fromEntries(Object.entries(createAdditionalFiles).filter(([_, fileData]) => (fileData == null ? void 0 : fileData.fileContent) !== void 0).map(([filePath, fileData]) => [
+          join(projectRoot, filePath),
+          fileData
+        ]));
         const compilePaths = Object.keys(createAdditionalFiles);
         if (compilePaths.length > 0)
           await compileFiles(compilePaths);
@@ -1335,23 +1087,17 @@ const CustomEntityComponentPlugin = createCustomComponentPlugin({
         "minecraft:entity/components",
         (_b = (_a = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _a.components) != null ? _b : {}
       ],
-      ...Object.entries(
-        (_d = (_c = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _c.component_groups) != null ? _d : {}
-      ).map(
-        ([groupName, groupContent]) => [
-          `minecraft:entity/component_groups/${groupName}`,
-          groupContent
-        ]
-      ),
-      ...((_f = (_e = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _e.permutations) != null ? _f : []).map(
-        (permutation, index) => {
-          var _a2;
-          return [
-            `minecraft:entity/permutations/${index}/components`,
-            (_a2 = permutation == null ? void 0 : permutation.components) != null ? _a2 : {}
-          ];
-        }
-      )
+      ...Object.entries((_d = (_c = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _c.component_groups) != null ? _d : {}).map(([groupName, groupContent]) => [
+        `minecraft:entity/component_groups/${groupName}`,
+        groupContent
+      ]),
+      ...((_f = (_e = fileContent == null ? void 0 : fileContent["minecraft:entity"]) == null ? void 0 : _e.permutations) != null ? _f : []).map((permutation, index) => {
+        var _a2;
+        return [
+          `minecraft:entity/permutations/${index}/components`,
+          (_a2 = permutation == null ? void 0 : permutation.components) != null ? _a2 : {}
+        ];
+      })
     ];
   }
 });
@@ -1376,15 +1122,13 @@ const CustomBlockComponentPlugin = createCustomComponentPlugin({
         "minecraft:block/components",
         (_b = (_a = fileContent == null ? void 0 : fileContent["minecraft:block"]) == null ? void 0 : _a.components) != null ? _b : {}
       ],
-      ...((_d = (_c = fileContent == null ? void 0 : fileContent["minecraft:block"]) == null ? void 0 : _c.permutations) != null ? _d : []).map(
-        (permutation, index) => {
-          var _a2;
-          return [
-            `minecraft:block/permutations/${index}/components`,
-            (_a2 = permutation.components) != null ? _a2 : {}
-          ];
-        }
-      )
+      ...((_d = (_c = fileContent == null ? void 0 : fileContent["minecraft:block"]) == null ? void 0 : _c.permutations) != null ? _d : []).map((permutation, index) => {
+        var _a2;
+        return [
+          `minecraft:block/permutations/${index}/components`,
+          (_a2 = permutation.components) != null ? _a2 : {}
+        ];
+      })
     ];
   }
 });
@@ -1395,9 +1139,7 @@ function transformCommands(commands, dependencies, includeComments, nestingDepth
       processedCommands.push(writtenCommand);
       continue;
     }
-    const [commandName, ...args] = tokenizeCommand(
-      writtenCommand.slice(1)
-    ).tokens.map(({ word }) => word);
+    const [commandName, ...args] = tokenizeCommand(writtenCommand.slice(1)).tokens.map(({ word }) => word);
     const command = dependencies[`command#${commandName}`];
     if (commandName === "execute") {
       let nestedCommandIndex = 4;
@@ -1414,23 +1156,13 @@ function transformCommands(commands, dependencies, includeComments, nestingDepth
         processedCommands.push(writtenCommand);
         continue;
       }
-      processedCommands.push(
-        ...nestedCommand.process(
-          `${nestedCommandName} ${nestedArgs.join(" ")}`,
-          dependencies,
-          nestingDepth + 1
-        ).map(
-          (command2) => command2.startsWith("/") ? `/execute ${args.slice(0, nestedCommandIndex).join(" ")} ${command2.slice(1)}` : command2
-        )
-      );
+      processedCommands.push(...nestedCommand.process(`${nestedCommandName} ${nestedArgs.join(" ")}`, dependencies, nestingDepth + 1).map((command2) => command2.startsWith("/") ? `/execute ${args.slice(0, nestedCommandIndex).join(" ")} ${command2.slice(1)}` : command2));
       continue;
     } else if (!(command instanceof Command)) {
       processedCommands.push(writtenCommand);
       continue;
     }
-    processedCommands.push(
-      ...command.process(writtenCommand, dependencies, nestingDepth)
-    );
+    processedCommands.push(...command.process(writtenCommand, dependencies, nestingDepth));
   }
   return processedCommands.filter((command) => includeComments || !command.startsWith("#")).map((command) => command.trim());
 }
@@ -1464,9 +1196,7 @@ class Command {
       defineCommand: (x) => x,
       Bridge: this.v1Compat ? v1Compat(v1CompatModule) : void 0
     }).catch((err) => {
-      this.console.error(
-        `Failed to execute command ${this.name}: ${err}`
-      );
+      this.console.error(`Failed to execute command ${this.name}: ${err}`);
       return null;
     });
     if (!module)
@@ -1475,9 +1205,7 @@ class Command {
       if (v1CompatModule.command) {
         module.__default__ = v1CompatModule.command;
       } else {
-        this.console.error(
-          `Component ${filePath} is not a valid component. Expected a function as the default export.`
-        );
+        this.console.error(`Component ${filePath} is not a valid component. Expected a function as the default export.`);
         return false;
       }
     }
@@ -1509,44 +1237,25 @@ class Command {
     var _a;
     if (command.startsWith("/"))
       command = command.slice(1);
-    const [commandName, ...args] = tokenizeCommand(command).tokens.map(
-      ({ word }) => word
-    );
-    const commands = (_a = this.template) == null ? void 0 : _a.call(
-      this,
-      args.map((arg) => castType(arg)),
-      {
-        compilerMode: this.mode,
-        commandNestingDepth: nestingDepth,
-        compileCommands: (customCommands) => {
-          return transformCommands(
-            customCommands.map(
-              (command2) => command2.startsWith("/") ? command2 : `/${command2}`
-            ),
-            dependencies,
-            false,
-            nestingDepth + 1
-          ).map(
-            (command2) => command2.startsWith("/") ? command2.slice(1) : command2
-          );
-        }
+    const [commandName, ...args] = tokenizeCommand(command).tokens.map(({ word }) => word);
+    const commands = (_a = this.template) == null ? void 0 : _a.call(this, args.map((arg) => castType(arg)), {
+      compilerMode: this.mode,
+      commandNestingDepth: nestingDepth,
+      compileCommands: (customCommands) => {
+        return transformCommands(customCommands.map((command2) => command2.startsWith("/") ? command2 : `/${command2}`), dependencies, false, nestingDepth + 1).map((command2) => command2.startsWith("/") ? command2.slice(1) : command2);
       }
-    );
+    });
     let processedCommands = [];
     if (typeof commands === "string")
       processedCommands = commands.split("\n");
     else if (Array.isArray(commands))
-      processedCommands = commands.filter(
-        (command2) => typeof command2 === "string"
-      );
+      processedCommands = commands.filter((command2) => typeof command2 === "string");
     else {
       const errrorMsg = `Failed to process command ${this._name}; Invalid command template return type: Expected string[] or string, received ${typeof commands}`;
       this.console.error(errrorMsg);
       processedCommands.push(`# ${errrorMsg}`);
     }
-    return processedCommands.map(
-      (command2) => command2.startsWith("/") || command2.startsWith("#") ? command2 : `/${command2}`
-    );
+    return processedCommands.map((command2) => command2.startsWith("/") || command2.startsWith("#") ? command2 : `/${command2}`);
   }
   getSchema() {
     if (!this.schema)
@@ -1592,12 +1301,7 @@ const CustomCommandsPlugin = ({
   };
   return {
     async buildStart() {
-      options.include = Object.assign(
-        await requestJsonData(
-          "data/packages/minecraftBedrock/location/validCommand.json"
-        ),
-        options.include
-      );
+      options.include = Object.assign(await requestJsonData("data/packages/minecraftBedrock/location/validCommand.json"), options.include);
       cachedPaths.clear();
     },
     ignore(filePath) {
@@ -1630,12 +1334,7 @@ const CustomCommandsPlugin = ({
     async load(filePath, fileContent) {
       var _a;
       if (isCommand(filePath)) {
-        const command = new Command(
-          console2,
-          fileContent,
-          options.mode,
-          (_a = options.v1CompatMode) != null ? _a : false
-        );
+        const command = new Command(console2, fileContent, options.mode, (_a = options.v1CompatMode) != null ? _a : false);
         await command.load(jsRuntime, filePath);
         return command;
       }
@@ -1656,43 +1355,23 @@ const CustomCommandsPlugin = ({
       const includePaths = loadCommandsFor(filePath);
       if (includePaths && includePaths.length > 0) {
         const hasSlashPrefix = withSlashPrefix(filePath);
-        includePaths.forEach(
-          (includePath) => setObjectAt(
-            includePath,
-            fileContent,
-            (commands) => {
-              if (!commands)
-                return commands;
-              commands = Array.isArray(commands) ? commands : [commands];
-              const filteredCommands = [];
-              for (const command of commands) {
-                if (typeof command === "string") {
-                  filteredCommands.push(command);
-                  continue;
-                }
-                console2.error(
-                  `The file "${filePath}" contains invalid commands. Expected type "string" within array but got type "${typeof command}"`
-                );
-              }
-              return transformCommands(
-                filteredCommands.map(
-                  (command) => !hasSlashPrefix && !command.startsWith("/") ? `/${command}` : command
-                ),
-                dependencies,
-                false
-              ).map(
-                (command) => hasSlashPrefix ? command : command.slice(1)
-              );
+        includePaths.forEach((includePath) => setObjectAt(includePath, fileContent, (commands) => {
+          if (!commands)
+            return commands;
+          commands = Array.isArray(commands) ? commands : [commands];
+          const filteredCommands = [];
+          for (const command of commands) {
+            if (typeof command === "string") {
+              filteredCommands.push(command);
+              continue;
             }
-          )
-        );
+            console2.error(`The file "${filePath}" contains invalid commands. Expected type "string" within array but got type "${typeof command}"`);
+          }
+          return transformCommands(filteredCommands.map((command) => !hasSlashPrefix && !command.startsWith("/") ? `/${command}` : command), dependencies, false).map((command) => hasSlashPrefix ? command : command.slice(1));
+        }));
       } else if (isMcfunction(filePath)) {
-        const commands = fileContent.split("\n").map((command) => command.trim()).filter(
-          (command) => command !== "" && !command.startsWith("#")
-        ).map((command) => `/${command}`);
-        return transformCommands(commands, dependencies, true).map(
-          (command) => command.startsWith("/") ? command.slice(1) : command
-        ).join("\n");
+        const commands = fileContent.split("\n").map((command) => command.trim()).filter((command) => command !== "" && !command.startsWith("#")).map((command) => `/${command}`);
+        return transformCommands(commands, dependencies, true).map((command) => command.startsWith("/") ? command.slice(1) : command).join("\n");
       }
     },
     finalizeBuild(filePath, fileContent) {
@@ -1759,30 +1438,15 @@ const RewriteForPackaging = ({
     const packId = packType.getId(filePath);
     const relativePath = relative(projectRoot, filePath);
     if (packId === "behaviorPack" || packId === "resourcePack" || packId === "skinPack")
-      return join(
-        projectRoot,
-        "builds/dist",
-        packId,
-        relevantFilePath(relativePath)
-      );
+      return join(projectRoot, "builds/dist", packId, relevantFilePath(relativePath));
   };
   const rewriteForMctemplate = (filePath) => {
     const packId = packType.getId(filePath);
     const relativePath = relative(projectRoot, filePath);
     if (packId === "worldTemplate")
-      return join(
-        projectRoot,
-        "builds/dist",
-        relevantFilePath(relativePath)
-      );
+      return join(projectRoot, "builds/dist", relevantFilePath(relativePath));
     else if (packId === "behaviorPack" || packId === "resourcePack") {
-      return join(
-        projectRoot,
-        "builds/dist",
-        packId === "behaviorPack" ? "behavior_packs" : "resource_packs",
-        options.packName,
-        relevantFilePath(relativePath)
-      );
+      return join(projectRoot, "builds/dist", packId === "behaviorPack" ? "behavior_packs" : "resource_packs", options.packName, relevantFilePath(relativePath));
     }
   };
   const rewriteForMcworld = (filePath) => {
@@ -1818,9 +1482,7 @@ const ContentsFilePlugin = ({
   options
 }) => {
   const packs = Object.keys(projectConfig.getAvailablePacks());
-  const packContents = Object.fromEntries(
-    packs.map((packId) => [packId, []])
-  );
+  const packContents = Object.fromEntries(packs.map((packId) => [packId, []]));
   const isContentsFile = (filePath) => {
     const packId = packType.getId(filePath);
     if (packId === "unknown")
@@ -1944,9 +1606,7 @@ class Collection {
   }
   add(filePath, fileContent) {
     if (this.files.has(filePath)) {
-      this.console.warn(
-        `Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`
-      );
+      this.console.warn(`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`);
       return;
     }
     this.files.set(filePath, fileContent);
@@ -2009,10 +1669,7 @@ const GeneratorScriptsPlugin = ({
       omitUsedTemplates.clear();
       filesToUpdate.clear();
       usedTemplateMap.clear();
-      jsRuntime.registerModule(
-        "@bridge-interal/collection",
-        CollectionModule
-      );
+      jsRuntime.registerModule("@bridge-interal/collection", CollectionModule);
       jsRuntime.registerModule("@bridge/generate", GeneratorScriptModule);
       jsRuntime.registerModule("path-browserify", {
         dirname,
@@ -2044,34 +1701,24 @@ const GeneratorScriptsPlugin = ({
       if (!fileContent)
         return null;
       const currentTemplates = /* @__PURE__ */ new Set();
-      const module = await jsRuntime.run(
-        filePath,
-        {
-          console: console2,
-          __baseDirectory: dirname(filePath),
-          __omitUsedTemplates: omitUsedTemplates,
-          __fileSystem: fileSystem
-        },
-        fileContent
-      ).catch((err) => {
-        console2.error(
-          `Failed to execute generator script "${filePath}": ${err}`
-        );
+      const module = await jsRuntime.run(filePath, {
+        console: console2,
+        __baseDirectory: dirname(filePath),
+        __omitUsedTemplates: omitUsedTemplates,
+        __fileSystem: fileSystem
+      }, fileContent).catch((err) => {
+        console2.error(`Failed to execute generator script "${filePath}": ${err}`);
         return null;
       });
       if (!module)
         return null;
       if (!module.__default__) {
-        console2.error(
-          `Expected generator script "${filePath}" to provide file content as default export!`
-        );
+        console2.error(`Expected generator script "${filePath}" to provide file content as default export!`);
         return null;
       }
       const fileMetadata = getFileMetadata(filePath);
       const previouslyUnlinkedFiles = ((_a2 = fileMetadata.get("unlinkedFiles")) != null ? _a2 : []).filter((filePath2) => !currentTemplates.has(filePath2));
-      previouslyUnlinkedFiles.forEach(
-        (file) => filesToUpdate.add(file)
-      );
+      previouslyUnlinkedFiles.forEach((file) => filesToUpdate.add(file));
       fileMetadata.set("unlinkedFiles", [...currentTemplates]);
       const generatedFiles = (_b = fileMetadata.get("generatedFiles")) != null ? _b : [];
       await unlinkOutputFiles([
@@ -2100,14 +1747,8 @@ const GeneratorScriptsPlugin = ({
           return null;
         const fileMetadata = getFileMetadata(filePath);
         if (fileContent.__isCollection) {
-          fileCollection.addFrom(
-            fileContent,
-            dirname(filePath)
-          );
-          fileMetadata.set(
-            "generatedFiles",
-            fileContent.getAll().map(([filePath2]) => filePath2)
-          );
+          fileCollection.addFrom(fileContent, dirname(filePath));
+          fileMetadata.set("generatedFiles", fileContent.getAll().map(([filePath2]) => filePath2));
           return null;
         }
         fileMetadata.set("generatedFiles", [transformPath(filePath)]);
@@ -2119,16 +1760,9 @@ const GeneratorScriptsPlugin = ({
       jsRuntime.deleteModule("@bridge-interal/collection");
       jsRuntime.deleteModule("path-browserify");
       if (filesToUpdate.size > 0)
-        await compileFiles(
-          [...filesToUpdate].filter(
-            (filePath) => !fileCollection.has(filePath)
-          ),
-          false
-        );
+        await compileFiles([...filesToUpdate].filter((filePath) => !fileCollection.has(filePath)), false);
       if (fileCollection.hasFiles)
-        await compileFiles(
-          fileCollection.getAll().map(([filePath]) => filePath)
-        );
+        await compileFiles(fileCollection.getAll().map(([filePath]) => filePath));
     },
     async beforeFileUnlinked(filePath) {
       var _a2, _b;
@@ -2209,36 +1843,23 @@ class AllPlugins {
     this.implementedHooks.clear();
     this.pluginRuntime.clearCache();
     const extensions = [
-      ...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, ".bridge/extensions")).catch(() => [])).map(
-        (entry) => entry.kind === "directory" ? join(
-          this.dash.projectRoot,
-          ".bridge/extensions",
-          entry.name
-        ) : void 0
-      ),
-      ...(await this.dash.fileSystem.readdir("extensions").catch(() => [])).map(
-        (entry) => entry.kind === "directory" ? join("extensions", entry.name) : void 0
-      )
+      ...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, ".bridge/extensions")).catch(() => [])).map((entry) => entry.kind === "directory" ? join(this.dash.projectRoot, ".bridge/extensions", entry.name) : void 0),
+      ...(await this.dash.fileSystem.readdir("extensions").catch(() => [])).map((entry) => entry.kind === "directory" ? join("extensions", entry.name) : void 0)
     ];
     const plugins = {};
     const manifestReadPromises = [];
     for (const extension of extensions) {
       if (!extension)
         continue;
-      manifestReadPromises.push(
-        this.dash.fileSystem.readJson(join(extension, "manifest.json")).then((manifest) => {
-          var _a2;
-          if (!((_a2 = manifest == null ? void 0 : manifest.compiler) == null ? void 0 : _a2.plugins))
-            return;
-          for (const pluginId in manifest.compiler.plugins) {
-            plugins[pluginId] = join(
-              extension,
-              manifest.compiler.plugins[pluginId]
-            );
-          }
-        }).catch(() => {
-        })
-      );
+      manifestReadPromises.push(this.dash.fileSystem.readJson(join(extension, "manifest.json")).then((manifest) => {
+        var _a2;
+        if (!((_a2 = manifest == null ? void 0 : manifest.compiler) == null ? void 0 : _a2.plugins))
+          return;
+        for (const pluginId in manifest.compiler.plugins) {
+          plugins[pluginId] = join(extension, manifest.compiler.plugins[pluginId]);
+        }
+      }).catch(() => {
+      }));
     }
     await Promise.all(manifestReadPromises);
     const usedPlugins = (_a = (await this.getCompilerOptions()).plugins) != null ? _a : [];
@@ -2248,28 +1869,22 @@ class AllPlugins {
       const usedPlugin = usedPlugins[i];
       const pluginId = typeof usedPlugin === "string" ? usedPlugin : usedPlugin[0];
       if (plugins[pluginId]) {
-        promises.push(
-          this.pluginRuntime.run(plugins[pluginId], {
-            console: this.dash.console,
-            ...scriptEnv
-          }).catch((err) => {
-            this.dash.console.error(
-              `Failed to execute plugin ${pluginId}: ${err}`
-            );
-            return null;
-          }).then((module) => {
-            if (!module)
-              return;
-            if (typeof module.__default__ === "function") {
-              evaluatedPlugins[i] = module.__default__;
-            } else {
-              evaluatedPlugins[i] = null;
-              this.dash.console.error(
-                `Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
-              );
-            }
-          })
-        );
+        promises.push(this.pluginRuntime.run(plugins[pluginId], {
+          console: this.dash.console,
+          ...scriptEnv
+        }).catch((err) => {
+          this.dash.console.error(`Failed to execute plugin ${pluginId}: ${err}`);
+          return null;
+        }).then((module) => {
+          if (!module)
+            return;
+          if (typeof module.__default__ === "function") {
+            evaluatedPlugins[i] = module.__default__;
+          } else {
+            evaluatedPlugins[i] = null;
+            this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`);
+          }
+        }));
       } else if (builtInPlugins[pluginId]) {
         evaluatedPlugins[i] = builtInPlugins[pluginId];
       } else {
@@ -2289,11 +1904,7 @@ class AllPlugins {
     }
   }
   async addPlugin(pluginId, pluginImpl, pluginOpts) {
-    const plugin = new Plugin(
-      this.dash,
-      pluginId,
-      await pluginImpl(this.getPluginContext(pluginId, pluginOpts))
-    );
+    const plugin = new Plugin(this.dash, pluginId, await pluginImpl(this.getPluginContext(pluginId, pluginOpts)));
     for (const hook of availableHooks) {
       if (plugin.implementsHook(hook)) {
         let hooks = this.implementedHooks.get(hook);
@@ -2346,9 +1957,7 @@ class AllPlugins {
       getFileMetadata: (filePath) => {
         const file = this.dash.includedFiles.get(filePath);
         if (!file)
-          throw new Error(
-            `File ${filePath} to get metadata from not found`
-          );
+          throw new Error(`File ${filePath} to get metadata from not found`);
         return {
           get(key) {
             return file.getMetadata(key);
@@ -2364,15 +1973,11 @@ class AllPlugins {
       addFileDependencies: (filePath, filePaths, clearPrevious = false) => {
         const file = this.dash.includedFiles.get(filePath);
         if (!file)
-          throw new Error(
-            `File ${filePath} to add dependency to not found`
-          );
+          throw new Error(`File ${filePath} to add dependency to not found`);
         if (clearPrevious)
           file.setRequiredFiles(new Set(filePaths));
         else
-          filePaths.forEach(
-            (filePath2) => file.addRequiredFile(filePath2)
-          );
+          filePaths.forEach((filePath2) => file.addRequiredFile(filePath2));
       },
       getOutputPath: (filePath) => {
         return this.dash.getCompilerOutputPath(filePath);
@@ -2385,11 +1990,7 @@ class AllPlugins {
     };
   }
   async runBuildStartHooks() {
-    await Promise.all(
-      this.pluginsFor("buildStart").map(
-        (plugin) => plugin.runBuildStartHook()
-      )
-    );
+    await Promise.all(this.pluginsFor("buildStart").map((plugin) => plugin.runBuildStartHook()));
   }
   async runIncludeHooks() {
     let includeFiles = [];
@@ -2421,10 +2022,7 @@ class AllPlugins {
   }
   async runReadHooks(file) {
     for (const plugin of this.pluginsFor("read", file)) {
-      const data = await plugin.runReadHook(
-        file.filePath,
-        file.fileHandle
-      );
+      const data = await plugin.runReadHook(file.filePath, file.fileHandle);
       if (data !== null && data !== void 0)
         return data;
     }
@@ -2442,10 +2040,7 @@ class AllPlugins {
   async runRegisterAliasesHooks(file) {
     const aliases = /* @__PURE__ */ new Set();
     for (const plugin of this.pluginsFor("registerAliases", file)) {
-      const tmp = await plugin.runRegisterAliasesHook(
-        file.filePath,
-        file.data
-      );
+      const tmp = await plugin.runRegisterAliasesHook(file.filePath, file.data);
       if (tmp === void 0 || tmp === null)
         continue;
       if (Array.isArray(tmp))
@@ -2469,19 +2064,13 @@ class AllPlugins {
     return requiredFiles;
   }
   async runTransformHooks(file) {
-    const dependencies = Object.fromEntries(
-      [...file.requiredFiles].map((query) => this.dash.includedFiles.query(query)).flat().map((file2) => [
-        [file2.filePath, file2.data],
-        ...[...file2.aliases].map((alias) => [alias, file2.data])
-      ]).flat()
-    );
+    const dependencies = Object.fromEntries([...file.requiredFiles].map((query) => this.dash.includedFiles.query(query)).flat().map((file2) => [
+      [file2.filePath, file2.data],
+      ...[...file2.aliases].map((alias) => [alias, file2.data])
+    ]).flat());
     let transformedData = file.data;
     for (const plugin of this.pluginsFor("transform", file)) {
-      const tmpData = await plugin.runTransformHook(
-        file.filePath,
-        transformedData,
-        dependencies
-      );
+      const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies);
       if (tmpData === void 0)
         continue;
       transformedData = tmpData;
@@ -2490,20 +2079,13 @@ class AllPlugins {
   }
   async runFinalizeBuildHooks(file) {
     for (const plugin of this.pluginsFor("finalizeBuild", file)) {
-      const finalizedData = await plugin.runFinalizeBuildHook(
-        file.filePath,
-        file.data
-      );
+      const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data);
       if (finalizedData !== void 0)
         return finalizedData;
     }
   }
   async runBuildEndHooks() {
-    await Promise.allSettled(
-      this.pluginsFor("buildEnd").map(
-        (plugin) => plugin.runBuildEndHook()
-      )
-    );
+    await Promise.allSettled(this.pluginsFor("buildEnd").map((plugin) => plugin.runBuildEndHook()));
   }
   async runBeforeFileUnlinked(filePath) {
     for (const plugin of this.pluginsFor("beforeFileUnlinked")) {
@@ -2541,9 +2123,7 @@ class DashFile {
       hookType,
       plugins
     ] of this.dash.plugins.getImplementedHooks()) {
-      const availablePlugins = plugins.filter(
-        (plugin) => !this.isIgnoredBy(plugin.pluginId)
-      );
+      const availablePlugins = plugins.filter((plugin) => !this.isIgnoredBy(plugin.pluginId));
       this._myImplementedHooks.set(hookType, availablePlugins);
     }
     const readHooks = (_a = this.myImplementedHooks.get("read")) != null ? _a : [];
@@ -2555,9 +2135,7 @@ class DashFile {
   get myImplementedHooks() {
     if (this._myImplementedHooks)
       return this._myImplementedHooks;
-    throw new Error(
-      `Tried to access implemented hooks before they were created`
-    );
+    throw new Error(`Tried to access implemented hooks before they were created`);
   }
   setFileHandle(fileHandle) {
     this.fileHandle = fileHandle;
@@ -2585,9 +2163,7 @@ class DashFile {
     this.requiredFiles.add(filePath);
   }
   setUpdateFiles(files) {
-    this.updateFiles = new Set(
-      files.map((filePath) => this.dash.includedFiles.get(filePath)).filter((file) => file !== void 0)
-    );
+    this.updateFiles = new Set(files.map((filePath) => this.dash.includedFiles.get(filePath)).filter((file) => file !== void 0));
   }
   addUpdateFile(file) {
     this.updateFiles.add(file);
@@ -2647,13 +2223,7 @@ class DashFile {
     if (this.data === null || this.data === void 0) {
       this.isDone = true;
       if (this.filePath !== this.outputPath && this.outputPath !== null && !this.isVirtual && writeFiles) {
-        copyFilePromises.push(
-          this.dash.fileSystem.copyFile(
-            this.filePath,
-            this.outputPath,
-            this.dash.outputFileSystem
-          )
-        );
+        copyFilePromises.push(this.dash.fileSystem.copyFile(this.filePath, this.outputPath, this.dash.outputFileSystem));
       }
     }
   }
@@ -2729,15 +2299,13 @@ class IncludedFiles {
     const packPaths = this.dash.projectConfig.getAvailablePackPaths();
     const promises = [];
     for (const packPath of packPaths) {
-      promises.push(
-        this.dash.fileSystem.allFiles(packPath).catch((err) => {
-          this.dash.console.warn(err);
-          return [];
-        }).then((files) => {
-          for (const file of files)
-            allFiles.add(file);
-        })
-      );
+      promises.push(this.dash.fileSystem.allFiles(packPath).catch((err) => {
+        this.dash.console.warn(err);
+        return [];
+      }).then((files) => {
+        for (const file of files)
+          allFiles.add(file);
+      }));
     }
     await Promise.all(promises);
     const includeFiles = await this.dash.plugins.runIncludeHooks();
@@ -2778,10 +2346,7 @@ class IncludedFiles {
     }
   }
   async save(filePath) {
-    await this.dash.fileSystem.writeJson(
-      filePath,
-      this.all().map((file) => file.serialize())
-    );
+    await this.dash.fileSystem.writeJson(filePath, this.all().map((file) => file.serialize()));
   }
   async load(filePath) {
     this.removeAll();
@@ -2790,11 +2355,7 @@ class IncludedFiles {
     if (!sFiles)
       return;
     for (const sFile of sFiles) {
-      const file = new DashFile(
-        this.dash,
-        sFile.filePath,
-        sFile.isVirtual
-      );
+      const file = new DashFile(this.dash, sFile.filePath, sFile.isVirtual);
       file.setAliases(new Set(sFile.aliases));
       file.setRequiredFiles(new Set(sFile.requiredFiles));
       file.setMetadata(sFile.metadata);
@@ -2835,12 +2396,10 @@ class LoadFiles {
       promises.push(this.loadFile(file, writeFiles));
     }
     await Promise.allSettled(promises);
-    await Promise.allSettled(
-      files.map(async (file) => {
-        const requiredFiles = await this.dash.plugins.runRequireHooks(file);
-        file.setRequiredFiles(requiredFiles);
-      })
-    );
+    await Promise.allSettled(files.map(async (file) => {
+      const requiredFiles = await this.dash.plugins.runRequireHooks(file);
+      file.setRequiredFiles(requiredFiles);
+    }));
   }
   async loadFile(file, writeFiles = true) {
     var _a;
@@ -2885,17 +2444,13 @@ class ResolveFileOrder {
       const depFiles = files.query(depFileId);
       for (const depFile of depFiles) {
         if (!depFile) {
-          this.dash.console.error(
-            `Undefined file dependency: "${file.filePath}" requires "${depFileId}"`
-          );
+          this.dash.console.error(`Undefined file dependency: "${file.filePath}" requires "${depFileId}"`);
           continue;
         }
         depFile.addUpdateFile(file);
         if (!resolved.has(depFile)) {
           if (unresolved.has(depFile)) {
-            this.dash.console.error(
-              `Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`
-            );
+            this.dash.console.error(`Circular dependency detected: ${depFile.filePath} is required by ${file.filePath} but also depends on this file.`);
             continue;
           }
           this.resolveSingle(depFile, resolved, unresolved);
@@ -2920,12 +2475,7 @@ class FileTransformer {
         continue;
       let writeData = await this.transformFile(file, true, skipTransform);
       if (writeData !== void 0 && writeData !== null && file.outputPath !== null && file.filePath !== file.outputPath) {
-        promises.push(
-          this.dash.outputFileSystem.writeFile(
-            file.outputPath,
-            writeData
-          )
-        );
+        promises.push(this.dash.outputFileSystem.writeFile(file.outputPath, writeData));
       }
     }
     await Promise.allSettled(promises);
@@ -2942,10 +2492,7 @@ class FileTransformer {
       writeData = file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
-        this.dash.console.warn(
-          `File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`,
-          writeData
-        );
+        this.dash.console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
         writeData = JSON.stringify(writeData);
       }
     }
@@ -3123,9 +2670,7 @@ class Dash {
       await this.saveDashFile();
     this.includedFiles.resetAll();
     this.progress.advance();
-    this.console.log(
-      `Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`
-    );
+    this.console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`);
   }
   async updateFiles(filePaths, saveDashFile = true) {
     var _a;
@@ -3156,13 +2701,9 @@ class Dash {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const newDeps = [...file.requiredFiles].filter((dep) => !oldDeps[i].has(dep));
-      newDeps.forEach(
-        (dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.addUpdateFile(file))
-      );
+      newDeps.forEach((dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.addUpdateFile(file)));
       const removedDeps = [...oldDeps[i]].filter((dep) => !file.requiredFiles.has(dep));
-      removedDeps.forEach(
-        (dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.removeUpdateFile(file))
-      );
+      removedDeps.forEach((dep) => this.includedFiles.query(dep).forEach((depFile) => depFile.removeUpdateFile(file)));
     }
     this.progress.advance();
     const filesToLoad = new Set(files.map((file) => [...file.filesToLoadForHotUpdate()]).flat());
@@ -3208,10 +2749,7 @@ class Dash {
     await this.loadFiles.loadFile(file, false);
     this.progress.advance();
     const filesToLoad = file.filesToLoadForHotUpdate();
-    await this.loadFiles.run(
-      [...filesToLoad.values()].filter((currFile) => file !== currFile),
-      false
-    );
+    await this.loadFiles.run([...filesToLoad.values()].filter((currFile) => file !== currFile), false);
     this.progress.advance();
     for (const file2 of filesToLoad) {
       if (file2.isDone)
@@ -3340,10 +2878,7 @@ class FileSystem {
     await outputFs.writeFile(to, new Uint8Array(await file.arrayBuffer()));
   }
   async writeJson(path, content, beautify = true) {
-    await this.writeFile(
-      path,
-      JSON.stringify(content, null, beautify ? "	" : 0)
-    );
+    await this.writeFile(path, JSON.stringify(content, null, beautify ? "	" : 0));
   }
   async readJson(path) {
     const file = await this.readFile(path);
@@ -3354,9 +2889,7 @@ class FileSystem {
     }
   }
   watchDirectory(path, onChange) {
-    console.warn(
-      "Watching a directory for changes is not supported on this platform!"
-    );
+    console.warn("Watching a directory for changes is not supported on this platform!");
   }
 }
 export { Command, Component, Console, Dash, DefaultConsole, FileSystem, initRuntimes };
