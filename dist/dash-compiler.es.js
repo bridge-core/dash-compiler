@@ -574,7 +574,6 @@ class Component {
     } else {
       folderNamespace = "bridge";
     }
-    this.console.log(`Folder Namespace: ${folderNamespace}`);
     const animation = (animation2, molangCondition) => {
       this.animations.push([animation2, molangCondition]);
       return this.getShortAnimName("a", fileName, this.animations.length - 1);
@@ -598,13 +597,13 @@ class Component {
     };
     const recipe = (recipeDef) => {
       this.serverFiles.push([
-        `recipes/bridge/${this.getShortAnimName("recipe", fileName, this.serverFiles.length)}.json`,
+        `recipes/${folderNamespace}/${this.getShortAnimName("recipe", fileName, this.serverFiles.length)}.json`,
         recipeDef
       ]);
     };
     const spawnRule = (spawnRuleDef) => {
       this.serverFiles.push([
-        `spawn_rules/bridge/${this.getShortAnimName("sr", fileName, this.serverFiles.length)}.json`,
+        `spawn_rules/${folderNamespace}/${this.getShortAnimName("sr", fileName, this.serverFiles.length)}.json`,
         spawnRuleDef
       ]);
     };
@@ -642,7 +641,7 @@ class Component {
         onDeactivated,
         client: {
           create: (clientEntity, formatVersion = "1.10.0") => {
-            this.clientFiles[`entity/bridge/${fileName}.json`] = {
+            this.clientFiles[`entity/${folderNamespace}/${fileName}.json`] = {
               format_version: formatVersion,
               "minecraft:client_entity": Object.assign({
                 description: {
@@ -691,13 +690,22 @@ class Component {
     }
   }
   async processAdditionalFiles(filePath, fileContent, isPlayerFile = false) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _i;
     const bpRoot = (_b = (_a = this.projectConfig) == null ? void 0 : _a.getRelativePackRoot("behaviorPack")) != null ? _b : "BP";
     const rpRoot = (_c = this.projectConfig) == null ? void 0 : _c.getRelativePackRoot("resourcePack");
     const identifier = isPlayerFile ? "minecraft:player" : (_f = (_e = (_d = fileContent[`minecraft:${this.fileType}`]) == null ? void 0 : _d.description) == null ? void 0 : _e.identifier) != null ? _f : "bridge:no_identifier";
+    const projectNamespace = (_i = (_h = (_g = this.projectConfig) == null ? void 0 : _g.get()) == null ? void 0 : _h.namespace) != null ? _i : "bridge";
+    let folderNamespace;
+    if (projectNamespace.includes("_")) {
+      const studioname = projectNamespace.split("_")[0];
+      const packname = projectNamespace.split("_").slice(1).join("_");
+      folderNamespace = `${studioname}/${packname}`;
+    } else {
+      folderNamespace = "bridge";
+    }
     const fileName = (await hashString(`${this.name}/${identifier}`)).slice(0, 25);
-    const animFileName = `${bpRoot}/animations/bridge/${fileName}.json`;
-    const animControllerFileName = `${bpRoot}/animation_controllers/bridge/${fileName}.json`;
+    const animFileName = `${bpRoot}/animations/${folderNamespace}/${fileName}.json`;
+    const animControllerFileName = `${bpRoot}/animation_controllers/${folderNamespace}/${fileName}.json`;
     if (identifier === "minecraft:player") {
       this.createOnPlayer.forEach(([location, template, operation]) => {
         this.create(fileContent, template, location, operation);
@@ -722,7 +730,7 @@ class Component {
     }
     return {
       ...anims,
-      [join(bpRoot, `dialogue/bridge/${fileName}.json`)]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
+      [join(bpRoot, `dialogue/${folderNamespace}/${fileName}.json`)]: this.dialogueScenes[fileName] && this.dialogueScenes[fileName].length > 0 ? {
         baseFile: filePath,
         fileContent: JSON.stringify({
           format_version: this.targetVersion,
