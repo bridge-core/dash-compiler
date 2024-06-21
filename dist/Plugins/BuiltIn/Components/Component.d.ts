@@ -1,7 +1,7 @@
 import { ProjectConfig } from '@bridge-editor/mc-project-core';
 import { Console } from '../../../Common/Console';
 import { Runtime } from '@bridge-editor/js-runtime';
-export declare type TTemplate = (componentArgs: any, opts: any) => any;
+export type TTemplate = (componentArgs: any, opts: any) => any;
 export declare class Component {
     protected console: Console;
     protected fileType: string;
