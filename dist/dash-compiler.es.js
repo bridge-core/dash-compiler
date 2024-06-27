@@ -823,7 +823,7 @@ class Component {
     return JSON.stringify(animationControllers, null, "	");
   }
   getAnimName(prefix, namespace, fileName, id) {
-    return `${prefix}.${namespace}_${fileName}_${id}`;
+    return `${prefix}.${namespace}.${fileName}_${id}`;
   }
   getShortAnimName(category, fileName, id) {
     var _a;

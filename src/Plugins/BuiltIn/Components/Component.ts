@@ -626,7 +626,7 @@ export class Component {
 		fileName: string,
 		id: number
 	) {
-		return `${prefix}.${namespace}_${fileName}_${id}`
+		return `${prefix}.${namespace}.${fileName}_${id}`
 	}
 	protected getShortAnimName(category: string, fileName: string, id: number) {
 		return `${fileName.slice(0, 16) ?? 'bridge_auto'}_${category}_${id}`
