@@ -1417,10 +1417,9 @@ const TypeScriptPlugin = ({ options }) => {
         sourceMaps: (options == null ? void 0 : options.inlineSourceMap) ? "inline" : void 0,
         jsc: {
           parser: {
-            syntax: "typescript",
-            preserveAllComments: false,
-            topLevelAwait: true
+            syntax: "typescript"
           },
+          preserveAllComments: false,
           target: "es2020"
         }
       }).code;

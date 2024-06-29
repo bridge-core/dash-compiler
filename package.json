@@ -1,6 +1,6 @@
 {
 	"name": "@bridge-editor/dash-compiler",
-	"version": "0.11.2",
+	"version": "0.11.3",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
@@ -35,11 +35,11 @@
 	},
 	"homepage": "https://github.com/bridge-core/dash-compiler#readme",
 	"dependencies": {
-		"@swc/wasm-web": "^1.2.218",
 		"@bridge-editor/common-utils": "^0.3.3",
-		"@bridge-editor/js-runtime": "^0.4.3",
+		"@bridge-editor/js-runtime": "^0.4.4",
 		"@bridge-editor/mc-project-core": "^0.4.0",
 		"@bridge-editor/molang": "^2.0.2",
+		"@swc/wasm-web": "^1.6.5",
 		"is-glob": "^4.0.3",
 		"json5": "^2.2.0",
 		"micromatch": "^4.0.4",
