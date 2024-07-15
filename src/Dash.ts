@@ -454,7 +454,7 @@ export class Dash<TSetupArg = void> {
 	}
 }
 
-export function initRuntimes(wasmLocation: string) {
+export function initRuntimes(wasmLocation: string | BufferSource) {
 	initBridgeJsRuntimes(wasmLocation)
 
 	initSwc(wasmLocation)
