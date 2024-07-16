@@ -25,7 +25,12 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			return await file?.text()
 		},
 		async load(filePath, fileContent) {
-			if (!filePath.endsWith('.ts') || fileContent === null || typeof fileContent !== 'string') return
+			if (
+				!filePath.endsWith('.ts') ||
+				fileContent === null ||
+				typeof fileContent !== 'string'
+			)
+				return
 
 			await loadedWasm
 
@@ -40,6 +45,9 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 					},
 					preserveAllComments: false,
 					target: 'es2020',
+					transform: {
+						useDefineForClassFields: false,
+					},
 				},
 			}).code
 		},
@@ -49,7 +57,8 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			 * This is necessary because e.g. custom component files need their own
 			 * logic to be transformed from the Component instance back to a transpiled string
 			 */
-			if (filePath.endsWith('.ts') && typeof fileContent === 'string') return fileContent
+			if (filePath.endsWith('.ts') && typeof fileContent === 'string')
+				return fileContent
 		},
 	}
 }

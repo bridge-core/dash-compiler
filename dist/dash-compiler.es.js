@@ -1420,7 +1420,10 @@ const TypeScriptPlugin = ({ options }) => {
             syntax: "typescript"
           },
           preserveAllComments: false,
-          target: "es2020"
+          target: "es2020",
+          transform: {
+            useDefineForClassFields: false
+          }
         }
       }).code;
     },
