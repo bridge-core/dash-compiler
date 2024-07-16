@@ -1,6 +1,6 @@
 {
 	"name": "@bridge-editor/dash-compiler",
-	"version": "0.11.5",
+	"version": "0.11.6",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
