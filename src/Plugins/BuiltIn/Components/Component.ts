@@ -3,7 +3,7 @@ import { ProjectConfig } from '@bridge-editor/mc-project-core'
 import { v1Compat } from './v1Compat'
 import { deepMerge, hashString } from '@bridge-editor/common-utils'
 import { Console } from '../../../Common/Console'
-import { join } from 'path-browserify'
+import { join } from 'pathe'
 import { Runtime } from '@bridge-editor/js-runtime'
 
 export type TTemplate = (componentArgs: any, opts: any) => any

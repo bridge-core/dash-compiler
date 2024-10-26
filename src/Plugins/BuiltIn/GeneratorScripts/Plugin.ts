@@ -1,4 +1,4 @@
-import { dirname, join } from 'path-browserify'
+import { dirname, join } from 'pathe'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Collection } from './Collection'
 import GeneratorScriptModule from './Module?raw'
@@ -62,7 +62,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 				CollectionModule
 			)
 			jsRuntime.registerModule('@bridge/generate', GeneratorScriptModule)
-			jsRuntime.registerModule('path-browserify', {
+			jsRuntime.registerModule('pathe', {
 				dirname,
 				join,
 			})
@@ -201,7 +201,7 @@ export const GeneratorScriptsPlugin: TCompilerPluginFactory<{
 		async buildEnd() {
 			jsRuntime.deleteModule('@bridge/generate')
 			jsRuntime.deleteModule('@bridge-interal/collection')
-			jsRuntime.deleteModule('path-browserify')
+			jsRuntime.deleteModule('pathe')
 
 			if (filesToUpdate.size > 0)
 				await compileFiles(

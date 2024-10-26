@@ -1,4 +1,4 @@
-import { relative, join } from 'path-browserify'
+import { relative, join } from 'pathe'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const SimpleRewrite: TCompilerPluginFactory<{

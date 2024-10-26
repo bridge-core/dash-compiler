@@ -3,7 +3,7 @@ import { get, deepMerge } from '@bridge-editor/common-utils'
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import { Component } from './Component'
 import { findCustomComponents } from './findComponents'
-import { join } from 'path-browserify'
+import { join } from 'pathe'
 interface IOpts {
 	fileType: string
 	getComponentObjects: (fileContent: any) => [string, any][]
