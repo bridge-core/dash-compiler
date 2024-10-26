@@ -42,7 +42,6 @@
 		"@swc/wasm-web": "1.6.5",
 		"is-glob": "^4.0.3",
 		"json5": "^2.2.0",
-		"micromatch": "^4.0.4",
 		"path-browserify": "^1.0.1"
 	},
 	"devDependencies": {

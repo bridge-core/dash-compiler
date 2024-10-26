@@ -24,8 +24,7 @@ export default defineConfig({
 				'@bridge-editor/common-utils',
 				'fs',
 				'is-glob',
-				'@swc/wasm-web',
-				'micromatch',
+				'@swc/wasm-web'
 			],
 		},
 	},
