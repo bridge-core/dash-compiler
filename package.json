@@ -37,7 +37,7 @@
 	"dependencies": {
 		"@bridge-editor/common-utils": "^0.3.3",
 		"@bridge-editor/js-runtime": "^0.5.0-alpha",
-		"@bridge-editor/mc-project-core": "^0.5.0-alpha",
+		"@bridge-editor/mc-project-core": "^0.5.0-alpha.2",
 		"@bridge-editor/molang": "^2.0.2",
 		"@swc/wasm-web": "1.6.5",
 		"is-glob": "^4.0.3",
