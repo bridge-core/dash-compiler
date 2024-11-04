@@ -18,13 +18,15 @@ export default defineConfig({
 			external: [
 				'json5',
 				'pathe',
+				'path-browserify',
 				'@bridge-editor/mc-project-core',
 				'@bridge-editor/molang',
 				'@bridge-editor/js-runtime',
 				'@bridge-editor/common-utils',
 				'fs',
 				'is-glob',
-				'@swc/wasm-web'
+				'@swc/wasm-web',
+				'micromatch'
 			],
 		},
 	},

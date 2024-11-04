@@ -41,7 +41,9 @@
 		"@bridge-editor/molang": "^2.0.2",
 		"@swc/wasm-web": "1.6.5",
 		"is-glob": "^4.0.3",
+		"micromatch": "^4.0.4",
 		"json5": "^2.2.0",
+		"path-browserify": "^1.0.1",
 		"pathe": "^1.1.2"
 	},
 	"devDependencies": {
@@ -49,6 +51,7 @@
 		"@types/node": "^16.11.12",
 		"typescript": "^4.5.4",
 		"vite": "^2.6.13",
-		"vitest": "^0.22.1"
+		"vitest": "^0.22.1",
+		"@types/path-browserify": "^1.0.0"
 	}
 }

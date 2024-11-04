@@ -1,5 +1,5 @@
 import { ProjectConfig } from "@bridge-editor/mc-project-core";
-import { dirname, relative, join, basename } from "pathe";
+import { dirname, relative, join, basename } from "path-browserify";
 import { CustomMolang, expressions, Molang } from "@bridge-editor/molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "@bridge-editor/common-utils";
 import json5 from "json5";
@@ -1631,8 +1631,8 @@ class Collection {
     }
   }
 }
-var GeneratorScriptModule = "import { join } from 'pathe'\r\nimport type { FileSystem } from '../../../FileSystem/FileSystem'\r\nimport type { Console } from '../../../Common/Console'\r\n// @ts-expect-error\r\nimport { Collection } from '@bridge-interal/collection'\r\n\r\ndeclare const __fileSystem: FileSystem\r\ndeclare const console: Console\r\ndeclare const __omitUsedTemplates: Set<string>\r\ndeclare const __baseDirectory: string\r\n\r\nexport interface IModuleOpts {\r\n	generatorPath: string\r\n	omitUsedTemplates: Set<string>\r\n	fileSystem: FileSystem\r\n	console: Console\r\n}\r\n\r\ninterface IUseTemplateOptions {\r\n	omitTemplate?: boolean\r\n}\r\n\r\nexport function useTemplate(\r\n	filePath: string,\r\n	{ omitTemplate = true }: IUseTemplateOptions = {}\r\n) {\r\n	const templatePath = join(__baseDirectory, filePath)\r\n	if (omitTemplate) __omitUsedTemplates.add(templatePath)\r\n\r\n	// TODO(@solvedDev): Pipe file through compileFile API\r\n	if (filePath.endsWith('.json')) return __fileSystem.readJson(templatePath)\r\n	else return __fileSystem.readFile(templatePath).then((file) => file.text())\r\n}\r\n\r\nexport function createCollection() {\r\n	return new Collection(console)\r\n}\r\n";
-var CollectionModule = "import { join } from 'pathe'\r\nimport { Console } from '../../../Common/Console'\r\n\r\nexport class Collection {\r\n	public readonly __isCollection = true\r\n	protected files = new Map<string, any>()\r\n	constructor(protected console: Console) {}\r\n\r\n	get hasFiles() {\r\n		return this.files.size > 0\r\n	}\r\n\r\n	getAll() {\r\n		return [...this.files.entries()]\r\n	}\r\n\r\n	get(filePath: string) {\r\n		return this.files.get(filePath)\r\n	}\r\n\r\n	clear() {\r\n		this.files.clear()\r\n	}\r\n	add(filePath: string, fileContent: any) {\r\n		if (this.files.has(filePath)) {\r\n			this.console.warn(\r\n				`Omitting file \"${filePath}\" from collection because it would overwrite a previously generated file!`\r\n			)\r\n			return\r\n		}\r\n		this.files.set(filePath, fileContent)\r\n	}\r\n	has(filePath: string) {\r\n		return this.files.has(filePath)\r\n	}\r\n	addFrom(collection: Collection, baseDir?: string) {\r\n		for (const [filePath, fileContent] of collection.getAll()) {\r\n			const resolvedPath = baseDir ? join(baseDir, filePath) : filePath\r\n			this.add(resolvedPath, fileContent)\r\n		}\r\n	}\r\n}\r\n";
+var GeneratorScriptModule = "import { dirname, join } from 'path-browserify'\r\nimport type { FileSystem } from '../../../FileSystem/FileSystem'\r\nimport type { Console } from '../../../Common/Console'\r\n// @ts-expect-error\r\nimport { Collection } from '@bridge-interal/collection'\r\n\r\ndeclare const __fileSystem: FileSystem\r\ndeclare const console: Console\r\ndeclare const __omitUsedTemplates: Set<string>\r\ndeclare const __baseDirectory: string\r\n\r\nexport interface IModuleOpts {\r\n	generatorPath: string\r\n	omitUsedTemplates: Set<string>\r\n	fileSystem: FileSystem\r\n	console: Console\r\n}\r\n\r\ninterface IUseTemplateOptions {\r\n	omitTemplate?: boolean\r\n}\r\n\r\nexport function useTemplate(\r\n	filePath: string,\r\n	{ omitTemplate = true }: IUseTemplateOptions = {}\r\n) {\r\n	const templatePath = join(__baseDirectory, filePath)\r\n	if (omitTemplate) __omitUsedTemplates.add(templatePath)\r\n\r\n	// TODO(@solvedDev): Pipe file through compileFile API\r\n	if (filePath.endsWith('.json')) return __fileSystem.readJson(templatePath)\r\n	else return __fileSystem.readFile(templatePath).then((file) => file.text())\r\n}\r\n\r\nexport function createCollection() {\r\n	return new Collection(console)\r\n}\r\n";
+var CollectionModule = "import { join } from 'path-browserify'\r\nimport { Console } from '../../../Common/Console'\r\n\r\nexport class Collection {\r\n	public readonly __isCollection = true\r\n	protected files = new Map<string, any>()\r\n	constructor(protected console: Console) {}\r\n\r\n	get hasFiles() {\r\n		return this.files.size > 0\r\n	}\r\n\r\n	getAll() {\r\n		return [...this.files.entries()]\r\n	}\r\n\r\n	get(filePath: string) {\r\n		return this.files.get(filePath)\r\n	}\r\n\r\n	clear() {\r\n		this.files.clear()\r\n	}\r\n	add(filePath: string, fileContent: any) {\r\n		if (this.files.has(filePath)) {\r\n			this.console.warn(\r\n				`Omitting file \"${filePath}\" from collection because it would overwrite a previously generated file!`\r\n			)\r\n			return\r\n		}\r\n		this.files.set(filePath, fileContent)\r\n	}\r\n	has(filePath: string) {\r\n		return this.files.has(filePath)\r\n	}\r\n	addFrom(collection: Collection, baseDir?: string) {\r\n		for (const [filePath, fileContent] of collection.getAll()) {\r\n			const resolvedPath = baseDir ? join(baseDir, filePath) : filePath\r\n			this.add(resolvedPath, fileContent)\r\n		}\r\n	}\r\n}\r\n";
 const GeneratorScriptsPlugin = ({
   options,
   fileType,
@@ -1681,7 +1681,7 @@ const GeneratorScriptsPlugin = ({
       usedTemplateMap.clear();
       jsRuntime.registerModule("@bridge-interal/collection", CollectionModule);
       jsRuntime.registerModule("@bridge/generate", GeneratorScriptModule);
-      jsRuntime.registerModule("pathe", {
+      jsRuntime.registerModule("path-browserify", {
         dirname,
         join
       });
@@ -1768,7 +1768,7 @@ const GeneratorScriptsPlugin = ({
     async buildEnd() {
       jsRuntime.deleteModule("@bridge/generate");
       jsRuntime.deleteModule("@bridge-interal/collection");
-      jsRuntime.deleteModule("pathe");
+      jsRuntime.deleteModule("path-browserify");
       if (filesToUpdate.size > 0)
         await compileFiles([...filesToUpdate].filter((filePath) => !fileCollection.has(filePath)), false);
       if (fileCollection.hasFiles)
@@ -2602,6 +2602,8 @@ class Dash {
     this.buildType = "fullBuild";
     this.outputFileSystem = outputFileSystem != null ? outputFileSystem : fileSystem;
     this.projectRoot = dirname(options.config);
+    console.log(`Dash.ts: this.projectRoot: ${this.projectRoot}`);
+    console.log(`Dash.ts: Basename ${basename(options.config)}`);
     this.projectConfig = new DashProjectConfig(fileSystem, options.config);
     this.console = (_a = options.console) != null ? _a : new DefaultConsole(options.verbose);
     this.jsRuntime = new JsRuntime(this.fileSystem, [
@@ -2630,6 +2632,8 @@ class Dash {
     return this.options.requestJsonData;
   }
   get dashFilePath() {
+    const joinedPath = join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
+    this.console.log(`dashFilePath(): ${joinedPath}`);
     return join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
   }
   async setup(setupArg) {

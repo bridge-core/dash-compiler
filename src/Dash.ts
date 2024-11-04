@@ -1,6 +1,6 @@
 import { FileSystem } from './FileSystem/FileSystem'
 import { DashProjectConfig } from './DashProjectConfig'
-import { basename, dirname, join } from 'pathe'
+import { basename, dirname, join } from 'path-browserify'
 import { AllPlugins } from './Plugins/AllPlugins'
 import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
@@ -81,6 +81,8 @@ export class Dash<TSetupArg = void> {
 	) {
 		this.outputFileSystem = outputFileSystem ?? fileSystem
 		this.projectRoot = dirname(options.config)
+		console.log(`Dash.ts: this.projectRoot: ${this.projectRoot}`)
+		console.log(`Dash.ts: Basename ${basename(options.config)}`)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
 		this.console = options.console ?? new DefaultConsole(options.verbose)
 		this.jsRuntime = new JsRuntime(this.fileSystem, [
@@ -111,6 +113,8 @@ export class Dash<TSetupArg = void> {
 	}
 
 	protected get dashFilePath() {
+		const joinedPath = join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
+		this.console.log(`dashFilePath(): ${joinedPath}`)
 		return join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
 	}
 

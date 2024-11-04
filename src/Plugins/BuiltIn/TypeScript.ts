@@ -1,6 +1,6 @@
 import { transformSync } from '@swc/wasm-web'
 import { loadedWasm } from '@bridge-editor/js-runtime'
-import { basename } from 'pathe'
+import { basename } from 'path-browserify'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const TypeScriptPlugin: TCompilerPluginFactory<{
