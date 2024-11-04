@@ -81,7 +81,7 @@ export class Dash<TSetupArg = void> {
 	) {
 		this.outputFileSystem = outputFileSystem ?? fileSystem
 		this.projectRoot = dirname(options.config)
-		console.log(`Dash.ts: this.projectRoot: ${this.projectRoot}`)
+		console.log(`Dash.ts: DirName: ${this.projectRoot}`)
 		console.log(`Dash.ts: Basename ${basename(options.config)}`)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
 		this.console = options.console ?? new DefaultConsole(options.verbose)
