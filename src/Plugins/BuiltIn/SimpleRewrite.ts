@@ -1,4 +1,4 @@
-import { relative, join } from 'path-browserify'
+import { relative, join } from 'pathe'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const SimpleRewrite: TCompilerPluginFactory<{
@@ -6,16 +6,8 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 	packName?: string
 	rewriteToComMojang?: boolean
 	packNameSuffix?: Record<string, string>
-}> = ({
-	options,
-	outputFileSystem,
-	hasComMojangDirectory,
-	projectConfig,
-	projectRoot,
-	packType,
-}) => {
-	if (!options.buildName)
-		options.buildName = options.mode === 'development' ? 'dev' : 'dist'
+}> = ({ options, outputFileSystem, hasComMojangDirectory, projectConfig, projectRoot, packType }) => {
+	if (!options.buildName) options.buildName = options.mode === 'development' ? 'dev' : 'dist'
 	if (!options.packName) options.packName = 'Bridge'
 	if (!(options.rewriteToComMojang ?? true)) hasComMojangDirectory = false
 
@@ -27,19 +19,12 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 	}
 
 	// Rewrite paths so files land in the correct comMojangFolder if comMojang folder is set
-	const pathPrefix = (pack: string) =>
-		hasComMojangDirectory && options.mode === 'development'
-			? `${folders[pack]}`
-			: `${projectRoot}/builds/${options.buildName}`
-	const pathPrefixWithPack = (pack: string, suffix: string) =>
-		`${pathPrefix(pack)}/${options.packName} ${suffix}`
+	const pathPrefix = (pack: string) => (hasComMojangDirectory && options.mode === 'development' ? `${folders[pack]}` : `${projectRoot}/builds/${options.buildName}`)
+	const pathPrefixWithPack = (pack: string, suffix: string) => `${pathPrefix(pack)}/${options.packName} ${suffix}`
 
 	return {
 		async buildStart() {
-			if (
-				options.mode === 'production' ||
-				options.buildType === 'fullBuild'
-			) {
+			if (options.mode === 'production' || options.buildType === 'fullBuild') {
 				if (hasComMojangDirectory) {
 					for (const packId in folders) {
 						const pack = packType.getFromId(<any>packId)
@@ -54,20 +39,14 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 					}
 				} else {
 					//Using "BP" is fine here because the path doesn't change based on the pack without a com.mojang folder
-					await outputFileSystem
-						.unlink(pathPrefix('BP'))
-						.catch(() => {})
+					await outputFileSystem.unlink(pathPrefix('BP')).catch(() => {})
 				}
 			}
 		},
 		transformPath(filePath) {
 			if (!filePath) return
 			// Don't include gametests in production builds
-			if (
-				filePath.includes('BP/scripts/gametests/') &&
-				options.mode === 'production'
-			)
-				return
+			if (filePath.includes('BP/scripts/gametests/') && options.mode === 'production') return
 
 			const pack = packType?.get(filePath)
 			if (!pack) return
@@ -75,21 +54,10 @@ export const SimpleRewrite: TCompilerPluginFactory<{
 			const packRoot = projectConfig.getAbsolutePackRoot(pack.id)
 			const relPath = relative(packRoot, filePath)
 
-			if (
-				[
-					'behaviorPack',
-					'resourcePack',
-					'skinPack',
-					'worldTemplate',
-				].includes(pack.id)
-			)
+			if (['behaviorPack', 'resourcePack', 'skinPack', 'worldTemplate'].includes(pack.id))
 				return join(
 					// @ts-ignore
-					pathPrefixWithPack(
-						pack.id,
-						options.packNameSuffix?.[pack.id] ??
-							pack.defaultPackPath
-					),
+					pathPrefixWithPack(pack.id, options.packNameSuffix?.[pack.id] ?? pack.defaultPackPath),
 					relPath
 				)
 		},

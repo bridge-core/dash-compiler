@@ -1,4 +1,4 @@
-import { dirname, join } from 'path-browserify'
+import { dirname, join } from 'pathe'
 import type { FileSystem } from '../../../FileSystem/FileSystem'
 import type { Console } from '../../../Common/Console'
 // @ts-expect-error
@@ -20,16 +20,13 @@ interface IUseTemplateOptions {
 	omitTemplate?: boolean
 }
 
-export function useTemplate(
-	filePath: string,
-	{ omitTemplate = true }: IUseTemplateOptions = {}
-) {
+export function useTemplate(filePath: string, { omitTemplate = true }: IUseTemplateOptions = {}) {
 	const templatePath = join(__baseDirectory, filePath)
 	if (omitTemplate) __omitUsedTemplates.add(templatePath)
 
 	// TODO(@solvedDev): Pipe file through compileFile API
 	if (filePath.endsWith('.json')) return __fileSystem.readJson(templatePath)
-	else return __fileSystem.readFile(templatePath).then((file) => file.text())
+	else return __fileSystem.readFile(templatePath).then(file => file.text())
 }
 
 export function createCollection() {

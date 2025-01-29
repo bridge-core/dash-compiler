@@ -1,6 +1,6 @@
 {
 	"name": "@bridge-editor/dash-compiler",
-	"version": "0.11.7",
+	"version": "0.12.0",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
@@ -43,12 +43,11 @@
 		"is-glob": "^4.0.3",
 		"json5": "^2.2.0",
 		"micromatch": "^4.0.4",
-		"path-browserify": "^1.0.1"
+		"pathe": "^2.0.2"
 	},
 	"devDependencies": {
 		"@types/is-glob": "^4.0.2",
 		"@types/node": "^16.11.12",
-		"@types/path-browserify": "^1.0.0",
 		"typescript": "^4.5.4",
 		"vite": "^2.6.13",
 		"vitest": "^0.22.1"

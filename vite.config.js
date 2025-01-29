@@ -12,12 +12,12 @@ export default defineConfig({
 		lib: {
 			entry: resolve(__dirname, 'src/main.ts'),
 			name: 'DashCompiler',
-			fileName: (format) => `dash-compiler.${format}.js`,
+			fileName: format => `dash-compiler.${format}.js`,
 		},
 		rollupOptions: {
 			external: [
 				'json5',
-				'path-browserify',
+				'pathe',
 				'@bridge-editor/mc-project-core',
 				'@bridge-editor/molang',
 				'@bridge-editor/js-runtime',
