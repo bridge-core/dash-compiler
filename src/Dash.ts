@@ -1,6 +1,6 @@
 import { FileSystem } from './FileSystem/FileSystem'
 import { DashProjectConfig } from './DashProjectConfig'
-import { basename, dirname, join } from 'pathe'
+import { basename, dirname, join, sep } from 'pathe'
 import { AllPlugins } from './Plugins/AllPlugins'
 import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
@@ -111,7 +111,7 @@ export class Dash<TSetupArg = void> {
 	}
 
 	protected get dashFilePath() {
-		return join(this.projectRoot, `.bridge/.dash.${this.getMode()}.json`);
+		return join(this.projectRoot, `.bridge${sep}.dash.${this.getMode()}.json`);
 	}
 
 	async setup(setupArg: TSetupArg) {
