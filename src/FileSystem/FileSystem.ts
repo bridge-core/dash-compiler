@@ -1,4 +1,4 @@
-import { join } from 'pathe'
+import { join } from 'path-browserify'
 import json5 from 'json5'
 
 export interface IDirEntry {

@@ -1,4 +1,4 @@
-import { join } from 'pathe'
+import { join } from 'path-browserify'
 import type { DashFile, IFileHandle } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'

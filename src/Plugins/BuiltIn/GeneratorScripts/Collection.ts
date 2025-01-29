@@ -1,4 +1,4 @@
-import { join } from 'pathe'
+import { join } from 'path-browserify'
 import { Console } from '../../../Common/Console'
 
 export class Collection {

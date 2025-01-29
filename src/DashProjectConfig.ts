@@ -1,6 +1,6 @@
 import { ProjectConfig } from '@bridge-editor/mc-project-core'
 import { FileSystem } from './FileSystem/FileSystem'
-import { dirname } from 'pathe'
+import { dirname } from 'path-browserify'
 
 export class DashProjectConfig extends ProjectConfig {
 	constructor(

@@ -1,4 +1,4 @@
-import { join } from 'pathe'
+import { dirname, join } from 'path-browserify'
 import type { FileSystem } from '../../../FileSystem/FileSystem'
 import type { Console } from '../../../Common/Console'
 // @ts-expect-error
