@@ -17,7 +17,7 @@ export default defineConfig({
 		rollupOptions: {
 			external: [
 				'json5',
-				'pathe',
+				'path-browserify',
 				'@bridge-editor/mc-project-core',
 				'@bridge-editor/molang',
 				'@bridge-editor/js-runtime',
