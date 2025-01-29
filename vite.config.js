@@ -25,7 +25,6 @@ export default defineConfig({
 				'fs',
 				'is-glob',
 				'@swc/wasm-web',
-				'micromatch',
 			],
 		},
 	},
