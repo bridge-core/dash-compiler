@@ -42,7 +42,6 @@
 		"@swc/wasm-web": "1.6.5",
 		"is-glob": "^4.0.3",
 		"json5": "^2.2.0",
-		"micromatch": "^4.0.4",
 		"pathe": "^2.0.2"
 	},
 	"devDependencies": {
