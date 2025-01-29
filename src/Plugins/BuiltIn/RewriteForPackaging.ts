@@ -1,17 +1,10 @@
-import { relative, join } from 'path-browserify'
+import { relative, join } from 'pathe'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const RewriteForPackaging: TCompilerPluginFactory<{
 	format?: 'mcaddon' | 'mcworld' | 'mctemplate'
 	packName?: string
-}> = ({
-	options,
-	outputFileSystem,
-	projectRoot,
-	packType,
-	fileType,
-	console,
-}) => {
+}> = ({ options, outputFileSystem, projectRoot, packType, fileType, console }) => {
 	if (!options.packName) options.packName = 'bridge project'
 
 	/**
@@ -25,7 +18,7 @@ export const RewriteForPackaging: TCompilerPluginFactory<{
 	const relevantFilePath = (path: string) =>
 		path
 			.split(/\\|\//g)
-			.filter((part) => part !== '..' && part !== '.')
+			.filter(part => part !== '..' && part !== '.')
 			.slice(1)
 			.join('/')
 
@@ -36,17 +29,7 @@ export const RewriteForPackaging: TCompilerPluginFactory<{
 		// Get file path relative to the project root
 		const relativePath = relative(projectRoot, filePath)
 
-		if (
-			packId === 'behaviorPack' ||
-			packId === 'resourcePack' ||
-			packId === 'skinPack'
-		)
-			return join(
-				projectRoot,
-				'builds/dist',
-				packId,
-				relevantFilePath(relativePath)
-			)
+		if (packId === 'behaviorPack' || packId === 'resourcePack' || packId === 'skinPack') return join(projectRoot, 'builds/dist', packId, relevantFilePath(relativePath))
 	}
 
 	const rewriteForMctemplate = (filePath: string) => {
@@ -56,20 +39,9 @@ export const RewriteForPackaging: TCompilerPluginFactory<{
 		// Get file path relative to the project root
 		const relativePath = relative(projectRoot, filePath)
 
-		if (packId === 'worldTemplate')
-			return join(
-				projectRoot,
-				'builds/dist',
-				relevantFilePath(relativePath)
-			)
+		if (packId === 'worldTemplate') return join(projectRoot, 'builds/dist', relevantFilePath(relativePath))
 		else if (packId === 'behaviorPack' || packId === 'resourcePack') {
-			return join(
-				projectRoot,
-				'builds/dist',
-				packId === 'behaviorPack' ? 'behavior_packs' : 'resource_packs',
-				options.packName!,
-				relevantFilePath(relativePath)
-			)
+			return join(projectRoot, 'builds/dist', packId === 'behaviorPack' ? 'behavior_packs' : 'resource_packs', options.packName!, relevantFilePath(relativePath))
 		}
 	}
 	const rewriteForMcworld = (filePath: string) => {
@@ -82,9 +54,7 @@ export const RewriteForPackaging: TCompilerPluginFactory<{
 
 	return {
 		async buildStart() {
-			await outputFileSystem
-				.unlink(`${projectRoot}/builds/dist`)
-				.catch(() => {})
+			await outputFileSystem.unlink(`${projectRoot}/builds/dist`).catch(() => {})
 		},
 		transformPath(filePath) {
 			if (!filePath) return

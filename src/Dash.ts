@@ -1,6 +1,6 @@
 import { FileSystem } from './FileSystem/FileSystem'
 import { DashProjectConfig } from './DashProjectConfig'
-import { basename, dirname, join } from 'path-browserify'
+import { basename, dirname, join } from 'pathe'
 import { AllPlugins } from './Plugins/AllPlugins'
 import { IncludedFiles } from './Core/IncludedFiles'
 import { LoadFiles } from './Core/LoadFiles'
@@ -74,11 +74,7 @@ export class Dash<TSetupArg = void> {
 
 	// TODO(@solvedDev): Add support for multiple output directories
 	// (e.g. compiling a RP to Minecraft Bedrock and Java)
-	constructor(
-		public readonly fileSystem: FileSystem,
-		outputFileSystem: FileSystem | undefined,
-		protected options: IDashOptions<TSetupArg>
-	) {
+	constructor(public readonly fileSystem: FileSystem, outputFileSystem: FileSystem | undefined, protected options: IDashOptions<TSetupArg>) {
 		this.outputFileSystem = outputFileSystem ?? fileSystem
 		this.projectRoot = dirname(options.config)
 		this.projectConfig = new DashProjectConfig(fileSystem, options.config)
@@ -181,9 +177,7 @@ export class Dash<TSetupArg = void> {
 
 		this.progress.advance()
 
-		this.console.log(
-			`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`
-		)
+		this.console.log(`Dash compiled ${this.includedFiles.all().length} files in ${Date.now() - startTime}ms!`)
 
 		// TODO(@solvedDev): Packaging scripts to e.g. export as .mcaddon
 	}
@@ -230,15 +224,11 @@ export class Dash<TSetupArg = void> {
 			const file = files[i]
 			const newDeps = [...file.requiredFiles].filter(dep => !oldDeps[i].has(dep))
 
-			newDeps.forEach(dep =>
-				this.includedFiles.query(dep).forEach(depFile => depFile.addUpdateFile(file))
-			)
+			newDeps.forEach(dep => this.includedFiles.query(dep).forEach(depFile => depFile.addUpdateFile(file)))
 
 			const removedDeps = [...oldDeps[i]].filter(dep => !file.requiredFiles.has(dep))
 
-			removedDeps.forEach(dep =>
-				this.includedFiles.query(dep).forEach(depFile => depFile.removeUpdateFile(file))
-			)
+			removedDeps.forEach(dep => this.includedFiles.query(dep).forEach(depFile => depFile.removeUpdateFile(file)))
 		}
 
 		this.progress.advance() // 4
@@ -384,8 +374,7 @@ export class Dash<TSetupArg = void> {
 		if (!this.isCompilerActivated) return
 
 		const includedFile: DashFile = this.includedFiles.get(filePath) ?? new DashFile(this, filePath)
-		if (includedFile && includedFile.outputPath !== filePath)
-			return includedFile.outputPath ?? undefined
+		if (includedFile && includedFile.outputPath !== filePath) return includedFile.outputPath ?? undefined
 
 		const outputPath = await this.plugins.runTransformPathHooks(includedFile)
 		if (!outputPath) return

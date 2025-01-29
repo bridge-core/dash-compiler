@@ -1,4 +1,4 @@
-import { join } from 'path-browserify'
+import { join } from 'pathe'
 import type { DashFile, IFileHandle } from '../Core/DashFile'
 import type { Dash } from '../Dash'
 import { Plugin } from './Plugin'
@@ -6,11 +6,7 @@ import { TCompilerPluginFactory } from './TCompilerPluginFactory'
 import { SimpleRewrite } from './BuiltIn/SimpleRewrite'
 import { MolangPlugin } from './BuiltIn/Molang'
 import { EntityIdentifierAlias } from './BuiltIn/EntityIdentifier'
-import {
-	CustomBlockComponentPlugin,
-	CustomEntityComponentPlugin,
-	CustomItemComponentPlugin,
-} from './BuiltIn/Components/Plugins'
+import { CustomBlockComponentPlugin, CustomEntityComponentPlugin, CustomItemComponentPlugin } from './BuiltIn/Components/Plugins'
 import { CustomCommandsPlugin } from './BuiltIn/Commands/Plugin'
 import { TypeScriptPlugin } from './BuiltIn/TypeScript'
 import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
@@ -52,7 +48,7 @@ const availableHooks = [
 
 	'beforeFileUnlinked',
 ] as const
-export type THookType = typeof availableHooks[number]
+export type THookType = (typeof availableHooks)[number]
 
 export class AllPlugins {
 	protected pluginRuntime: JsRuntime
@@ -78,26 +74,10 @@ export class AllPlugins {
 
 		// Loading all available extensions
 		const extensions = [
-			...(
-				await this.dash.fileSystem
-					.readdir(join(this.dash.projectRoot, '.bridge/extensions'))
-					.catch(() => [])
-			).map((entry) =>
-				entry.kind === 'directory'
-					? join(
-							this.dash.projectRoot,
-							'.bridge/extensions',
-							entry.name
-					  )
-					: undefined
+			...(await this.dash.fileSystem.readdir(join(this.dash.projectRoot, '.bridge/extensions')).catch(() => [])).map(entry =>
+				entry.kind === 'directory' ? join(this.dash.projectRoot, '.bridge/extensions', entry.name) : undefined
 			),
-			...(
-				await this.dash.fileSystem.readdir('extensions').catch(() => [])
-			).map((entry) =>
-				entry.kind === 'directory'
-					? join('extensions', entry.name)
-					: undefined
-			),
+			...(await this.dash.fileSystem.readdir('extensions').catch(() => [])).map(entry => (entry.kind === 'directory' ? join('extensions', entry.name) : undefined)),
 		]
 
 		const plugins: Record<string, string> = {}
@@ -109,14 +89,11 @@ export class AllPlugins {
 			manifestReadPromises.push(
 				this.dash.fileSystem
 					.readJson(join(extension, 'manifest.json'))
-					.then((manifest) => {
+					.then(manifest => {
 						if (!manifest?.compiler?.plugins) return
 
 						for (const pluginId in manifest.compiler.plugins) {
-							plugins[pluginId] = join(
-								extension,
-								manifest.compiler.plugins[pluginId]
-							)
+							plugins[pluginId] = join(extension, manifest.compiler.plugins[pluginId])
 						}
 					})
 					.catch(() => {})
@@ -125,14 +102,12 @@ export class AllPlugins {
 
 		await Promise.all(manifestReadPromises)
 
-		const usedPlugins: (string | [string, any])[] =
-			(await this.getCompilerOptions()).plugins ?? []
+		const usedPlugins: (string | [string, any])[] = (await this.getCompilerOptions()).plugins ?? []
 		const evaluatedPlugins: (TCompilerPluginFactory<any> | null)[] = []
 		const promises = []
 		for (let i = 0; i < usedPlugins.length; i++) {
 			const usedPlugin = usedPlugins[i]
-			const pluginId =
-				typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
+			const pluginId = typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
 
 			if (plugins[pluginId]) {
 				promises.push(
@@ -141,22 +116,18 @@ export class AllPlugins {
 							console: this.dash.console,
 							...scriptEnv,
 						})
-						.catch((err) => {
-							this.dash.console.error(
-								`Failed to execute plugin ${pluginId}: ${err}`
-							)
+						.catch(err => {
+							this.dash.console.error(`Failed to execute plugin ${pluginId}: ${err}`)
 							return null
 						})
-						.then((module) => {
+						.then(module => {
 							if (!module) return
 
 							if (typeof module.__default__ === 'function') {
 								evaluatedPlugins[i] = module.__default__
 							} else {
 								evaluatedPlugins[i] = null
-								this.dash.console.error(
-									`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`
-								)
+								this.dash.console.error(`Plugin ${pluginId} is invalid: It does not provide a function as a default export.`)
 							}
 						})
 				)
@@ -175,25 +146,15 @@ export class AllPlugins {
 			if (!currPlugin) continue
 
 			const usedPlugin = usedPlugins[i]
-			const pluginOpts =
-				typeof usedPlugin === 'string' ? {} : usedPlugin[1]
-			const pluginId =
-				typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
+			const pluginOpts = typeof usedPlugin === 'string' ? {} : usedPlugin[1]
+			const pluginId = typeof usedPlugin === 'string' ? usedPlugin : usedPlugin[0]
 
 			this.addPlugin(pluginId, currPlugin, pluginOpts)
 		}
 	}
 
-	async addPlugin(
-		pluginId: string,
-		pluginImpl: TCompilerPluginFactory<any>,
-		pluginOpts: any
-	) {
-		const plugin = new Plugin(
-			this.dash,
-			pluginId,
-			await pluginImpl(this.getPluginContext(pluginId, pluginOpts))
-		)
+	async addPlugin(pluginId: string, pluginImpl: TCompilerPluginFactory<any>, pluginOpts: any) {
+		const plugin = new Plugin(this.dash, pluginId, await pluginImpl(this.getPluginContext(pluginId, pluginOpts)))
 
 		for (const hook of availableHooks) {
 			if (plugin.implementsHook(hook)) {
@@ -210,8 +171,7 @@ export class AllPlugins {
 
 	async getCompilerOptions(): Promise<any> {
 		const compilerConfigPath = await this.dash.getCompilerConfigPath()
-		if (!compilerConfigPath)
-			return this.dash.projectConfig.get().compiler ?? {}
+		if (!compilerConfigPath) return this.dash.projectConfig.get().compiler ?? {}
 
 		return await this.dash.fileSystem.readJson(compilerConfigPath)
 	}
@@ -244,18 +204,13 @@ export class AllPlugins {
 			fileType: this.dash.fileType,
 			targetVersion: this.dash.projectConfig.get().targetVersion,
 			requestJsonData: this.dash.requestJsonData,
-			getAliases: (filePath: string) => [
-				...(this.dash.includedFiles.get(filePath)?.aliases ?? []),
-			],
+			getAliases: (filePath: string) => [...(this.dash.includedFiles.get(filePath)?.aliases ?? [])],
 			getAliasesWhere: (criteria: (alias: string) => boolean) => {
 				return this.dash.includedFiles.getAliasesWhere(criteria)
 			},
 			getFileMetadata: (filePath: string) => {
 				const file = this.dash.includedFiles.get(filePath)
-				if (!file)
-					throw new Error(
-						`File ${filePath} to get metadata from not found`
-					)
+				if (!file) throw new Error(`File ${filePath} to get metadata from not found`)
 
 				return {
 					get(key: string) {
@@ -269,23 +224,13 @@ export class AllPlugins {
 					},
 				}
 			},
-			addFileDependencies: (
-				filePath: string,
-				filePaths: string[],
-				clearPrevious = false
-			) => {
+			addFileDependencies: (filePath: string, filePaths: string[], clearPrevious = false) => {
 				const file = this.dash.includedFiles.get(filePath)
 
-				if (!file)
-					throw new Error(
-						`File ${filePath} to add dependency to not found`
-					)
+				if (!file) throw new Error(`File ${filePath} to add dependency to not found`)
 
 				if (clearPrevious) file.setRequiredFiles(new Set(filePaths))
-				else
-					filePaths.forEach((filePath) =>
-						file.addRequiredFile(filePath)
-					)
+				else filePaths.forEach(filePath => file.addRequiredFile(filePath))
 			},
 			getOutputPath: (filePath: string) => {
 				return this.dash.getCompilerOutputPath(filePath)
@@ -297,19 +242,13 @@ export class AllPlugins {
 			/**
 			 * TODO: Deprecate in favor of a broader API that is not specific to Minecraft Bedrock
 			 */
-			hasComMojangDirectory:
-				this.dash.fileSystem !== this.dash.outputFileSystem,
-			compileFiles: (filePaths: string[], virtual = true) =>
-				this.dash.compileAdditionalFiles(filePaths, virtual),
+			hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
+			compileFiles: (filePaths: string[], virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual),
 		}
 	}
 
 	async runBuildStartHooks() {
-		await Promise.all(
-			this.pluginsFor('buildStart').map((plugin) =>
-				plugin.runBuildStartHook()
-			)
-		)
+		await Promise.all(this.pluginsFor('buildStart').map(plugin => plugin.runBuildStartHook()))
 	}
 	async runIncludeHooks() {
 		let includeFiles = []
@@ -317,8 +256,7 @@ export class AllPlugins {
 		for (const plugin of this.pluginsFor('include')) {
 			const filesToInclude = await plugin.runIncludeHook()
 
-			if (Array.isArray(filesToInclude))
-				includeFiles.push(...filesToInclude)
+			if (Array.isArray(filesToInclude)) includeFiles.push(...filesToInclude)
 		}
 
 		return includeFiles
@@ -335,8 +273,7 @@ export class AllPlugins {
 	async runTransformPathHooks(file: DashFile) {
 		let currentFilePath: string | null = file.filePath
 		for (const plugin of this.pluginsFor('transformPath')) {
-			const newPath: string | undefined | null =
-				await plugin.runTransformPathHook(currentFilePath)
+			const newPath: string | undefined | null = await plugin.runTransformPathHook(currentFilePath)
 
 			if (newPath === null) return null
 			else if (newPath !== undefined) currentFilePath = newPath
@@ -346,10 +283,7 @@ export class AllPlugins {
 	}
 	async runReadHooks(file: DashFile) {
 		for (const plugin of this.pluginsFor('read', file)) {
-			const data = await plugin.runReadHook(
-				file.filePath,
-				file.fileHandle
-			)
+			const data = await plugin.runReadHook(file.filePath, file.fileHandle)
 
 			if (data !== null && data !== undefined) return data
 		}
@@ -368,14 +302,11 @@ export class AllPlugins {
 		const aliases = new Set<string>()
 
 		for (const plugin of this.pluginsFor('registerAliases', file)) {
-			const tmp = await plugin.runRegisterAliasesHook(
-				file.filePath,
-				file.data
-			)
+			const tmp = await plugin.runRegisterAliasesHook(file.filePath, file.data)
 
 			if (tmp === undefined || tmp === null) continue
 
-			if (Array.isArray(tmp)) tmp.forEach((alias) => aliases.add(alias))
+			if (Array.isArray(tmp)) tmp.forEach(alias => aliases.add(alias))
 			else aliases.add(tmp)
 		}
 
@@ -389,8 +320,7 @@ export class AllPlugins {
 
 			if (tmp === undefined || tmp === null) continue
 
-			if (Array.isArray(tmp))
-				tmp.forEach((file) => requiredFiles.add(file))
+			if (Array.isArray(tmp)) tmp.forEach(file => requiredFiles.add(file))
 			else requiredFiles.add(tmp)
 		}
 
@@ -399,23 +329,16 @@ export class AllPlugins {
 	async runTransformHooks(file: DashFile) {
 		const dependencies = Object.fromEntries(
 			[...file.requiredFiles]
-				.map((query) => this.dash.includedFiles.query(query))
+				.map(query => this.dash.includedFiles.query(query))
 				.flat()
-				.map((file) => [
-					[file.filePath, file.data],
-					...[...file.aliases].map((alias) => [alias, file.data]),
-				])
+				.map(file => [[file.filePath, file.data], ...[...file.aliases].map(alias => [alias, file.data])])
 				.flat()
 		)
 
 		let transformedData = file.data
 
 		for (const plugin of this.pluginsFor('transform', file)) {
-			const tmpData = await plugin.runTransformHook(
-				file.filePath,
-				transformedData,
-				dependencies
-			)
+			const tmpData = await plugin.runTransformHook(file.filePath, transformedData, dependencies)
 			if (tmpData === undefined) continue
 
 			transformedData = tmpData
@@ -425,21 +348,14 @@ export class AllPlugins {
 	}
 	async runFinalizeBuildHooks(file: DashFile) {
 		for (const plugin of this.pluginsFor('finalizeBuild', file)) {
-			const finalizedData = await plugin.runFinalizeBuildHook(
-				file.filePath,
-				file.data
-			)
+			const finalizedData = await plugin.runFinalizeBuildHook(file.filePath, file.data)
 
 			if (finalizedData !== undefined) return finalizedData
 		}
 	}
 
 	async runBuildEndHooks() {
-		await Promise.allSettled(
-			this.pluginsFor('buildEnd').map((plugin) =>
-				plugin.runBuildEndHook()
-			)
-		)
+		await Promise.allSettled(this.pluginsFor('buildEnd').map(plugin => plugin.runBuildEndHook()))
 	}
 
 	async runBeforeFileUnlinked(filePath: string) {

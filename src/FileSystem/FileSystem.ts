@@ -1,4 +1,4 @@
-import { join } from 'path-browserify'
+import { join } from 'pathe'
 import json5 from 'json5'
 
 export interface IDirEntry {
@@ -7,10 +7,7 @@ export interface IDirEntry {
 }
 export abstract class FileSystem {
 	abstract readFile(path: string): Promise<File>
-	abstract writeFile(
-		path: string,
-		content: string | Uint8Array
-	): Promise<void>
+	abstract writeFile(path: string, content: string | Uint8Array): Promise<void>
 	abstract unlink(path: string): Promise<void>
 
 	abstract readdir(path: string): Promise<IDirEntry[]>
@@ -38,15 +35,8 @@ export abstract class FileSystem {
 		const file = await this.readFile(from)
 		await outputFs.writeFile(to, new Uint8Array(await file.arrayBuffer()))
 	}
-	async writeJson(
-		path: string,
-		content: any,
-		beautify = true
-	): Promise<void> {
-		await this.writeFile(
-			path,
-			JSON.stringify(content, null, beautify ? '\t' : 0)
-		)
+	async writeJson(path: string, content: any, beautify = true): Promise<void> {
+		await this.writeFile(path, JSON.stringify(content, null, beautify ? '\t' : 0))
 	}
 	async readJson(path: string): Promise<any> {
 		const file = await this.readFile(path)
@@ -58,12 +48,7 @@ export abstract class FileSystem {
 	}
 	abstract lastModified(filePath: string): Promise<number>
 
-	watchDirectory(
-		path: string,
-		onChange: (filePath: string, changeType: unknown) => void
-	) {
-		console.warn(
-			'Watching a directory for changes is not supported on this platform!'
-		)
+	watchDirectory(path: string, onChange: (filePath: string, changeType: unknown) => void) {
+		console.warn('Watching a directory for changes is not supported on this platform!')
 	}
 }

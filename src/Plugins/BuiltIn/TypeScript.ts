@@ -1,6 +1,6 @@
 import { transformSync } from '@swc/wasm-web'
 import { loadedWasm } from '@bridge-editor/js-runtime'
-import { basename } from 'path-browserify'
+import { basename } from 'pathe'
 import { TCompilerPluginFactory } from '../TCompilerPluginFactory'
 
 export const TypeScriptPlugin: TCompilerPluginFactory<{
@@ -25,12 +25,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			return await file?.text()
 		},
 		async load(filePath, fileContent) {
-			if (
-				!filePath.endsWith('.ts') ||
-				fileContent === null ||
-				typeof fileContent !== 'string'
-			)
-				return
+			if (!filePath.endsWith('.ts') || fileContent === null || typeof fileContent !== 'string') return
 
 			await loadedWasm
 
@@ -57,8 +52,7 @@ export const TypeScriptPlugin: TCompilerPluginFactory<{
 			 * This is necessary because e.g. custom component files need their own
 			 * logic to be transformed from the Component instance back to a transpiled string
 			 */
-			if (filePath.endsWith('.ts') && typeof fileContent === 'string')
-				return fileContent
+			if (filePath.endsWith('.ts') && typeof fileContent === 'string') return fileContent
 		},
 	}
 }

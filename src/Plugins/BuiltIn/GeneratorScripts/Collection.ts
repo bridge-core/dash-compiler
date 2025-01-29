@@ -1,4 +1,4 @@
-import { join } from 'path-browserify'
+import { join } from 'pathe'
 import { Console } from '../../../Common/Console'
 
 export class Collection {
@@ -23,9 +23,7 @@ export class Collection {
 	}
 	add(filePath: string, fileContent: any) {
 		if (this.files.has(filePath)) {
-			this.console.warn(
-				`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`
-			)
+			this.console.warn(`Omitting file "${filePath}" from collection because it would overwrite a previously generated file!`)
 			return
 		}
 		this.files.set(filePath, fileContent)
