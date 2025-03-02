@@ -3,7 +3,7 @@ interface IOpts {
     fileType: string;
     getComponentObjects: (fileContent: any) => [string, any][];
 }
-export declare function createCustomComponentPlugin({ fileType, getComponentObjects, }: IOpts): TCompilerPluginFactory<{
+export declare function createCustomComponentPlugin({ fileType, getComponentObjects }: IOpts): TCompilerPluginFactory<{
     v1CompatMode?: boolean;
 }>;
 export declare const CustomEntityComponentPlugin: TCompilerPluginFactory<{

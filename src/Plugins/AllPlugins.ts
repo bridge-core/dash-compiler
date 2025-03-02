@@ -13,6 +13,7 @@ import { RewriteForPackaging } from './BuiltIn/RewriteForPackaging'
 import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
 import { FormatVersionCorrection } from './BuiltIn/FormatVersionCorrection'
 import { GeneratorScriptsPlugin } from './BuiltIn/GeneratorScripts/Plugin'
+import { FloatPropertyTruncationFix } from './BuiltIn/FloatPropertyTruncationFix'
 import { JsRuntime } from '../Common/JsRuntime'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
@@ -29,6 +30,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	contentsFile: ContentsFilePlugin,
 	formatVersionCorrection: FormatVersionCorrection,
 	generatorScripts: GeneratorScriptsPlugin,
+	floatPropertyTruncationFix: FloatPropertyTruncationFix,
 }
 
 const availableHooks = [
