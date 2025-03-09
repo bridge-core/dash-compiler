@@ -1696,7 +1696,7 @@ const GeneratorScriptsPlugin = ({ options, fileType, console: console2, jsRuntim
     }
   };
 };
-function jsonStringifyWithFloatFix(json, matches) {
+function jsonStringifyWithFloatFix(json, matches, spacing = "	") {
   let traversedKeys = [];
   let traversedObjects = [];
   return JSON.stringify(json, function(key, value) {
@@ -1723,7 +1723,7 @@ function jsonStringifyWithFloatFix(json, matches) {
     } else {
       return value;
     }
-  }, "	").replaceAll(/"\$___dash___floatPropertyTruncationFix___THIS IS AUTO GENERATED AND I HATE IT___([0-9]|\.|-)+"/g, (value) => {
+  }, spacing).replaceAll(/"\$___dash___floatPropertyTruncationFix___THIS IS AUTO GENERATED AND I HATE IT___([0-9]|\.|-)+"/g, (value) => {
     return value.substring(80, value.length - 1);
   });
 }
@@ -1964,7 +1964,8 @@ class AllPlugins {
         return this.dash.unlinkMultiple(filePaths, false, true);
       },
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
-      compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual)
+      compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual),
+      jsonStringifyWithFloatFix
     };
   }
   async runBuildStartHooks() {
