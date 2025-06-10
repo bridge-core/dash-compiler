@@ -14,6 +14,7 @@ import { ContentsFilePlugin } from './BuiltIn/ContentsFile'
 import { FormatVersionCorrection } from './BuiltIn/FormatVersionCorrection'
 import { GeneratorScriptsPlugin } from './BuiltIn/GeneratorScripts/Plugin'
 import { JsRuntime } from '../Common/JsRuntime'
+import { EsbuildTypeScriptPlugin } from './BuiltIn/EsbuildTypeScript/EsbuildTypeScript'
 
 const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	simpleRewrite: SimpleRewrite,
@@ -25,6 +26,7 @@ const builtInPlugins: Record<string, TCompilerPluginFactory<any>> = {
 	customItemComponents: CustomItemComponentPlugin,
 	customBlockComponents: CustomBlockComponentPlugin,
 	customCommands: CustomCommandsPlugin,
+	esbuildTypeScript: EsbuildTypeScriptPlugin,
 	typeScript: TypeScriptPlugin,
 	contentsFile: ContentsFilePlugin,
 	formatVersionCorrection: FormatVersionCorrection,
