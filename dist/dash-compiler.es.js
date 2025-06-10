@@ -4295,15 +4295,12 @@ const EsbuildTypeScriptPlugin = ({ options, projectRoot, fileSystem, projectConf
           {
             name: "virtual-files",
             setup(build) {
-              build.onResolve({ filter: /^test\.ts$/ }, (args) => ({
+              build.onResolve({ filter: /\.ts$/ }, (args) => ({
                 path: args.path,
                 namespace: "virtual"
               }));
-              build.onLoad({ filter: /^test\.ts$/, namespace: "virtual" }, async () => ({
-                contents: `
-                                    export const hello = "Hello from virtual test.ts!";
-                                    console.log(hello);
-                                `,
+              build.onLoad({ filter: /\.ts$/, namespace: "virtual" }, async (args) => ({
+                contents: await (await fileSystem.readFile(join(scriptsPath, args.path))).text(),
                 loader: "ts"
               }));
             }
