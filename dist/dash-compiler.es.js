@@ -4348,7 +4348,8 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
             }
           }
         ],
-        tsconfigRaw: tsconfig
+        tsconfigRaw: tsconfig,
+        platform: "neutral"
       });
       for (const file of result.outputFiles) {
         buildResult[file.path] = file.text;

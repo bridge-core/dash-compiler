@@ -117,6 +117,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                     },
                 ],
                 tsconfigRaw: tsconfig,
+                platform: 'neutral',
             })
 
             for (const file of result.outputFiles) {
