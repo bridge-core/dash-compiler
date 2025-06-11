@@ -54,7 +54,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     bundle?: boolean
     entryFile?: string
 }> = ({ options, fileSystem, projectConfig, projectRoot }) => {
-    let bundle = options.bundle ?? false
+    let bundle = options.bundle ?? true
     let entryFile = options.entryFile ?? 'main.ts'
 
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
