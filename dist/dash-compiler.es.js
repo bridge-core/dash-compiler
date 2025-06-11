@@ -4275,7 +4275,7 @@ async function initialize() {
     wasmURL: esbuildWasmUrl,
     worker: false
   });
-  console.log(`Initialized esbuild-wasm!`);
+  console.log(`[EsbuildTypescript] Initialized esbuild-wasm!`);
 }
 async function findScriptFiles(path, fileSystem) {
   const entries = await fileSystem.readdir(path);
@@ -4298,7 +4298,7 @@ function ignore(projectConfig, filePath) {
     return true;
   return !filePath.endsWith(".ts") && !filePath.endsWith(".js");
 }
-const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
+const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRoot }) => {
   var _a, _b;
   let bundle = (_a = options.bundle) != null ? _a : false;
   let entryFile = (_b = options.entryFile) != null ? _b : "main.ts";
@@ -4306,7 +4306,6 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
   let buildResult = {};
   return {
     async buildStart() {
-      console.log("Esbuild Typescript plugin build start!");
       buildResult = {};
       await initialize();
       let entryPoints = [entryFile];
@@ -4317,6 +4316,15 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
       let outFile = entryFile;
       if (outFile.endsWith(".ts"))
         outFile = outFile.substring(0, outFile.length - 3) + ".js";
+      let tsconfig = void 0;
+      try {
+        const file = await fileSystem.readFile(join(projectRoot, "tsconfig.json"));
+        const text = await file.text();
+        tsconfig = JSON.parse(text);
+        console.log("[EsbuildTypescript] Located tsconfig!");
+      } catch {
+        console.warn("[EsbuildTypescript] Could not locate tsconfig!");
+      }
       const result = await browser.exports.build({
         packages: "bundle",
         bundle,
@@ -4340,17 +4348,11 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
             }
           }
         ],
-        tsconfigRaw: {
-          compilerOptions: {
-            module: "esnext",
-            target: "esnext"
-          }
-        }
+        tsconfigRaw: tsconfig
       });
       for (const file of result.outputFiles) {
         buildResult[file.path] = file.text;
       }
-      console.log(buildResult);
     },
     ignore(filePath) {
       return ignore(projectConfig, filePath);
@@ -4363,16 +4365,10 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
       let resolvedFilePath = filePath.substring(scriptsPath.length);
       if (resolvedFilePath.endsWith(".ts"))
         resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
-      console.log(resolvedFilePath);
-      if (buildResult[resolvedFilePath] === void 0) {
-        console.log(`Skipping ${filePath} because it is no in the build result!`);
+      if (buildResult[resolvedFilePath] === void 0)
         return null;
-      }
-      if (filePath.endsWith(".ts")) {
-        console.log(`Transforming ${filePath} to js ${filePath.substring(0, filePath.length - 3) + ".js"}`);
+      if (filePath.endsWith(".ts"))
         return filePath.substring(0, filePath.length - 3) + ".js";
-      }
-      console.log(`Filepath ${filePath} is good!`);
       return filePath;
     },
     async read(filePath, fileContent) {
@@ -4387,7 +4383,6 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
       return fileContent;
     },
     transform(filePath, fileContent) {
-      console.log(`Transforming ${filePath}`);
       let resolvedFilePath = filePath.substring(scriptsPath.length);
       if (resolvedFilePath.endsWith(".ts"))
         resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
