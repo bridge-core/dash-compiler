@@ -4277,19 +4277,53 @@ async function initialize() {
   });
   console.log(`Initialized esbuild-wasm!`);
 }
-const EsbuildTypeScriptPlugin = ({ options, projectRoot, fileSystem, projectConfig }) => {
+async function findScriptFiles(path, fileSystem) {
+  const entries = await fileSystem.readdir(path);
+  let files = [];
+  for (const entry of entries) {
+    if (entry.kind === "file") {
+      if (!entry.name.endsWith(".js") && !entry.name.endsWith(".ts"))
+        continue;
+      files.push(join(path, entry.name));
+    } else {
+      const subFiles = await findScriptFiles(join(path, entry.name), fileSystem);
+      files = files.concat(subFiles);
+    }
+  }
+  return files;
+}
+function ignore(projectConfig, filePath) {
+  const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
+  if (!filePath.startsWith(scriptsPath))
+    return true;
+  return !filePath.endsWith(".ts") && !filePath.endsWith(".js");
+}
+const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig }) => {
+  var _a, _b;
+  let bundle = (_a = options.bundle) != null ? _a : false;
+  let entryFile = (_b = options.entryFile) != null ? _b : "main.ts";
+  const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
+  let buildResult = {};
   return {
     async buildStart() {
       console.log("Esbuild Typescript plugin build start!");
+      buildResult = {};
       await initialize();
-      const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
-      console.log(scriptsPath);
-      console.log(await fileSystem.readdir(join(projectRoot, scriptsPath)));
+      let entryPoints = [entryFile];
+      if (!options.bundle) {
+        const scriptFiles = await findScriptFiles(scriptsPath, fileSystem);
+        entryPoints = scriptFiles.map((filePath) => filePath.substring(scriptsPath.length + 1));
+      }
+      let outFile = entryFile;
+      if (outFile.endsWith(".ts"))
+        outFile = outFile.substring(0, outFile.length - 3) + ".js";
       const result = await browser.exports.build({
-        bundle: true,
         packages: "bundle",
-        entryPoints: ["test.ts"],
-        outfile: "main.js",
+        bundle,
+        external: bundle ? ["@minecraft/server", "@minecraft/server-ui", "@minecraft/vanilla-data", "@minecraft/server-gametest"] : void 0,
+        entryPoints,
+        outfile: bundle ? outFile : void 0,
+        outdir: bundle ? void 0 : "/",
         write: false,
         plugins: [
           {
@@ -4305,10 +4339,59 @@ const EsbuildTypeScriptPlugin = ({ options, projectRoot, fileSystem, projectConf
               }));
             }
           }
-        ]
+        ],
+        tsconfigRaw: {
+          compilerOptions: {
+            module: "esnext",
+            target: "esnext"
+          }
+        }
       });
-      console.log(result);
-      console.log(new TextDecoder().decode(result.outputFiles[0].contents));
+      for (const file of result.outputFiles) {
+        buildResult[file.path] = file.text;
+      }
+      console.log(buildResult);
+    },
+    ignore(filePath) {
+      return ignore(projectConfig, filePath);
+    },
+    async transformPath(filePath) {
+      if (typeof filePath !== "string")
+        return filePath;
+      if (ignore(projectConfig, filePath))
+        return filePath;
+      let resolvedFilePath = filePath.substring(scriptsPath.length);
+      if (resolvedFilePath.endsWith(".ts"))
+        resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
+      console.log(resolvedFilePath);
+      if (buildResult[resolvedFilePath] === void 0) {
+        console.log(`Skipping ${filePath} because it is no in the build result!`);
+        return null;
+      }
+      if (filePath.endsWith(".ts")) {
+        console.log(`Transforming ${filePath} to js ${filePath.substring(0, filePath.length - 3) + ".js"}`);
+        return filePath.substring(0, filePath.length - 3) + ".js";
+      }
+      console.log(`Filepath ${filePath} is good!`);
+      return filePath;
+    },
+    async read(filePath, fileContent) {
+      if (!fileContent)
+        return;
+      const file = await fileContent.getFile();
+      if (!file)
+        return;
+      return await file.text();
+    },
+    load(filePath, fileContent) {
+      return fileContent;
+    },
+    transform(filePath, fileContent) {
+      console.log(`Transforming ${filePath}`);
+      let resolvedFilePath = filePath.substring(scriptsPath.length);
+      if (resolvedFilePath.endsWith(".ts"))
+        resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
+      return buildResult[resolvedFilePath];
     }
   };
 };
@@ -4520,8 +4603,8 @@ class AllPlugins {
   }
   async runIgnoreHooks(file) {
     for (const plugin of this.pluginsFor("ignore")) {
-      const ignore = await plugin.runIgnoreHook(file.filePath);
-      if (ignore)
+      const ignore2 = await plugin.runIgnoreHook(file.filePath);
+      if (ignore2)
         file.addIgnoredPlugin(plugin.pluginId);
     }
     file.createImplementedHooksMap();

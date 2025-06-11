@@ -1,7 +1,8 @@
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import * as esbuild from 'esbuild-wasm'
 import esbuildWasmUrl from './esbuild.wasm?url'
-import { join } from 'pathe'
+import { join, resolve } from 'pathe'
+import { FileSystem } from '../../../main'
 
 let esbuildInitialized = false
 async function initialize() {
@@ -21,26 +22,71 @@ async function initialize() {
     console.log(`Initialized esbuild-wasm!`)
 }
 
+async function findScriptFiles(path: string, fileSystem: FileSystem): Promise<string[]> {
+    const entries = await fileSystem.readdir(path)
+
+    let files: string[] = []
+
+    for (const entry of entries) {
+        if (entry.kind === 'file') {
+            if (!entry.name.endsWith('.js') && !entry.name.endsWith('.ts')) continue
+
+            files.push(join(path, entry.name))
+        } else {
+            const subFiles = await findScriptFiles(join(path, entry.name), fileSystem)
+
+            files = files.concat(subFiles)
+        }
+    }
+
+    return files
+}
+
+function ignore(projectConfig: any, filePath: string) {
+    const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
+
+    if (!filePath.startsWith(scriptsPath)) return true
+
+    return !filePath.endsWith('.ts') && !filePath.endsWith('.js')
+}
+
 export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
-    inlineSourceMap?: boolean
-}> = ({ options, projectRoot, fileSystem, projectConfig }) => {
+    bundle?: boolean
+    entryFile?: string
+}> = ({ options, fileSystem, projectConfig }) => {
+    let bundle = options.bundle ?? false
+    let entryFile = options.entryFile ?? 'main.ts'
+
+    const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
+
+    let buildResult: Record<string, string> = {}
+
     return {
         async buildStart() {
             console.log('Esbuild Typescript plugin build start!')
 
+            buildResult = {}
+
             await initialize()
 
-            const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
+            let entryPoints = [entryFile]
 
-            console.log(scriptsPath)
+            if (!options.bundle) {
+                const scriptFiles = await findScriptFiles(scriptsPath, fileSystem)
 
-            console.log(await fileSystem.readdir(join(projectRoot, scriptsPath)))
+                entryPoints = scriptFiles.map(filePath => filePath.substring(scriptsPath.length + 1))
+            }
+
+            let outFile = entryFile
+            if (outFile.endsWith('.ts')) outFile = outFile.substring(0, outFile.length - 3) + '.js'
 
             const result = await esbuild.build({
-                bundle: true,
                 packages: 'bundle',
-                entryPoints: ['test.ts'],
-                outfile: 'main.js',
+                bundle: bundle,
+                external: bundle ? ['@minecraft/server', '@minecraft/server-ui', '@minecraft/vanilla-data', '@minecraft/server-gametest'] : undefined,
+                entryPoints: entryPoints,
+                outfile: bundle ? outFile : undefined,
+                outdir: bundle ? undefined : '/',
                 write: false,
                 plugins: [
                     {
@@ -58,59 +104,73 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                         },
                     },
                 ],
+                tsconfigRaw: {
+                    compilerOptions: {
+                        module: 'esnext',
+                        target: 'esnext',
+                    },
+                },
             })
 
-            console.log(result)
+            for (const file of result.outputFiles) {
+                buildResult[file.path] = file.text
+            }
 
-            console.log(new TextDecoder().decode(result.outputFiles[0].contents))
+            console.log(buildResult)
         },
 
-        // ignore(filePath) {
-        //     return !filePath.endsWith('.ts')
-        // },
+        ignore(filePath) {
+            return ignore(projectConfig, filePath)
+        },
 
-        // async transformPath(filePath) {
-        //     if (!filePath?.endsWith('.ts')) return
+        async transformPath(filePath) {
+            if (typeof filePath !== 'string') return filePath
 
-        //     if (filePath?.endsWith('.d.ts')) return null
+            if (ignore(projectConfig, filePath)) return filePath
 
-        //     return `${filePath.slice(0, -3)}.js`
-        // },
-        // async read(filePath, fileHandle) {
-        //     if (!filePath.endsWith('.ts') || !fileHandle) return
+            let resolvedFilePath = filePath.substring(scriptsPath.length)
+            if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
-        //     const file = await fileHandle.getFile()
-        //     return await file?.text()
-        // },
-        // async load(filePath, fileContent) {
-        //     if (!filePath.endsWith('.ts') || fileContent === null || typeof fileContent !== 'string') return
+            console.log(resolvedFilePath)
 
-        //     await loadedWasm
+            if (buildResult[resolvedFilePath] === undefined) {
+                console.log(`Skipping ${filePath} because it is no in the build result!`)
 
-        //     return transformSync(fileContent, {
-        //         filename: basename(filePath),
+                return null
+            }
 
-        //         sourceMaps: options?.inlineSourceMap ? 'inline' : undefined,
+            if (filePath.endsWith('.ts')) {
+                console.log(`Transforming ${filePath} to js ${filePath.substring(0, filePath.length - 3) + '.js'}`)
 
-        //         jsc: {
-        //             parser: {
-        //                 syntax: 'typescript',
-        //             },
-        //             preserveAllComments: false,
-        //             target: 'es2020',
-        //             transform: {
-        //                 useDefineForClassFields: false,
-        //             },
-        //         },
-        //     }).code
-        // },
-        // finalizeBuild(filePath, fileContent) {
-        //     /**
-        //      * We can only finalize the build if the fileContent type didn't change.
-        //      * This is necessary because e.g. custom component files need their own
-        //      * logic to be transformed from the Component instance back to a transpiled string
-        //      */
-        //     if (filePath.endsWith('.ts') && typeof fileContent === 'string') return fileContent
-        // },
+                return filePath.substring(0, filePath.length - 3) + '.js'
+            }
+
+            console.log(`Filepath ${filePath} is good!`)
+
+            return filePath
+        },
+
+        async read(filePath, fileContent) {
+            if (!fileContent) return
+
+            const file = await fileContent.getFile()
+
+            if (!file) return
+
+            return await file.text()
+        },
+
+        load(filePath, fileContent) {
+            return fileContent
+        },
+
+        transform(filePath, fileContent) {
+            console.log(`Transforming ${filePath}`)
+
+            let resolvedFilePath = filePath.substring(scriptsPath.length)
+            if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
+
+            return buildResult[resolvedFilePath]
+        },
     }
 }
