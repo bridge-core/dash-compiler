@@ -1,5 +1,5 @@
 import { ProjectConfig } from "@bridge-editor/mc-project-core";
-import { dirname, relative, join, basename } from "pathe";
+import { dirname, relative, join, basename, extname } from "pathe";
 import { CustomMolang, expressions, Molang } from "@bridge-editor/molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "@bridge-editor/common-utils";
 import json5 from "json5";
@@ -4300,51 +4300,101 @@ function ignore(projectConfig, filePath) {
 }
 const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRoot }) => {
   var _a, _b;
-  let bundle = (_a = options.bundle) != null ? _a : false;
+  const externals = [
+    "@minecraft/server",
+    "@minecraft/server-ui",
+    "@minecraft/vanilla-data",
+    "@minecraft/server-gametest",
+    "@minecraft/common"
+  ];
+  let useBundle = (_a = options.bundle) != null ? _a : true;
   let entryFile = (_b = options.entryFile) != null ? _b : "main.ts";
+  if (options.splitting && options.outfile) {
+    throw new Error("splitting requires outdir, not outfile");
+  }
   const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
   let buildResult = {};
   return {
     async buildStart() {
+      var _a2, _b2;
       buildResult = {};
       await initialize();
       let entryPoints = [entryFile];
-      if (!options.bundle) {
+      if (!useBundle) {
         const scriptFiles = await findScriptFiles(scriptsPath, fileSystem);
         entryPoints = scriptFiles.map((filePath) => filePath.substring(scriptsPath.length + 1));
       }
       let outFile = entryFile;
       if (outFile.endsWith(".ts"))
         outFile = outFile.substring(0, outFile.length - 3) + ".js";
+      let outfileOption = void 0;
+      let outdirOption = void 0;
+      if (options.splitting) {
+        outdirOption = (_a2 = options.outdir) != null ? _a2 : scriptsPath;
+      } else {
+        outfileOption = (_b2 = options.outfile) != null ? _b2 : useBundle ? outFile : void 0;
+      }
       let tsconfig = void 0;
       try {
         const file = await fileSystem.readFile(join(projectRoot, "tsconfig.json"));
         const text = await file.text();
-        tsconfig = JSON.parse(text);
+        tsconfig = json5.parse(text);
         console.log("[EsbuildTypescript] Located tsconfig!");
       } catch {
         console.warn("[EsbuildTypescript] Could not locate tsconfig!");
       }
       const result = await browser.exports.build({
         packages: "bundle",
-        bundle,
-        external: bundle ? ["@minecraft/server", "@minecraft/server-ui", "@minecraft/vanilla-data", "@minecraft/server-gametest"] : void 0,
+        bundle: useBundle,
+        external: useBundle ? externals : void 0,
         entryPoints,
-        outfile: bundle ? outFile : void 0,
-        outdir: bundle ? void 0 : "/",
+        outfile: outfileOption,
+        outdir: outdirOption,
         write: false,
+        splitting: options.splitting,
+        sourcemap: true,
         plugins: [
           {
             name: "virtual-files",
             setup(build) {
-              build.onResolve({ filter: /\.ts$/ }, (args) => ({
-                path: args.path,
-                namespace: "virtual"
-              }));
-              build.onLoad({ filter: /\.ts$/, namespace: "virtual" }, async (args) => ({
-                contents: await (await fileSystem.readFile(join(scriptsPath, args.path))).text(),
-                loader: "ts"
-              }));
+              build.onResolve({ filter: /.*/ }, async (args) => {
+                if (args.namespace && args.namespace !== "virtual")
+                  return void 0;
+                if (externals.includes(args.path))
+                  return void 0;
+                let baseDir = scriptsPath;
+                if (args.importer && (args.path.startsWith("./") || args.path.startsWith("../"))) {
+                  baseDir = dirname(join(scriptsPath, args.importer));
+                }
+                let candidates = [args.path];
+                if (!/\.[jt]s$/.test(args.path)) {
+                  candidates = [
+                    args.path + ".ts",
+                    args.path + ".js"
+                  ];
+                }
+                for (const candidate of candidates) {
+                  const fullPath = join(baseDir, candidate);
+                  try {
+                    await fileSystem.readFile(fullPath);
+                    const relPath = fullPath.startsWith(scriptsPath) ? fullPath.substring(scriptsPath.length + 1) : candidate;
+                    return {
+                      path: relPath,
+                      namespace: "virtual"
+                    };
+                  } catch {
+                  }
+                }
+                return void 0;
+              });
+              build.onLoad({ filter: /.*/, namespace: "virtual" }, async (args) => {
+                const fullPath = join(scriptsPath, args.path);
+                return {
+                  contents: await (await fileSystem.readFile(fullPath)).text(),
+                  loader: extname(args.path) === ".js" ? "js" : "ts",
+                  resolveDir: dirname(fullPath)
+                };
+              });
             }
           }
         ],
