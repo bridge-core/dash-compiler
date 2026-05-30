@@ -4,5 +4,4 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     entryFile?: string;
     outfile?: string;
     outdir?: string;
-    splitting?: boolean;
 }>;

@@ -4298,7 +4298,7 @@ function ignore(projectConfig, filePath) {
     return true;
   return !filePath.endsWith(".ts") && !filePath.endsWith(".js");
 }
-const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRoot }) => {
+const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
   var _a, _b;
   const externals = [
     "@minecraft/server",
@@ -4309,15 +4309,18 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   ];
   let useBundle = (_a = options.bundle) != null ? _a : true;
   let entryFile = (_b = options.entryFile) != null ? _b : "main.ts";
-  if (options.splitting && options.outfile) {
-    throw new Error("splitting requires outdir, not outfile");
-  }
   const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
   let buildResult = {};
+  let sourceMapResult = {};
+  let sourceMapVirtualFiles = /* @__PURE__ */ new Set();
+  function cleanupSourceMapSources(sourceMapText) {
+    return sourceMapText.replace(/"virtual:/g, '"');
+  }
   return {
     async buildStart() {
-      var _a2, _b2;
       buildResult = {};
+      sourceMapResult = {};
+      sourceMapVirtualFiles = /* @__PURE__ */ new Set();
       await initialize();
       let entryPoints = [entryFile];
       if (!useBundle) {
@@ -4327,13 +4330,6 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
       let outFile = entryFile;
       if (outFile.endsWith(".ts"))
         outFile = outFile.substring(0, outFile.length - 3) + ".js";
-      let outfileOption = void 0;
-      let outdirOption = void 0;
-      if (options.splitting) {
-        outdirOption = (_a2 = options.outdir) != null ? _a2 : scriptsPath;
-      } else {
-        outfileOption = (_b2 = options.outfile) != null ? _b2 : useBundle ? outFile : void 0;
-      }
       let tsconfig = void 0;
       try {
         const file = await fileSystem.readFile(join(projectRoot, "tsconfig.json"));
@@ -4348,10 +4344,9 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         bundle: useBundle,
         external: useBundle ? externals : void 0,
         entryPoints,
-        outfile: outfileOption,
-        outdir: outdirOption,
+        outfile: useBundle ? outFile : void 0,
+        outdir: useBundle ? void 0 : ".",
         write: false,
-        splitting: options.splitting,
         sourcemap: true,
         plugins: [
           {
@@ -4402,15 +4397,34 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         platform: "neutral"
       });
       for (const file of result.outputFiles) {
+        if (file.path.endsWith(".map")) {
+          const relativeOutputPath = file.path.startsWith("/") ? file.path.substring(1) : file.path;
+          const virtualMapPath = join(scriptsPath, relativeOutputPath);
+          sourceMapVirtualFiles.add(virtualMapPath);
+          sourceMapResult[virtualMapPath] = cleanupSourceMapSources(file.text);
+          continue;
+        }
         buildResult[file.path] = file.text;
       }
     },
+    include() {
+      const virtualFiles = [...sourceMapVirtualFiles].map((filePath) => [filePath, { isVirtual: true }]);
+      return virtualFiles;
+    },
     ignore(filePath) {
+      if (sourceMapVirtualFiles.has(filePath))
+        return false;
       return ignore(projectConfig, filePath);
     },
     async transformPath(filePath) {
       if (typeof filePath !== "string")
         return filePath;
+      if (sourceMapVirtualFiles.has(filePath)) {
+        const sourceJsPath = filePath.endsWith(".map") ? filePath.substring(0, filePath.length - 4) : filePath;
+        const outputJsPath = await getOutputPath(sourceJsPath);
+        const outputPath = outputJsPath ? `${outputJsPath}.map` : filePath;
+        return outputPath;
+      }
       if (ignore(projectConfig, filePath))
         return filePath;
       let resolvedFilePath = filePath.substring(scriptsPath.length);
@@ -4423,6 +4437,9 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
       return filePath;
     },
     async read(filePath, fileContent) {
+      if (sourceMapVirtualFiles.has(filePath)) {
+        return sourceMapResult[filePath];
+      }
       if (!fileContent)
         return;
       const file = await fileContent.getFile();
@@ -4434,6 +4451,9 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
       return fileContent;
     },
     transform(filePath, fileContent) {
+      if (sourceMapVirtualFiles.has(filePath)) {
+        return sourceMapResult[filePath];
+      }
       let resolvedFilePath = filePath.substring(scriptsPath.length);
       if (resolvedFilePath.endsWith(".ts"))
         resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";

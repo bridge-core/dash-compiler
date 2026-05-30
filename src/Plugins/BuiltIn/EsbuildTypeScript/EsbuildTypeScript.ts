@@ -56,29 +56,33 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     entryFile?: string
     outfile?: string
     outdir?: string
-    splitting?: boolean
-}> = ({ options, fileSystem, projectConfig, projectRoot }) => {
+}> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
     const externals = [
         '@minecraft/server',
         '@minecraft/server-ui',
         '@minecraft/vanilla-data',
         '@minecraft/server-gametest',
-        '@minecraft/common',
+        '@minecraft/common'
     ];
 
     let useBundle = options.bundle ?? true
     let entryFile = options.entryFile ?? 'main.ts'
-    if (options.splitting && options.outfile) {
-        throw new Error("splitting requires outdir, not outfile");
-    }
 
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
 
     let buildResult: Record<string, string> = {}
+    let sourceMapResult: Record<string, string> = {}
+    let sourceMapVirtualFiles = new Set<string>()
+
+    function cleanupSourceMapSources(sourceMapText: string) {
+        return sourceMapText.replace(/"virtual:/g, '"')
+    }
 
     return {
         async buildStart() {
             buildResult = {}
+            sourceMapResult = {}
+            sourceMapVirtualFiles = new Set()
 
             await initialize()
 
@@ -92,15 +96,6 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
 
             let outFile = entryFile
             if (outFile.endsWith('.ts')) outFile = outFile.substring(0, outFile.length - 3) + '.js'
-
-            // Determine output options: only set outfile or outdir, never both
-            let outfileOption = undefined;
-            let outdirOption = undefined;
-            if (options.splitting) {
-                outdirOption = options.outdir ?? scriptsPath; // Use configured outdir or default to scriptsPath
-            } else {
-                outfileOption = options.outfile ?? (useBundle ? outFile : undefined); // Use configured outfile or default
-            }
 
             let tsconfig = undefined
             try {
@@ -117,10 +112,9 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 bundle: useBundle,
                 external: useBundle ? externals : undefined,
                 entryPoints: entryPoints,
-                outfile: outfileOption,
-                outdir: outdirOption,
+                outfile: useBundle ? outFile : undefined,
+                outdir: useBundle ? undefined : '.',
                 write: false,
-                splitting: options.splitting,
                 sourcemap: true,
                 plugins: [
                     {
@@ -169,16 +163,37 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             })
 
             for (const file of result.outputFiles) {
+                if (file.path.endsWith('.map')) {
+                    const relativeOutputPath = file.path.startsWith('/') ? file.path.substring(1) : file.path
+                    const virtualMapPath = join(scriptsPath, relativeOutputPath)
+
+                    sourceMapVirtualFiles.add(virtualMapPath)
+                    sourceMapResult[virtualMapPath] = cleanupSourceMapSources(file.text)
+                    continue
+                }
                 buildResult[file.path] = file.text
             }
         },
 
+        include() {
+            const virtualFiles = [...sourceMapVirtualFiles].map(filePath => [filePath, { isVirtual: true }] as [string, { isVirtual: boolean }])
+            return virtualFiles
+        },
+
         ignore(filePath) {
+            if (sourceMapVirtualFiles.has(filePath)) return false
             return ignore(projectConfig, filePath)
         },
 
         async transformPath(filePath) {
             if (typeof filePath !== 'string') return filePath
+
+            if (sourceMapVirtualFiles.has(filePath)) {
+                const sourceJsPath = filePath.endsWith('.map') ? filePath.substring(0, filePath.length - 4) : filePath
+                const outputJsPath = await getOutputPath(sourceJsPath)
+                const outputPath = outputJsPath ? `${outputJsPath}.map` : filePath
+                return outputPath
+            }
 
             if (ignore(projectConfig, filePath)) return filePath
 
@@ -193,6 +208,10 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         },
 
         async read(filePath, fileContent) {
+            if (sourceMapVirtualFiles.has(filePath)) {
+                return sourceMapResult[filePath]
+            }
+
             if (!fileContent) return
 
             const file = await fileContent.getFile()
@@ -207,6 +226,10 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         },
 
         transform(filePath, fileContent) {
+            if (sourceMapVirtualFiles.has(filePath)) {
+                return sourceMapResult[filePath]
+            }
+
             let resolvedFilePath = filePath.substring(scriptsPath.length)
             if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
