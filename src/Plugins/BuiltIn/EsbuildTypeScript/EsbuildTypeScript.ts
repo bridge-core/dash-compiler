@@ -108,7 +108,12 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             }
 
             let outFile = entryFile
+            let outDir = options.outdir ? options.outdir : undefined
             if (outFile.endsWith('.ts')) outFile = outFile.substring(0, outFile.length - 3) + '.js'
+            let useOutDir = false
+            if (options.outdir) {
+                useOutDir = true
+            }
 
             let tsconfig = undefined
             try {
@@ -125,8 +130,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 bundle: useBundle,
                 external: useBundle ? externals : undefined,
                 entryPoints: entryPoints,
-                outfile: useBundle ? outFile : undefined,
-                outdir: useBundle ? undefined : '.',
+                outfile: useOutDir ? undefined : outFile,
+                outdir: useOutDir ? outDir : undefined,
                 write: false,
                 sourcemap: true,
                 plugins: [
