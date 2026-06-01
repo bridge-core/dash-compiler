@@ -4,6 +4,10 @@ import esbuildWasmUrl from './esbuild.wasm?url'
 import { dirname, extname, join } from 'pathe'
 import { FileSystem } from '../../../main'
 import json5 from 'json5'
+import { isMatch } from '@bridge-editor/common-utils'
+import isGlob from 'is-glob'
+import { expandEntryPoints, findScriptFiles } from './entryPoints'
+import { createNodeModuleResolver } from './nodeModuleResolver'
 
 let esbuildInitialized = false
 async function initialize() {
@@ -23,26 +27,6 @@ async function initialize() {
     console.log(`[EsbuildTypescript] Initialized esbuild-wasm!`)
 }
 
-async function findScriptFiles(path: string, fileSystem: FileSystem): Promise<string[]> {
-    const entries = await fileSystem.readdir(path)
-
-    let files: string[] = []
-
-    for (const entry of entries) {
-        if (entry.kind === 'file') {
-            if (!entry.name.endsWith('.js') && !entry.name.endsWith('.ts')) continue
-
-            files.push(join(path, entry.name))
-        } else {
-            const subFiles = await findScriptFiles(join(path, entry.name), fileSystem)
-
-            files = files.concat(subFiles)
-        }
-    }
-
-    return files
-}
-
 function ignore(projectConfig: any, filePath: string) {
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
 
@@ -57,15 +41,19 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     entryPoints?: string[]
     outfile?: string
     outdir?: string
+    splitting?: boolean
+    format?: 'esm' | 'cjs' | 'iife'
     externals?: string[]
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
+    const nodeModuleResolver = createNodeModuleResolver({
+        fileSystem,
+        projectRoot,
+    })
+
     function isExternal(path: string) {
         return externals.some(pattern => {
-            if (!pattern.includes('*')) return pattern === path
-            const regex = new RegExp(
-                '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
-            )
-            return regex.test(path)
+            if (!isGlob(pattern)) return pattern === path
+            return isMatch(path, pattern)
         })
     }
 
@@ -76,15 +64,17 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         '@minecraft/server-gametest',
         '@minecraft/common',
         ...(options.externals ?? [])
-    ];
+    ]
+    console.log(`[EsbuildTypescript] Using externals: @minecraft/*, ${externals.join(', ')}`)
 
-    let useBundle = options.bundle ?? true
-    let entryFile = options.entryFile ?? 'main.ts'
-
+    const useBundle = options.bundle ?? true
+    const entryFile = options.entryFile ?? 'main.ts'
 
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
 
     let buildResult: Record<string, string> = {}
+    let virtualOutputResult: Record<string, string> = {}
+    let virtualOutputFiles = new Set<string>()
     let sourceMapResult: Record<string, string> = {}
     let sourceMapVirtualFiles = new Set<string>()
 
@@ -95,12 +85,18 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     return {
         async buildStart() {
             buildResult = {}
+            virtualOutputResult = {}
+            virtualOutputFiles = new Set()
             sourceMapResult = {}
             sourceMapVirtualFiles = new Set()
 
             await initialize()
 
             let entryPoints = options.entryPoints ?? [entryFile]
+
+            if (useBundle) {
+                entryPoints = await expandEntryPoints(entryPoints, scriptsPath, fileSystem)
+            }
 
             if (!useBundle) {
                 const scriptFiles = await findScriptFiles(scriptsPath, fileSystem)
@@ -113,6 +109,13 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             let useOutDir = false
             if (options.outdir) {
                 useOutDir = true
+            }
+
+            const useSplitting = useBundle && (options.splitting ?? entryPoints.length > 1)
+            const outputFormat = options.format ?? (useSplitting ? 'esm' : undefined)
+            if (useSplitting) {
+                useOutDir = true
+                outDir = outDir ?? '.'
             }
 
             let tsconfig = undefined
@@ -132,56 +135,94 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 entryPoints: entryPoints,
                 outfile: useOutDir ? undefined : outFile,
                 outdir: useOutDir ? outDir : undefined,
+                splitting: useSplitting,
+                format: outputFormat,
                 write: false,
                 sourcemap: true,
+                logOverride: {
+                    "missing-source-map": "silent"
+                },
                 plugins: [
                     {
                         name: 'virtual-files',
                         setup(build) {
                             build.onResolve({ filter: /.*/ }, async args => {
-                                if (args.namespace && args.namespace !== 'virtual') return undefined;
-                                if (isExternal(args.path)) return { path: args.path, external: true };
-                                let baseDir = scriptsPath;
-                                if (args.importer && (args.path.startsWith('./') || args.path.startsWith('../'))) {
-                                    baseDir = dirname(join(scriptsPath, args.importer));
+                                if (args.namespace && args.namespace !== 'virtual' && args.namespace !== 'node-modules') return undefined
+                                if (isExternal(args.path)) return { path: args.path, external: true }
+
+                                if (args.namespace === 'node-modules' && (args.path.startsWith('./') || args.path.startsWith('../'))) {
+                                    const resolvedInModule = await nodeModuleResolver.resolveRelative(args.importer, args.path)
+                                    if (resolvedInModule) {
+                                        return {
+                                            path: resolvedInModule,
+                                            namespace: 'node-modules',
+                                        }
+                                    }
                                 }
-                                let candidates = [args.path];
+
+                                if (!args.path.startsWith('./') && !args.path.startsWith('../') && !args.path.startsWith('/')) {
+                                    const resolvedPackageFile = await nodeModuleResolver.resolveBare(args.path)
+                                    if (resolvedPackageFile) {
+                                        return {
+                                            path: resolvedPackageFile,
+                                            namespace: 'node-modules',
+                                        }
+                                    }
+                                }
+
+                                let baseDir = scriptsPath
+                                if (args.importer && (args.path.startsWith('./') || args.path.startsWith('../'))) {
+                                    baseDir = dirname(join(scriptsPath, args.importer))
+                                }
+
+                                let candidates = [args.path]
                                 if (!/\.[jt]s$/.test(args.path)) {
                                     candidates = [
                                         args.path + '.ts',
                                         args.path + '.js',
-                                    ];
+                                    ]
                                 }
+
                                 for (const candidate of candidates) {
-                                    const fullPath = join(baseDir, candidate);
+                                    const fullPath = join(baseDir, candidate)
                                     try {
-                                        await fileSystem.readFile(fullPath);
-                                        const relPath = fullPath.startsWith(scriptsPath) ? fullPath.substring(scriptsPath.length + 1) : candidate;
+                                        await fileSystem.readFile(fullPath)
+                                        const relPath = fullPath.startsWith(scriptsPath)
+                                            ? fullPath.substring(scriptsPath.length + 1)
+                                            : candidate
                                         return {
                                             path: relPath,
                                             namespace: 'virtual',
-                                        };
+                                        }
                                     } catch {}
                                 }
 
-                                // Bare specifiers that are not marked external will fall back to esbuild's
-                                // package resolution.
+                                // Bare specifiers that are not marked external will fall back to package resolution.
                                 if (!args.path.startsWith('./') && !args.path.startsWith('../') && !args.path.startsWith('/')) {
                                     console.warn(
                                         `[EsbuildTypescript] Unresolved bare import "${args.path}" from "${args.importer || '<entry>'}". Falling back to esbuild package resolution.`
                                     )
                                 }
 
-                                return undefined;
-                            });
+                                return undefined
+                            })
+
                             build.onLoad({ filter: /.*/, namespace: 'virtual' }, async args => {
-                                const fullPath = join(scriptsPath, args.path);
+                                const fullPath = join(scriptsPath, args.path)
                                 return {
                                     contents: await (await fileSystem.readFile(fullPath)).text(),
                                     loader: extname(args.path) === '.js' ? 'js' : 'ts',
                                     resolveDir: dirname(fullPath),
-                                };
-                            });
+                                }
+                            })
+
+                            build.onLoad({ filter: /.*/, namespace: 'node-modules' }, async args => {
+                                return {
+                                    contents: await nodeModuleResolver.readText(args.path),
+                                    loader: nodeModuleResolver.loaderFor(args.path),
+                                    resolveDir: dirname(args.path),
+                                }
+                            })
                         },
                     },
                 ],
@@ -189,31 +230,42 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 platform: 'neutral',
             })
 
-            for (const file of result.outputFiles) {
+            for (const file of result.outputFiles ?? []) {
+                const relativeOutputPath = file.path.startsWith('/') ? file.path.substring(1) : file.path
+                const virtualOutputPath = join(scriptsPath, relativeOutputPath)
+
+                virtualOutputFiles.add(virtualOutputPath)
+
                 if (file.path.endsWith('.map')) {
-                    const relativeOutputPath = file.path.startsWith('/') ? file.path.substring(1) : file.path
-                    const virtualMapPath = join(scriptsPath, relativeOutputPath)
+                    const virtualMapPath = virtualOutputPath
 
                     sourceMapVirtualFiles.add(virtualMapPath)
                     sourceMapResult[virtualMapPath] = cleanupSourceMapSources(file.text)
+                    virtualOutputResult[virtualMapPath] = cleanupSourceMapSources(file.text)
                     continue
                 }
+
                 buildResult[file.path] = file.text
+                virtualOutputResult[virtualOutputPath] = file.text
             }
         },
 
         include() {
-            const virtualFiles = [...sourceMapVirtualFiles].map(filePath => [filePath, { isVirtual: true }] as [string, { isVirtual: boolean }])
+            const virtualFiles = [...virtualOutputFiles].map(filePath => [filePath, { isVirtual: true }] as [string, { isVirtual: boolean }])
             return virtualFiles
         },
 
         ignore(filePath) {
-            if (sourceMapVirtualFiles.has(filePath)) return false
+            if (virtualOutputFiles.has(filePath)) return false
             return ignore(projectConfig, filePath)
         },
 
         async transformPath(filePath) {
             if (typeof filePath !== 'string') return filePath
+
+            if (virtualOutputFiles.has(filePath) && !filePath.endsWith('.map')) {
+                return filePath
+            }
 
             if (sourceMapVirtualFiles.has(filePath)) {
                 const sourceJsPath = filePath.endsWith('.map') ? filePath.substring(0, filePath.length - 4) : filePath
@@ -227,7 +279,10 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             let resolvedFilePath = filePath.substring(scriptsPath.length)
             if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
-            if (buildResult[resolvedFilePath] === undefined) return null
+            if (buildResult[resolvedFilePath] === undefined) {
+                if (filePath.endsWith('.ts')) return null
+                return filePath
+            }
 
             if (filePath.endsWith('.ts')) return filePath.substring(0, filePath.length - 3) + '.js'
 
@@ -235,8 +290,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         },
 
         async read(filePath, fileContent) {
-            if (sourceMapVirtualFiles.has(filePath)) {
-                return sourceMapResult[filePath]
+            if (virtualOutputFiles.has(filePath)) {
+                return virtualOutputResult[filePath]
             }
 
             if (!fileContent) return
@@ -253,14 +308,16 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         },
 
         transform(filePath, fileContent) {
-            if (sourceMapVirtualFiles.has(filePath)) {
-                return sourceMapResult[filePath]
+            if (virtualOutputFiles.has(filePath)) {
+                return virtualOutputResult[filePath]
             }
 
             let resolvedFilePath = filePath.substring(scriptsPath.length)
             if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
-            return buildResult[resolvedFilePath]
+            // If not in buildResult (e.g. a .js virtual file from another plugin), leave content untouched.
+            const built = buildResult[resolvedFilePath]
+            return built !== undefined ? built : fileContent
         },
     }
 }
