@@ -54,19 +54,33 @@ function ignore(projectConfig: any, filePath: string) {
 export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     bundle?: boolean
     entryFile?: string
+    entryPoints?: string[]
     outfile?: string
     outdir?: string
+    externals?: string[]
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
+    function isExternal(path: string) {
+        return externals.some(pattern => {
+            if (!pattern.includes('*')) return pattern === path
+            const regex = new RegExp(
+                '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+            )
+            return regex.test(path)
+        })
+    }
+
     const externals = [
         '@minecraft/server',
         '@minecraft/server-ui',
         '@minecraft/vanilla-data',
         '@minecraft/server-gametest',
-        '@minecraft/common'
+        '@minecraft/common',
+        ...(options.externals ?? [])
     ];
 
     let useBundle = options.bundle ?? true
     let entryFile = options.entryFile ?? 'main.ts'
+
 
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
 
@@ -86,11 +100,10 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
 
             await initialize()
 
-            let entryPoints = [entryFile]
+            let entryPoints = options.entryPoints ?? [entryFile]
 
             if (!useBundle) {
                 const scriptFiles = await findScriptFiles(scriptsPath, fileSystem)
-
                 entryPoints = scriptFiles.map(filePath => filePath.substring(scriptsPath.length + 1))
             }
 
@@ -122,7 +135,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                         setup(build) {
                             build.onResolve({ filter: /.*/ }, async args => {
                                 if (args.namespace && args.namespace !== 'virtual') return undefined;
-                                if (externals.includes(args.path)) return undefined;
+                                if (isExternal(args.path)) return { path: args.path, external: true };
                                 let baseDir = scriptsPath;
                                 if (args.importer && (args.path.startsWith('./') || args.path.startsWith('../'))) {
                                     baseDir = dirname(join(scriptsPath, args.importer));
@@ -145,6 +158,15 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                                         };
                                     } catch {}
                                 }
+
+                                // Bare specifiers that are not marked external will fall back to esbuild's
+                                // package resolution.
+                                if (!args.path.startsWith('./') && !args.path.startsWith('../') && !args.path.startsWith('/')) {
+                                    console.warn(
+                                        `[EsbuildTypescript] Unresolved bare import "${args.path}" from "${args.importer || '<entry>'}". Falling back to esbuild package resolution.`
+                                    )
+                                }
+
                                 return undefined;
                             });
                             build.onLoad({ filter: /.*/, namespace: 'virtual' }, async args => {
