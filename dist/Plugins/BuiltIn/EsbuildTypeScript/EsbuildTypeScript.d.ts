@@ -3,9 +3,10 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     bundle?: boolean;
     entryFile?: string;
     entryPoints?: string[];
-    outfile?: string;
-    outdir?: string;
+    outFile?: string;
+    outDir?: string;
     splitting?: boolean;
-    format?: 'esm' | 'cjs' | 'iife';
     externals?: string[];
+    sourceRoot?: string;
+    useBPAsSourceRoot?: boolean;
 }>;

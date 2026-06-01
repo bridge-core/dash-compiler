@@ -2,7 +2,6 @@ import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import * as esbuild from 'esbuild-wasm'
 import esbuildWasmUrl from './esbuild.wasm?url'
 import { dirname, extname, join } from 'pathe'
-import { FileSystem } from '../../../main'
 import json5 from 'json5'
 import { isMatch } from '@bridge-editor/common-utils'
 import isGlob from 'is-glob'
@@ -39,11 +38,12 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     bundle?: boolean
     entryFile?: string
     entryPoints?: string[]
-    outfile?: string
-    outdir?: string
+    outFile?: string
+    outDir?: string
     splitting?: boolean
-    format?: 'esm' | 'cjs' | 'iife'
     externals?: string[]
+    sourceRoot?: string
+    useBPAsSourceRoot?: boolean
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
     const nodeModuleResolver = createNodeModuleResolver({
         fileSystem,
@@ -54,8 +54,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         return path.replace(/^\.\//, '').replace(/^\//, '')
     }
 
+    // Handler to resolve all import patterns for a path ie "bridge-core/*" to include "bridge-core/some/deep/file" and "bridge-core/index.ts"
     function matchesExternalPattern(path: string, pattern: string) {
-        // Backward-compatible folder pattern behavior: "Foo/*" matches any depth under "Foo/"
         if (pattern.endsWith('/*')) {
             const folderPrefix = pattern.substring(0, pattern.length - 1)
             return path.startsWith(folderPrefix)
@@ -65,6 +65,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         return isMatch(path, pattern)
     }
 
+    // Helper to check if the import path is an external module.
     function isExternal(path: string) {
         const normalizedPath = normalizeSpecifier(path)
 
@@ -74,15 +75,21 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         })
     }
 
+    // MC Modules which should not be bundled + user-defined externals
     const externals = [
         '@minecraft/server',
         '@minecraft/server-ui',
-        '@minecraft/vanilla-data',
+        '@minecraft/server-graphics',
+        '@minecraft/server-editor',
+        '@minecraft/server-net',
+        '@minecraft/server-admin',
+        '@minecraft/debug-utilities',
+        '@minecraft/diagnostics',
         '@minecraft/server-gametest',
         '@minecraft/common',
+        '@minecraft/vanilla-data',
         ...(options.externals ?? [])
     ]
-    console.log(`[EsbuildTypescript] Using externals: @minecraft/*, ${externals.join(', ')}`)
 
     const useBundle = options.bundle ?? true
     const entryFile = options.entryFile ?? 'main.ts'
@@ -95,6 +102,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     let sourceMapResult: Record<string, string> = {}
     let sourceMapVirtualFiles = new Set<string>()
 
+    // Because files get put into the virtual file system their paths get prefixed with virtual:. We forcefully strip this out to return to actual paths
     function cleanupSourceMapSources(sourceMapText: string) {
         return sourceMapText.replace(/"virtual:/g, '"')
     }
@@ -112,27 +120,30 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             let entryPoints = options.entryPoints ?? [entryFile]
 
             if (useBundle) {
+                // Support glob pattern for defining entry points in our custom loader
                 entryPoints = await expandEntryPoints(entryPoints, scriptsPath, fileSystem)
             }
 
+            // If not bundling, we need to include all script files as entry points so they get transformed and can be imported virtually
             if (!useBundle) {
                 const scriptFiles = await findScriptFiles(scriptsPath, fileSystem)
                 entryPoints = scriptFiles.map(filePath => filePath.substring(scriptsPath.length + 1))
             }
 
             let outFile = entryFile
-            let outDir = options.outdir ? options.outdir : undefined
+            let outDir = options.outDir ? options.outDir : undefined
             if (outFile.endsWith('.ts')) outFile = outFile.substring(0, outFile.length - 3) + '.js'
+
             let useOutDir = false
-            if (options.outdir) {
+            if (options.outDir) {
                 useOutDir = true
             }
 
+            // If splitting is enabled, we have to use outDir because esbuild doesn't support splitting with a single outfile
             const useSplitting = useBundle && (options.splitting ?? entryPoints.length > 1)
-            const outputFormat = options.format ?? (useSplitting ? 'esm' : undefined)
             if (useSplitting) {
                 useOutDir = true
-                outDir = outDir ?? '.'
+                outDir = outDir ?? '/'
             }
 
             let tsconfig = undefined
@@ -140,7 +151,6 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 const file = await fileSystem.readFile(join(projectRoot, 'tsconfig.json'))
                 const text = await file.text()
                 tsconfig = json5.parse(text)
-                console.log('[EsbuildTypescript] Located tsconfig!')
             } catch {
                 console.warn('[EsbuildTypescript] Could not locate tsconfig!')
             }
@@ -153,11 +163,11 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 outfile: useOutDir ? undefined : outFile,
                 outdir: useOutDir ? outDir : undefined,
                 splitting: useSplitting,
-                format: outputFormat,
                 write: false,
-                sourcemap: true,
+                sourcemap: true, // TODO: allow configuration of sourcemap type or disabling sourcemaps entirely
+                sourceRoot: options.useBPAsSourceRoot ? scriptsPath : options.sourceRoot ?? undefined,
                 logOverride: {
-                    'missing-source-map': 'silent',
+                    'missing-source-map': 'silent', //TODO: Handle node_modules source maps files correctly
                 },
                 plugins: [
                     {
@@ -167,6 +177,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                                 if (args.namespace && args.namespace !== 'virtual' && args.namespace !== 'node-modules') return undefined
                                 if (isExternal(args.path)) return { path: args.path, external: true }
 
+                                //Resolve node modules
                                 if (args.namespace === 'node-modules' && (args.path.startsWith('./') || args.path.startsWith('../'))) {
                                     const resolvedInModule = await nodeModuleResolver.resolveRelative(args.importer, args.path)
                                     if (resolvedInModule) {

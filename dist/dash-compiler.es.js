@@ -4486,12 +4486,17 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   const externals = [
     "@minecraft/server",
     "@minecraft/server-ui",
-    "@minecraft/vanilla-data",
+    "@minecraft/server-graphics",
+    "@minecraft/server-editor",
+    "@minecraft/server-net",
+    "@minecraft/server-admin",
+    "@minecraft/debug-utilities",
+    "@minecraft/diagnostics",
     "@minecraft/server-gametest",
     "@minecraft/common",
+    "@minecraft/vanilla-data",
     ...(_a = options.externals) != null ? _a : []
   ];
-  console.log(`[EsbuildTypescript] Using externals: @minecraft/*, ${externals.join(", ")}`);
   const useBundle = (_b = options.bundle) != null ? _b : true;
   const entryFile = (_c = options.entryFile) != null ? _c : "main.ts";
   const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
@@ -4521,25 +4526,23 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         entryPoints = scriptFiles.map((filePath) => filePath.substring(scriptsPath.length + 1));
       }
       let outFile = entryFile;
-      let outDir = options.outdir ? options.outdir : void 0;
+      let outDir = options.outDir ? options.outDir : void 0;
       if (outFile.endsWith(".ts"))
         outFile = outFile.substring(0, outFile.length - 3) + ".js";
       let useOutDir = false;
-      if (options.outdir) {
+      if (options.outDir) {
         useOutDir = true;
       }
       const useSplitting = useBundle && ((_b2 = options.splitting) != null ? _b2 : entryPoints.length > 1);
-      const outputFormat = (_c2 = options.format) != null ? _c2 : useSplitting ? "esm" : void 0;
       if (useSplitting) {
         useOutDir = true;
-        outDir = outDir != null ? outDir : ".";
+        outDir = outDir != null ? outDir : "/";
       }
       let tsconfig = void 0;
       try {
         const file = await fileSystem.readFile(join(projectRoot, "tsconfig.json"));
         const text = await file.text();
         tsconfig = json5.parse(text);
-        console.log("[EsbuildTypescript] Located tsconfig!");
       } catch {
         console.warn("[EsbuildTypescript] Could not locate tsconfig!");
       }
@@ -4551,9 +4554,9 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         outfile: useOutDir ? void 0 : outFile,
         outdir: useOutDir ? outDir : void 0,
         splitting: useSplitting,
-        format: outputFormat,
         write: false,
         sourcemap: true,
+        sourceRoot: options.useBPAsSourceRoot ? scriptsPath : (_c2 = options.sourceRoot) != null ? _c2 : void 0,
         logOverride: {
           "missing-source-map": "silent"
         },
