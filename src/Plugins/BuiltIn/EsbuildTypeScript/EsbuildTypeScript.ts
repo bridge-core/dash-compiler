@@ -1,7 +1,7 @@
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import * as esbuild from 'esbuild-wasm'
 import esbuildWasmUrl from './esbuild.wasm?url'
-import { dirname, extname, join } from 'pathe'
+import { dirname, extname, join, resolve } from 'pathe'
 import json5 from 'json5'
 import { isMatch } from '@bridge-editor/common-utils'
 import isGlob from 'is-glob'
@@ -165,7 +165,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 splitting: useSplitting,
                 write: false,
                 sourcemap: true, // TODO: allow configuration of sourcemap type or disabling sourcemaps entirely
-                sourceRoot: options.useBPAsSourceRoot ? scriptsPath : options.sourceRoot ?? undefined,
+                sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : options.sourceRoot ?? undefined,
                 logOverride: {
                     'missing-source-map': 'silent', //TODO: Handle node_modules source maps files correctly
                 },
