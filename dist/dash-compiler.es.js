@@ -4464,11 +4464,23 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
     fileSystem,
     projectRoot
   });
+  function normalizeSpecifier(path) {
+    return path.replace(/^\.\//, "").replace(/^\//, "");
+  }
+  function matchesExternalPattern(path, pattern) {
+    if (pattern.endsWith("/*")) {
+      const folderPrefix = pattern.substring(0, pattern.length - 1);
+      return path.startsWith(folderPrefix);
+    }
+    if (!isGlob(pattern))
+      return pattern === path;
+    return isMatch(path, pattern);
+  }
   function isExternal(path) {
+    const normalizedPath = normalizeSpecifier(path);
     return externals.some((pattern) => {
-      if (!isGlob(pattern))
-        return pattern === path;
-      return isMatch(path, pattern);
+      const normalizedPattern = normalizeSpecifier(pattern);
+      return matchesExternalPattern(normalizedPath, normalizedPattern);
     });
   }
   const externals = [
@@ -4588,6 +4600,12 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
                   try {
                     await fileSystem.readFile(fullPath);
                     const relPath = fullPath.startsWith(scriptsPath) ? fullPath.substring(scriptsPath.length + 1) : candidate;
+                    if (isExternal(relPath)) {
+                      return {
+                        path: args.path,
+                        external: true
+                      };
+                    }
                     return {
                       path: relPath,
                       namespace: "virtual"

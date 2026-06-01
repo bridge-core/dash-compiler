@@ -50,10 +50,27 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         projectRoot,
     })
 
+    function normalizeSpecifier(path: string) {
+        return path.replace(/^\.\//, '').replace(/^\//, '')
+    }
+
+    function matchesExternalPattern(path: string, pattern: string) {
+        // Backward-compatible folder pattern behavior: "Foo/*" matches any depth under "Foo/"
+        if (pattern.endsWith('/*')) {
+            const folderPrefix = pattern.substring(0, pattern.length - 1)
+            return path.startsWith(folderPrefix)
+        }
+
+        if (!isGlob(pattern)) return pattern === path
+        return isMatch(path, pattern)
+    }
+
     function isExternal(path: string) {
+        const normalizedPath = normalizeSpecifier(path)
+
         return externals.some(pattern => {
-            if (!isGlob(pattern)) return pattern === path
-            return isMatch(path, pattern)
+            const normalizedPattern = normalizeSpecifier(pattern)
+            return matchesExternalPattern(normalizedPath, normalizedPattern)
         })
     }
 
@@ -140,7 +157,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 write: false,
                 sourcemap: true,
                 logOverride: {
-                    "missing-source-map": "silent"
+                    'missing-source-map': 'silent',
                 },
                 plugins: [
                     {
@@ -190,6 +207,14 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                                         const relPath = fullPath.startsWith(scriptsPath)
                                             ? fullPath.substring(scriptsPath.length + 1)
                                             : candidate
+
+                                        if (isExternal(relPath)) {
+                                            return {
+                                                path: args.path,
+                                                external: true,
+                                            }
+                                        }
+
                                         return {
                                             path: relPath,
                                             namespace: 'virtual',
