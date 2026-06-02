@@ -1,5 +1,5 @@
 import { ProjectConfig } from "@bridge-editor/mc-project-core";
-import { dirname, relative, join, basename, extname, resolve } from "pathe";
+import { dirname, relative, join, basename, matchesGlob, extname, resolve, normalize } from "pathe";
 import { CustomMolang, expressions, Molang } from "@bridge-editor/molang";
 import { setObjectAt, deepMerge, hashString, get, tokenizeCommand, castType, isMatch } from "@bridge-editor/common-utils";
 import json5 from "json5";
@@ -4288,7 +4288,7 @@ async function expandEntryPoints(entrySpecs, scriptsPath, fileSystem) {
   for (const specRaw of entrySpecs) {
     const spec = normalizeRelativePath(specRaw);
     if (isGlob(spec)) {
-      const matches = relativeFiles.filter((filePath) => isMatch(filePath, spec));
+      const matches = relativeFiles.filter((filePath) => matchesGlob(filePath, spec));
       if (matches.length === 0) {
         console.warn(`[EsbuildTypescript] entryPoints glob matched no files: ${specRaw}`);
       }
@@ -4450,7 +4450,6 @@ async function initialize() {
     wasmURL: esbuildWasmUrl,
     worker: false
   });
-  console.log(`[EsbuildTypescript] Initialized esbuild-wasm!`);
 }
 function ignore(projectConfig, filePath) {
   const scriptsPath = projectConfig.resolvePackPath("behaviorPack", "scripts");
@@ -4468,16 +4467,12 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
     return path.replace(/^\.\//, "").replace(/^\//, "");
   }
   function matchesExternalPattern(path, pattern) {
-    if (pattern.endsWith("/*")) {
-      const folderPrefix = pattern.substring(0, pattern.length - 1);
-      return path.startsWith(folderPrefix);
-    }
     if (!isGlob(pattern))
       return pattern === path;
-    return isMatch(path, pattern);
+    return matchesGlob(path, pattern);
   }
   function isExternal(path) {
-    const normalizedPath = normalizeSpecifier(path);
+    const normalizedPath = normalize(path);
     return externals.some((pattern) => {
       const normalizedPattern = normalizeSpecifier(pattern);
       return matchesExternalPattern(normalizedPath, normalizedPattern);
@@ -4510,7 +4505,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   }
   return {
     async buildStart() {
-      var _a2, _b2, _c2, _d;
+      var _a2, _b2, _c2, _d, _e;
       buildResult = {};
       virtualOutputResult = {};
       virtualOutputFiles = /* @__PURE__ */ new Set();
@@ -4555,8 +4550,9 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         outdir: useOutDir ? outDir : void 0,
         splitting: useSplitting,
         write: false,
-        sourcemap: true,
-        sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : (_c2 = options.sourceRoot) != null ? _c2 : void 0,
+        target: "es2022",
+        sourcemap: (_c2 = options.sourcemap) != null ? _c2 : false,
+        sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : (_d = options.sourceRoot) != null ? _d : void 0,
         logOverride: {
           "missing-source-map": "silent"
         },
@@ -4642,7 +4638,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         tsconfigRaw: tsconfig,
         platform: "neutral"
       });
-      for (const file of (_d = result.outputFiles) != null ? _d : []) {
+      for (const file of (_e = result.outputFiles) != null ? _e : []) {
         const relativeOutputPath = file.path.startsWith("/") ? file.path.substring(1) : file.path;
         const virtualOutputPath = join(scriptsPath, relativeOutputPath);
         virtualOutputFiles.add(virtualOutputPath);

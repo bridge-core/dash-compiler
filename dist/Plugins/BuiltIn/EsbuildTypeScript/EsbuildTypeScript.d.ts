@@ -7,6 +7,7 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     outDir?: string;
     splitting?: boolean;
     externals?: string[];
+    sourcemap?: boolean | 'linked' | 'external' | 'inline' | 'both';
     sourceRoot?: string;
     useBPAsSourceRoot?: boolean;
 }>;
