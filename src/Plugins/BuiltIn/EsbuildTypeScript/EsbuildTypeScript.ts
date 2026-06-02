@@ -54,6 +54,10 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
 
     // Handler to resolve all import patterns for a path ie "bridge-core/*" to include "bridge-core/some/deep/file" and "bridge-core/index.ts"
     function matchesExternalPattern(path: string, pattern: string) {
+        if (pattern.endsWith('/*')) {
+            const folderPrefix = pattern.substring(0, pattern.length - 1)
+            return path.startsWith(folderPrefix)
+        }
         if (!isGlob(pattern)) return pattern === path
         return matchesGlob(path, pattern)
     }

@@ -4467,6 +4467,10 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
     return path.replace(/^\.\//, "").replace(/^\//, "");
   }
   function matchesExternalPattern(path, pattern) {
+    if (pattern.endsWith("/*")) {
+      const folderPrefix = pattern.substring(0, pattern.length - 1);
+      return path.startsWith(folderPrefix);
+    }
     if (!isGlob(pattern))
       return pattern === path;
     return matchesGlob(path, pattern);
