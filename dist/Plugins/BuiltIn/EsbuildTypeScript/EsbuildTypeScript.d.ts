@@ -11,7 +11,7 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     sourceRoot?: string;
     useBPAsSourceRoot?: boolean;
     dropLabels?: string[];
-    define: {
+    define?: {
         [key: string]: string;
     };
 }>;

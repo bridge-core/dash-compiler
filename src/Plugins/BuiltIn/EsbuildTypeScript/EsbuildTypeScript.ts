@@ -41,7 +41,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     sourceRoot?: string
     useBPAsSourceRoot?: boolean,
     dropLabels?: string[]
-    define: { [key: string]: string }
+    define?: { [key: string]: string }
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
     const nodeModuleResolver = createNodeModuleResolver({
         fileSystem,
