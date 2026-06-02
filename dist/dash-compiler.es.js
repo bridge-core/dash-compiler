@@ -4553,6 +4553,8 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         target: "es2022",
         sourcemap: (_c2 = options.sourcemap) != null ? _c2 : false,
         sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : (_d = options.sourceRoot) != null ? _d : void 0,
+        dropLabels: options.dropLabels ? options.dropLabels : void 0,
+        define: options.define ? options.define : void 0,
         logOverride: {
           "missing-source-map": "silent"
         },

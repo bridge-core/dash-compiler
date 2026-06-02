@@ -39,7 +39,9 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     externals?: string[]
     sourcemap?: boolean | 'linked' | 'external' | 'inline' | 'both'
     sourceRoot?: string
-    useBPAsSourceRoot?: boolean
+    useBPAsSourceRoot?: boolean,
+    dropLabels?: string[]
+    define: { [key: string]: string }
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
     const nodeModuleResolver = createNodeModuleResolver({
         fileSystem,
@@ -158,6 +160,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 target: 'es2022',
                 sourcemap: options.sourcemap ?? false,
                 sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : options.sourceRoot ?? undefined,
+                dropLabels: options.dropLabels ? options.dropLabels : undefined,
+                define: options.define ? options.define : undefined,
                 logOverride: {
                     'missing-source-map': 'silent', //TODO: Handle node_modules source maps files correctly
                 },

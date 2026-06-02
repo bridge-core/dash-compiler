@@ -10,4 +10,8 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     sourcemap?: boolean | 'linked' | 'external' | 'inline' | 'both';
     sourceRoot?: string;
     useBPAsSourceRoot?: boolean;
+    dropLabels?: string[];
+    define: {
+        [key: string]: string;
+    };
 }>;
