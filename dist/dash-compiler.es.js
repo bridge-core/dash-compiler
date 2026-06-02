@@ -4550,7 +4550,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         outdir: useOutDir ? outDir : void 0,
         splitting: useSplitting,
         write: false,
-        target: "es2022",
+        target: "es2023",
         sourcemap: (_c2 = options.sourcemap) != null ? _c2 : false,
         sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : (_d = options.sourceRoot) != null ? _d : void 0,
         dropLabels: options.dropLabels ? options.dropLabels : void 0,

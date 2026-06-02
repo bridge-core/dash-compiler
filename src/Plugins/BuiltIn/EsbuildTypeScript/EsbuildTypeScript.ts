@@ -157,7 +157,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 outdir: useOutDir ? outDir : undefined,
                 splitting: useSplitting,
                 write: false,
-                target: 'es2022',
+                target: 'es2023',
                 sourcemap: options.sourcemap ?? false,
                 sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : options.sourceRoot ?? undefined,
                 dropLabels: options.dropLabels ? options.dropLabels : undefined,
