@@ -43,7 +43,7 @@
 		"esbuild-wasm": "^0.25.5",
 		"is-glob": "^4.0.3",
 		"json5": "^2.2.0",
-		"pathe": "^2.0.2"
+		"pathe": "^2.0.3"
 	},
 	"devDependencies": {
 		"@types/is-glob": "^4.0.2",

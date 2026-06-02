@@ -1,6 +1,5 @@
-import { isMatch } from '@bridge-editor/common-utils'
 import isGlob from 'is-glob'
-import { join } from 'pathe'
+import { join, matchesGlob } from 'pathe'
 import { FileSystem } from '../../../main'
 
 export async function findScriptFiles(path: string, fileSystem: FileSystem): Promise<string[]> {
@@ -38,7 +37,7 @@ export async function expandEntryPoints(entrySpecs: string[], scriptsPath: strin
         const spec = normalizeRelativePath(specRaw)
 
         if (isGlob(spec)) {
-            const matches = relativeFiles.filter(filePath => isMatch(filePath, spec))
+            const matches = relativeFiles.filter(filePath => matchesGlob(filePath, spec))
             if (matches.length === 0) {
                 console.warn(`[EsbuildTypescript] entryPoints glob matched no files: ${specRaw}`)
             }

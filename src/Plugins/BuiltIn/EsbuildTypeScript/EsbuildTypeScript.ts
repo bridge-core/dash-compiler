@@ -1,9 +1,8 @@
 import { TCompilerPluginFactory } from '../../TCompilerPluginFactory'
 import * as esbuild from 'esbuild-wasm'
 import esbuildWasmUrl from './esbuild.wasm?url'
-import { dirname, extname, join, resolve } from 'pathe'
+import { dirname, extname, join, resolve, normalize, matchesGlob } from 'pathe'
 import json5 from 'json5'
-import { isMatch } from '@bridge-editor/common-utils'
 import isGlob from 'is-glob'
 import { expandEntryPoints, findScriptFiles } from './entryPoints'
 import { createNodeModuleResolver } from './nodeModuleResolver'
@@ -22,15 +21,11 @@ async function initialize() {
         wasmURL: esbuildWasmUrl,
         worker: false,
     })
-
-    console.log(`[EsbuildTypescript] Initialized esbuild-wasm!`)
 }
 
 function ignore(projectConfig: any, filePath: string) {
     const scriptsPath = projectConfig.resolvePackPath('behaviorPack', 'scripts')
-
     if (!filePath.startsWith(scriptsPath)) return true
-
     return !filePath.endsWith('.ts') && !filePath.endsWith('.js')
 }
 
@@ -42,6 +37,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     outDir?: string
     splitting?: boolean
     externals?: string[]
+    sourcemap?: boolean | 'linked' | 'external' | 'inline' | 'both'
     sourceRoot?: string
     useBPAsSourceRoot?: boolean
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
@@ -56,18 +52,13 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
 
     // Handler to resolve all import patterns for a path ie "bridge-core/*" to include "bridge-core/some/deep/file" and "bridge-core/index.ts"
     function matchesExternalPattern(path: string, pattern: string) {
-        if (pattern.endsWith('/*')) {
-            const folderPrefix = pattern.substring(0, pattern.length - 1)
-            return path.startsWith(folderPrefix)
-        }
-
         if (!isGlob(pattern)) return pattern === path
-        return isMatch(path, pattern)
+        return matchesGlob(path, pattern)
     }
 
     // Helper to check if the import path is an external module.
     function isExternal(path: string) {
-        const normalizedPath = normalizeSpecifier(path)
+        const normalizedPath = normalize(path)
 
         return externals.some(pattern => {
             const normalizedPattern = normalizeSpecifier(pattern)
@@ -164,7 +155,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 outdir: useOutDir ? outDir : undefined,
                 splitting: useSplitting,
                 write: false,
-                sourcemap: true, // TODO: allow configuration of sourcemap type or disabling sourcemaps entirely
+                target: 'es2022',
+                sourcemap: options.sourcemap ?? false,
                 sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : options.sourceRoot ?? undefined,
                 logOverride: {
                     'missing-source-map': 'silent', //TODO: Handle node_modules source maps files correctly
