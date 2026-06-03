@@ -176,12 +176,6 @@ export const MolangPlugin: TCompilerPluginFactory<{
 			}
 		},
 
-		finalizeBuild(filePath, fileContent) {
-			// Make sure JSON files are transformed back into a format that we can write to disk
-			if (loadMolangFrom(filePath) && typeof fileContent !== 'string')
-				return JSON.stringify(fileContent, null, '\t')
-		},
-
 		buildEnd() {
 			astTransformers = []
 		},
