@@ -48,12 +48,6 @@ export class FileTransformer {
 
 		if (writeData !== undefined && writeData !== null) {
 			if (!isWritableData(writeData)) {
-				this.dash.console.warn(
-					`File "${
-						file.filePath
-					}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`,
-					writeData
-				)
 				writeData = JSON.stringify(writeData)
 			}
 		}

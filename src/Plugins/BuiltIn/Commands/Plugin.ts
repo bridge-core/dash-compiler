@@ -193,12 +193,6 @@ export const CustomCommandsPlugin: TCompilerPluginFactory<{
 			if (isCommand(filePath) && fileContent) {
 				return (<Command>fileContent).toString()
 			}
-			// Make sure JSON files are transformed back into a format that we can write to disk
-			else if (
-				loadCommandsFor(filePath) &&
-				typeof fileContent !== 'string'
-			)
-				return JSON.stringify(fileContent, null, '\t')
 		},
 	}
 }
