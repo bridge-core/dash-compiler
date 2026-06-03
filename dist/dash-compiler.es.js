@@ -287,10 +287,6 @@ const MolangPlugin = async ({
         }));
       }
     },
-    finalizeBuild(filePath, fileContent) {
-      if (loadMolangFrom(filePath) && typeof fileContent !== "string")
-        return JSON.stringify(fileContent, null, "	");
-    },
     buildEnd() {
       astTransformers = [];
     }
@@ -1316,8 +1312,7 @@ const CustomCommandsPlugin = ({
     finalizeBuild(filePath, fileContent) {
       if (isCommand(filePath) && fileContent) {
         return fileContent.toString();
-      } else if (loadCommandsFor(filePath) && typeof fileContent !== "string")
-        return JSON.stringify(fileContent, null, "	");
+      }
     }
   };
 };
@@ -1701,6 +1696,71 @@ const GeneratorScriptsPlugin = ({ options, fileType, console: console2, jsRuntim
     }
   };
 };
+function jsonStringifyWithFloatFix(json, matches, spacing = "	") {
+  let traversedKeys = [];
+  let traversedObjects = [];
+  return JSON.stringify(json, function(key, value) {
+    if (key !== "") {
+      traversedKeys.push(key);
+      traversedObjects.push(this);
+    }
+    if (typeof value !== "object") {
+      const path = traversedKeys.join("/");
+      const matcherTraversedObjects = [...traversedObjects];
+      console.log(path);
+      traversedKeys.pop();
+      traversedObjects.pop();
+      if (typeof value === "number") {
+        for (const matcher of matches) {
+          console.log(path, matcher.pathGlob, isMatch(path, matcher.pathGlob));
+          if (isMatch(path, matcher.pathGlob) && (!matcher.apply || matcher.apply(path, matcherTraversedObjects))) {
+            let result = value.toString();
+            return `$___dash___floatPropertyTruncationFix___THIS IS AUTO GENERATED AND I HATE IT___${result.includes(".") ? result : result + ".0"}`;
+          }
+        }
+      }
+      return value;
+    } else {
+      return value;
+    }
+  }, spacing).replaceAll(/"\$___dash___floatPropertyTruncationFix___THIS IS AUTO GENERATED AND I HATE IT___([0-9]|\.|-)+"/g, (value) => {
+    return value.substring(80, value.length - 1);
+  });
+}
+const FloatPropertyTruncationFix = ({ fileType }) => {
+  return {
+    finalizeBuild(filePath, fileContent) {
+      if ((fileType == null ? void 0 : fileType.getId(filePath)) !== "entity")
+        return;
+      if (!filePath.endsWith("player.json"))
+        return fileContent;
+      if (typeof fileContent === "string")
+        return fileContent;
+      return jsonStringifyWithFloatFix(fileContent, [
+        {
+          pathGlob: "minecraft:entity/description/properties/*/value",
+          apply(path, traversedObjects) {
+            if (traversedObjects.length === 0)
+              return false;
+            if (traversedObjects[traversedObjects.length - 1].type !== "float")
+              return false;
+            return true;
+          }
+        },
+        {
+          pathGlob: "minecraft:entity/description/properties/*/range/*",
+          apply(path, traversedObjects) {
+            if (traversedObjects.length < 2)
+              return false;
+            if (traversedObjects[traversedObjects.length - 2].type !== "float")
+              return false;
+            return true;
+          }
+        }
+      ]);
+    }
+  };
+};
 class JsRuntime extends Runtime {
   constructor(fs, modules) {
     super(modules);
@@ -1726,7 +1786,8 @@ const builtInPlugins = {
   typeScript: TypeScriptPlugin,
   contentsFile: ContentsFilePlugin,
   formatVersionCorrection: FormatVersionCorrection,
-  generatorScripts: GeneratorScriptsPlugin
+  generatorScripts: GeneratorScriptsPlugin,
+  floatPropertyTruncationFix: FloatPropertyTruncationFix
 };
 const availableHooks = [
   "buildStart",
@@ -1903,7 +1964,8 @@ class AllPlugins {
         return this.dash.unlinkMultiple(filePaths, false, true);
       },
       hasComMojangDirectory: this.dash.fileSystem !== this.dash.outputFileSystem,
-      compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual)
+      compileFiles: (filePaths, virtual = true) => this.dash.compileAdditionalFiles(filePaths, virtual),
+      jsonStringifyWithFloatFix
     };
   }
   async runBuildStartHooks() {
@@ -2406,7 +2468,6 @@ class FileTransformer {
       writeData = file.data;
     if (writeData !== void 0 && writeData !== null) {
       if (!isWritableData(writeData)) {
-        this.dash.console.warn(`File "${file.filePath}" was not in a writable format: "${typeof writeData}". Trying to JSON.stringify(...) it...`, writeData);
         writeData = JSON.stringify(writeData);
       }
     }

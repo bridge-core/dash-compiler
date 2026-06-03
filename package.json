@@ -1,6 +1,6 @@
 {
 	"name": "@bridge-editor/dash-compiler",
-	"version": "0.12.0",
+	"version": "0.13.0",
 	"description": "A fast compiler for Minecraft Add-Ons",
 	"scripts": {
 		"build:types": "tsc --project tsconfig.json",
@@ -27,6 +27,10 @@
 		{
 			"name": "Thomas Orsbourne",
 			"email": "thomas@gamemodeone.com"
+		},
+		{
+			"name": "Outer Cloud",
+			"email": "outercloudstudio@gmail.com"
 		}
 	],
 	"license": "MIT",

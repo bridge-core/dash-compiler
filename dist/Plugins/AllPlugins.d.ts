@@ -2,6 +2,7 @@ import type { DashFile } from '../Core/DashFile';
 import type { Dash } from '../Dash';
 import { Plugin } from './Plugin';
 import { TCompilerPluginFactory } from './TCompilerPluginFactory';
+import { jsonStringifyWithFloatFix } from './BuiltIn/FloatPropertyTruncationFix';
 import { JsRuntime } from '../Common/JsRuntime';
 declare const availableHooks: readonly ["buildStart", "buildEnd", "include", "ignore", "transformPath", "read", "load", "registerAliases", "require", "transform", "finalizeBuild", "beforeFileUnlinked"];
 export declare type THookType = (typeof availableHooks)[number];
@@ -39,6 +40,7 @@ export declare class AllPlugins {
         unlinkOutputFiles: (filePaths: string[]) => Promise<void>;
         hasComMojangDirectory: boolean;
         compileFiles: (filePaths: string[], virtual?: boolean) => Promise<void>;
+        jsonStringifyWithFloatFix: typeof jsonStringifyWithFloatFix;
     };
     runBuildStartHooks(): Promise<void>;
     runIncludeHooks(): Promise<(string | [string, {
