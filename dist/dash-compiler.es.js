@@ -4562,19 +4562,29 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   let buildResult = {};
   let virtualOutputResult = {};
   let virtualOutputFiles = /* @__PURE__ */ new Set();
-  let sourceMapResult = {};
-  let sourceMapVirtualFiles = /* @__PURE__ */ new Set();
+  let outputDependencies = /* @__PURE__ */ new Map();
   function cleanupSourceMapSources(sourceMapText) {
     return sourceMapText.replace(/"virtual:/g, '"');
   }
+  function normalizeRelativePath2(filePath) {
+    return filePath.replace(/^[\\/]+/, "");
+  }
+  function toVirtualOutputPath(outputPath) {
+    return join(scriptsPath, normalizeRelativePath2(outputPath));
+  }
+  function toBuildResultKey(filePath) {
+    return normalizeRelativePath2(filePath.substring(scriptsPath.length));
+  }
+  function toMapSourceJsPath(filePath) {
+    return filePath.endsWith(".map") ? filePath.substring(0, filePath.length - 4) : filePath;
+  }
   return {
     async buildStart() {
-      var _a2, _b2, _c2, _d, _e;
+      var _a2, _b2, _c2, _d, _e, _f, _g, _h;
       buildResult = {};
       virtualOutputResult = {};
       virtualOutputFiles = /* @__PURE__ */ new Set();
-      sourceMapResult = {};
-      sourceMapVirtualFiles = /* @__PURE__ */ new Set();
+      outputDependencies = /* @__PURE__ */ new Map();
       await initialize();
       let entryPoints = (_a2 = options.entryPoints) != null ? _a2 : [entryFile];
       if (useBundle) {
@@ -4609,6 +4619,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         packages: "bundle",
         bundle: useBundle,
         external: useBundle ? externals : void 0,
+        metafile: true,
         entryPoints,
         outfile: useOutDir ? void 0 : outFile,
         outdir: useOutDir ? outDir : void 0,
@@ -4705,18 +4716,51 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         platform: "neutral"
       });
       for (const file of (_e = result.outputFiles) != null ? _e : []) {
-        const relativeOutputPath = file.path.startsWith("/") ? file.path.substring(1) : file.path;
-        const virtualOutputPath = join(scriptsPath, relativeOutputPath);
+        const relativeOutputPath = normalizeRelativePath2(file.path);
+        const virtualOutputPath = toVirtualOutputPath(file.path);
         virtualOutputFiles.add(virtualOutputPath);
         if (file.path.endsWith(".map")) {
-          const virtualMapPath = virtualOutputPath;
-          sourceMapVirtualFiles.add(virtualMapPath);
-          sourceMapResult[virtualMapPath] = cleanupSourceMapSources(file.text);
-          virtualOutputResult[virtualMapPath] = cleanupSourceMapSources(file.text);
+          virtualOutputResult[virtualOutputPath] = cleanupSourceMapSources(file.text);
           continue;
         }
-        buildResult[file.path] = file.text;
+        buildResult[relativeOutputPath] = file.text;
         virtualOutputResult[virtualOutputPath] = file.text;
+      }
+      for (const [outputPath, outputMeta] of Object.entries((_g = (_f = result.metafile) == null ? void 0 : _f.outputs) != null ? _g : {})) {
+        const virtualOutputPath = toVirtualOutputPath(outputPath);
+        if (!virtualOutputFiles.has(virtualOutputPath))
+          continue;
+        const dependencies = /* @__PURE__ */ new Set();
+        for (const inputPath of Object.keys((_h = outputMeta.inputs) != null ? _h : {})) {
+          let normalizedInputPath = inputPath;
+          if (normalizedInputPath.startsWith("virtual:")) {
+            normalizedInputPath = normalizedInputPath.substring("virtual:".length);
+          }
+          if (normalizedInputPath.startsWith("node_modules/") || normalizedInputPath.startsWith("node-modules:"))
+            continue;
+          if (normalizedInputPath.startsWith("/")) {
+            normalizedInputPath = normalizedInputPath.substring(1);
+          }
+          if (normalizedInputPath.startsWith("./")) {
+            normalizedInputPath = normalizedInputPath.substring(2);
+          }
+          const fullInputPath = join(scriptsPath, normalizedInputPath);
+          if (ignore(projectConfig, fullInputPath))
+            continue;
+          dependencies.add(fullInputPath);
+        }
+        outputDependencies.set(virtualOutputPath, [...dependencies]);
+      }
+      for (const virtualMapPath of virtualOutputFiles) {
+        if (!virtualMapPath.endsWith(".map"))
+          continue;
+        const jsPath = toMapSourceJsPath(virtualMapPath);
+        if (outputDependencies.has(virtualMapPath))
+          continue;
+        const deps = outputDependencies.get(jsPath);
+        if (deps && deps.length > 0) {
+          outputDependencies.set(virtualMapPath, deps);
+        }
       }
     },
     include() {
@@ -4728,21 +4772,26 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         return false;
       return ignore(projectConfig, filePath);
     },
+    require(filePath) {
+      if (!virtualOutputFiles.has(filePath))
+        return;
+      return outputDependencies.get(filePath);
+    },
     async transformPath(filePath) {
       if (typeof filePath !== "string")
         return filePath;
       if (virtualOutputFiles.has(filePath) && !filePath.endsWith(".map")) {
         return filePath;
       }
-      if (sourceMapVirtualFiles.has(filePath)) {
-        const sourceJsPath = filePath.endsWith(".map") ? filePath.substring(0, filePath.length - 4) : filePath;
+      if (virtualOutputFiles.has(filePath) && filePath.endsWith(".map")) {
+        const sourceJsPath = toMapSourceJsPath(filePath);
         const outputJsPath = await getOutputPath(sourceJsPath);
         const outputPath = outputJsPath ? `${outputJsPath}.map` : filePath;
         return outputPath;
       }
       if (ignore(projectConfig, filePath))
         return filePath;
-      let resolvedFilePath = filePath.substring(scriptsPath.length);
+      let resolvedFilePath = toBuildResultKey(filePath);
       if (resolvedFilePath.endsWith(".ts"))
         resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
       if (buildResult[resolvedFilePath] === void 0) {
@@ -4772,7 +4821,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
       if (virtualOutputFiles.has(filePath)) {
         return virtualOutputResult[filePath];
       }
-      let resolvedFilePath = filePath.substring(scriptsPath.length);
+      let resolvedFilePath = toBuildResultKey(filePath);
       if (resolvedFilePath.endsWith(".ts"))
         resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + ".js";
       const built = buildResult[resolvedFilePath];

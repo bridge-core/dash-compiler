@@ -96,12 +96,27 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     let buildResult: Record<string, string> = {}
     let virtualOutputResult: Record<string, string> = {}
     let virtualOutputFiles = new Set<string>()
-    let sourceMapResult: Record<string, string> = {}
-    let sourceMapVirtualFiles = new Set<string>()
+    let outputDependencies = new Map<string, string[]>()
 
     // Because files get put into the virtual file system their paths get prefixed with virtual:. We forcefully strip this out to return to actual paths
     function cleanupSourceMapSources(sourceMapText: string) {
         return sourceMapText.replace(/"virtual:/g, '"')
+    }
+
+    function normalizeRelativePath(filePath: string) {
+        return filePath.replace(/^[\\/]+/, '')
+    }
+
+    function toVirtualOutputPath(outputPath: string) {
+        return join(scriptsPath, normalizeRelativePath(outputPath))
+    }
+
+    function toBuildResultKey(filePath: string) {
+        return normalizeRelativePath(filePath.substring(scriptsPath.length))
+    }
+
+    function toMapSourceJsPath(filePath: string) {
+        return filePath.endsWith('.map') ? filePath.substring(0, filePath.length - 4) : filePath
     }
 
     return {
@@ -109,8 +124,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             buildResult = {}
             virtualOutputResult = {}
             virtualOutputFiles = new Set()
-            sourceMapResult = {}
-            sourceMapVirtualFiles = new Set()
+            outputDependencies = new Map()
 
             await initialize()
 
@@ -156,6 +170,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 packages: 'bundle',
                 bundle: useBundle,
                 external: useBundle ? externals : undefined,
+                metafile: true,
                 entryPoints: entryPoints,
                 outfile: useOutDir ? undefined : outFile,
                 outdir: useOutDir ? outDir : undefined,
@@ -267,22 +282,67 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             })
 
             for (const file of result.outputFiles ?? []) {
-                const relativeOutputPath = file.path.startsWith('/') ? file.path.substring(1) : file.path
-                const virtualOutputPath = join(scriptsPath, relativeOutputPath)
+                const relativeOutputPath = normalizeRelativePath(file.path)
+                const virtualOutputPath = toVirtualOutputPath(file.path)
 
                 virtualOutputFiles.add(virtualOutputPath)
 
                 if (file.path.endsWith('.map')) {
-                    const virtualMapPath = virtualOutputPath
-
-                    sourceMapVirtualFiles.add(virtualMapPath)
-                    sourceMapResult[virtualMapPath] = cleanupSourceMapSources(file.text)
-                    virtualOutputResult[virtualMapPath] = cleanupSourceMapSources(file.text)
+                    virtualOutputResult[virtualOutputPath] = cleanupSourceMapSources(file.text)
                     continue
                 }
 
-                buildResult[file.path] = file.text
+                buildResult[relativeOutputPath] = file.text
                 virtualOutputResult[virtualOutputPath] = file.text
+            }
+
+            // Wire esbuild output files into Dash's dependency graph so hot updates
+            // include bundle outputs when any of their source inputs change.
+            for (const [outputPath, outputMeta] of Object.entries(result.metafile?.outputs ?? {})) {
+                const virtualOutputPath = toVirtualOutputPath(outputPath)
+
+                if (!virtualOutputFiles.has(virtualOutputPath)) continue
+
+                const dependencies = new Set<string>()
+                for (const inputPath of Object.keys(outputMeta.inputs ?? {})) {
+                    let normalizedInputPath = inputPath
+
+                    if (normalizedInputPath.startsWith('virtual:')) {
+                        normalizedInputPath = normalizedInputPath.substring('virtual:'.length)
+                    }
+
+                    // Ignore node_modules and non-script files from dependency wiring.
+                    if (normalizedInputPath.startsWith('node_modules/') || normalizedInputPath.startsWith('node-modules:')) continue
+
+                    if (normalizedInputPath.startsWith('/')) {
+                        normalizedInputPath = normalizedInputPath.substring(1)
+                    }
+                    if (normalizedInputPath.startsWith('./')) {
+                        normalizedInputPath = normalizedInputPath.substring(2)
+                    }
+
+                    const fullInputPath = join(scriptsPath, normalizedInputPath)
+                    if (ignore(projectConfig, fullInputPath)) continue
+
+                    dependencies.add(fullInputPath)
+                }
+
+                outputDependencies.set(virtualOutputPath, [...dependencies])
+            }
+
+            // Some esbuild configurations don't attach inputs to .map outputs.
+            // Mirror JS dependencies to their source map companions.
+            for (const virtualMapPath of virtualOutputFiles) {
+                if (!virtualMapPath.endsWith('.map')) continue
+
+                const jsPath = toMapSourceJsPath(virtualMapPath)
+
+                if (outputDependencies.has(virtualMapPath)) continue
+
+                const deps = outputDependencies.get(jsPath)
+                if (deps && deps.length > 0) {
+                    outputDependencies.set(virtualMapPath, deps)
+                }
             }
         },
 
@@ -296,6 +356,11 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             return ignore(projectConfig, filePath)
         },
 
+        require(filePath) {
+            if (!virtualOutputFiles.has(filePath)) return
+            return outputDependencies.get(filePath)
+        },
+
         async transformPath(filePath) {
             if (typeof filePath !== 'string') return filePath
 
@@ -303,8 +368,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 return filePath
             }
 
-            if (sourceMapVirtualFiles.has(filePath)) {
-                const sourceJsPath = filePath.endsWith('.map') ? filePath.substring(0, filePath.length - 4) : filePath
+            if (virtualOutputFiles.has(filePath) && filePath.endsWith('.map')) {
+                const sourceJsPath = toMapSourceJsPath(filePath)
                 const outputJsPath = await getOutputPath(sourceJsPath)
                 const outputPath = outputJsPath ? `${outputJsPath}.map` : filePath
                 return outputPath
@@ -312,7 +377,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
 
             if (ignore(projectConfig, filePath)) return filePath
 
-            let resolvedFilePath = filePath.substring(scriptsPath.length)
+            let resolvedFilePath = toBuildResultKey(filePath)
             if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
             if (buildResult[resolvedFilePath] === undefined) {
@@ -321,7 +386,6 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             }
 
             if (filePath.endsWith('.ts')) return filePath.substring(0, filePath.length - 3) + '.js'
-
             return filePath
         },
 
@@ -348,7 +412,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 return virtualOutputResult[filePath]
             }
 
-            let resolvedFilePath = filePath.substring(scriptsPath.length)
+            let resolvedFilePath = toBuildResultKey(filePath)
             if (resolvedFilePath.endsWith('.ts')) resolvedFilePath = resolvedFilePath.substring(0, resolvedFilePath.length - 3) + '.js'
 
             // If not in buildResult (e.g. a .js virtual file from another plugin), leave content untouched.
