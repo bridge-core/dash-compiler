@@ -301,7 +301,6 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             // Wire esbuild output files into Dash's dependency graph so hot updates
             // include bundle outputs when any of their source inputs change.
             for (const [outputPath, outputMeta] of Object.entries(result.metafile?.outputs ?? {})) {
-                    console.log(`[EsbuildTypescript] Output: ${outputPath} (inputs: ${Object.keys(outputMeta.inputs ?? {}).length})`)
                 const virtualOutputPath = toVirtualOutputPath(outputPath)
 
                 if (!virtualOutputFiles.has(virtualOutputPath)) continue
