@@ -41,7 +41,8 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     sourceRoot?: string
     useBPAsSourceRoot?: boolean,
     dropLabels?: string[]
-    define?: { [key: string]: string }
+    define?: { [key: string]: string},
+    keepNames?: boolean
 }> = ({ options, fileSystem, projectConfig, projectRoot, getOutputPath }) => {
     const nodeModuleResolver = createNodeModuleResolver({
         fileSystem,
@@ -181,6 +182,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : options.sourceRoot ?? undefined,
                 dropLabels: options.dropLabels ? options.dropLabels : undefined,
                 define: options.define ? options.define : undefined,
+                keepNames: options.keepNames ?? false,
                 logOverride: {
                     'missing-source-map': 'silent', //TODO: Handle node_modules source maps files correctly
                 },
@@ -299,6 +301,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
             // Wire esbuild output files into Dash's dependency graph so hot updates
             // include bundle outputs when any of their source inputs change.
             for (const [outputPath, outputMeta] of Object.entries(result.metafile?.outputs ?? {})) {
+                    console.log(`[EsbuildTypescript] Output: ${outputPath} (inputs: ${Object.keys(outputMeta.inputs ?? {}).length})`)
                 const virtualOutputPath = toVirtualOutputPath(outputPath)
 
                 if (!virtualOutputFiles.has(virtualOutputPath)) continue
@@ -306,6 +309,7 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
                 const dependencies = new Set<string>()
                 for (const inputPath of Object.keys(outputMeta.inputs ?? {})) {
                     let normalizedInputPath = inputPath
+                    if(inputPath.endsWith('.js')) continue // Ignore .js files as they are not part of the source files in the behavior pack
 
                     if (normalizedInputPath.startsWith('virtual:')) {
                         normalizedInputPath = normalizedInputPath.substring('virtual:'.length)

@@ -14,4 +14,5 @@ export declare const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
     define?: {
         [key: string]: string;
     };
+    keepNames?: boolean;
 }>;

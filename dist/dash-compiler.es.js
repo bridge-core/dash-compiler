@@ -4580,7 +4580,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   }
   return {
     async buildStart() {
-      var _a2, _b2, _c2, _d, _e, _f, _g, _h;
+      var _a2, _b2, _c2, _d, _e, _f, _g, _h, _i, _j;
       buildResult = {};
       virtualOutputResult = {};
       virtualOutputFiles = /* @__PURE__ */ new Set();
@@ -4630,6 +4630,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         sourceRoot: options.useBPAsSourceRoot ? resolve(scriptsPath) : (_d = options.sourceRoot) != null ? _d : void 0,
         dropLabels: options.dropLabels ? options.dropLabels : void 0,
         define: options.define ? options.define : void 0,
+        keepNames: (_e = options.keepNames) != null ? _e : false,
         logOverride: {
           "missing-source-map": "silent"
         },
@@ -4715,7 +4716,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         tsconfigRaw: tsconfig,
         platform: "neutral"
       });
-      for (const file of (_e = result.outputFiles) != null ? _e : []) {
+      for (const file of (_f = result.outputFiles) != null ? _f : []) {
         const relativeOutputPath = normalizeRelativePath2(file.path);
         const virtualOutputPath = toVirtualOutputPath(file.path);
         virtualOutputFiles.add(virtualOutputPath);
@@ -4726,13 +4727,16 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         buildResult[relativeOutputPath] = file.text;
         virtualOutputResult[virtualOutputPath] = file.text;
       }
-      for (const [outputPath, outputMeta] of Object.entries((_g = (_f = result.metafile) == null ? void 0 : _f.outputs) != null ? _g : {})) {
+      for (const [outputPath, outputMeta] of Object.entries((_h = (_g = result.metafile) == null ? void 0 : _g.outputs) != null ? _h : {})) {
+        console.log(`[EsbuildTypescript] Output: ${outputPath} (inputs: ${Object.keys((_i = outputMeta.inputs) != null ? _i : {}).length})`);
         const virtualOutputPath = toVirtualOutputPath(outputPath);
         if (!virtualOutputFiles.has(virtualOutputPath))
           continue;
         const dependencies = /* @__PURE__ */ new Set();
-        for (const inputPath of Object.keys((_h = outputMeta.inputs) != null ? _h : {})) {
+        for (const inputPath of Object.keys((_j = outputMeta.inputs) != null ? _j : {})) {
           let normalizedInputPath = inputPath;
+          if (inputPath.endsWith(".js"))
+            continue;
           if (normalizedInputPath.startsWith("virtual:")) {
             normalizedInputPath = normalizedInputPath.substring("virtual:".length);
           }
