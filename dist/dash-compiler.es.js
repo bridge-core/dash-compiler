@@ -4580,7 +4580,7 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
   }
   return {
     async buildStart() {
-      var _a2, _b2, _c2, _d, _e, _f, _g, _h, _i, _j;
+      var _a2, _b2, _c2, _d, _e, _f, _g, _h, _i;
       buildResult = {};
       virtualOutputResult = {};
       virtualOutputFiles = /* @__PURE__ */ new Set();
@@ -4728,12 +4728,11 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
         virtualOutputResult[virtualOutputPath] = file.text;
       }
       for (const [outputPath, outputMeta] of Object.entries((_h = (_g = result.metafile) == null ? void 0 : _g.outputs) != null ? _h : {})) {
-        console.log(`[EsbuildTypescript] Output: ${outputPath} (inputs: ${Object.keys((_i = outputMeta.inputs) != null ? _i : {}).length})`);
         const virtualOutputPath = toVirtualOutputPath(outputPath);
         if (!virtualOutputFiles.has(virtualOutputPath))
           continue;
         const dependencies = /* @__PURE__ */ new Set();
-        for (const inputPath of Object.keys((_j = outputMeta.inputs) != null ? _j : {})) {
+        for (const inputPath of Object.keys((_i = outputMeta.inputs) != null ? _i : {})) {
           let normalizedInputPath = inputPath;
           if (inputPath.endsWith(".js"))
             continue;
