@@ -85,7 +85,6 @@ export const EsbuildTypeScriptPlugin: TCompilerPluginFactory<{
         '@minecraft/diagnostics',
         '@minecraft/server-gametest',
         '@minecraft/common',
-        '@minecraft/vanilla-data',
         ...(options.externals ?? [])
     ]
 
