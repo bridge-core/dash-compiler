@@ -16,7 +16,12 @@
 		".": {
 			"import": "./dist/dash-compiler.es.js",
 			"require": "./dist/dash-compiler.umd.js"
-		}
+		},
+		"./bundled": {
+			"types": "./dist/main.d.ts",
+			"import": "./dist/dash-compiler.bundled.es.js"
+		},
+		"./package.json": "./package.json"
 	},
 	"repository": {
 		"type": "git",
