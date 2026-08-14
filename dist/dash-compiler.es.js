@@ -4553,7 +4553,6 @@ const EsbuildTypeScriptPlugin = ({ options, fileSystem, projectConfig, projectRo
     "@minecraft/diagnostics",
     "@minecraft/server-gametest",
     "@minecraft/common",
-    "@minecraft/vanilla-data",
     ...(_a = options.externals) != null ? _a : []
   ];
   const useBundle = (_b = options.bundle) != null ? _b : true;
